@@ -1,93 +1,89 @@
-# flatplan
+# Flatplan
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/YOUR_USERNAME/flatplan/actions)
+[![Latest Release](https://img.shields.io/badge/version-v0.1.0-lightgrey.svg)](https://github.com/YOUR_USERNAME/flatplan/releases)
 
+> Your financial planning in "flat" files. Simple, local, and fully under your control.
 
-## Getting started
+[HINT: A screenshot is crucial for user engagement. Insert one here as soon as you can.]
+``
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+---
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 💡 What is Flatplan?
 
-## Add your files
+**Flatplan** is a desktop personal budgeting application designed for those who value **simplicity, privacy, and full control** over their data.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+Unlike most financial apps, Flatplan **does not use cloud services or proprietary databases**. Instead, your entire financial life—plans, categories, and expenses—is stored in **human-readable files (JSON or YAML)** directly in a folder on your computer.
 
-```
-cd existing_repo
-git remote add origin https://gitlab.com/flatplan/flatplan.git
-git branch -M main
-git push -uf origin main
-```
+It implements the time-tested **"Plan vs. Fact"** (or "envelope") budgeting method without the bloat of double-entry accounting. It's the perfect solution for developers, tech-savvy users, and anyone who prefers to manage their data like they manage their configs: transparently, and optionally, with Git, Syncthing, or any other tool.
 
-## Integrate with your tools
+## 🏛️ The "Local-First" Philosophy
 
-- [ ] [Set up project integrations](https://gitlab.com/flatplan/flatplan/-/settings/integrations)
+Flatplan is built on a few key principles:
 
-## Collaborate with your team
+1.  **💻 You Own Your Data:** Your financial data lives only on your device in a simple folder. No third-party servers, ever.
+2.  **✨ Total Transparency:** By using YAML or JSON, you can view (and even edit) your data in a plain text editor at any time.
+3.  **🔄 Sync Freedom:** You decide how to sync your budget folder. Use **Git**, **Syncthing**, **Dropbox**, **Google Drive**, or just copy it to a USB stick. The app doesn't lock you into its own service.
+4.  **🔒 Private by Default:** The app requires no registration, does not connect to your bank accounts, and sends no "anonymous" telemetry.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## ✨ Key Features
 
-## Test and Deploy
+* **🗂️ File-Based:** All data is stored in human-readable `.json` or `.yaml` files. One period = one file.
+* **🧠 Simple Method:** Focuses on **"Plan vs. Fact"**—compare your planned spending against your actuals.
+* **🚫 No Accounting:** No double-entry, debits, or credits required. This is budgeting, not accounting.
+* **🗓️ Custom Periods:** Set any period length and start date you want (e.g., from the 25th of one month to the 24th of the next).
+* **🧾 Categories & Limits:** Create categories with spending limits or list planned itemized expenses.
+* **📊 Simple Stats:**
+    * Totals: Plan vs. Fact (Income & Expenses).
+    * "Heat" indicator for categories (turns red on overspending).
+    * Calculates remaining "free-to-spend" money per day until the period ends.
+* **📤 Copy Plan:** Easily copy the previous month's plan to avoid starting from scratch.
 
-Use the built-in continuous integration in GitLab.
+## 🎯 Who is this for?
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+* **Developers, sysadmins,** and other tech-savvy users who love keeping configs in text files.
+* **Privacy advocates** who don't trust cloud services with their financial data.
+* People who like the **method of YNAB** ("envelope budgeting") but dislike its **implementation** (cloud, subscription, bank-linking).
+* Users who tried **Ledger/hledger/Beancount** (Plain Text Accounting) but found them too complex (double-entry) for simple personal budgeting.
 
-***
+## ❌ Who is this *NOT* for?
 
-# Editing this README
+Flatplan is **not** for you if you are looking for:
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+* Automatic syncing with your bank accounts.
+* A cloud-first app with a native mobile client out of the box.
+* Complex, double-entry accounting to track assets and liabilities.
 
-## Suggestions for a good README
+## ⚙️ How It Works (Storage Concept)
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Flatplan doesn't use a database. Your entire setup lives in a folder you choose:
 
-## Name
-Choose a self-explaining name for your project.
+* `template.yaml`: Your budget "master template." It holds your list of categories and recurring income/expenses (e.g., "Rent", "Internet").
+* `period-2025-10.yaml`: The data file for October 2025. It's created from your template and holds your **planned** amounts for the month and a column for your **actual** spending.
+* `period-2025-11.yaml`: The data file for November 2025.
+* ...and so on.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## 🚀 Getting Started
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+[Your installation instructions will go here.]
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1.  **Download** the latest release from the [Releases](https://github.com/YOUR_USERNAME/flatplan/releases) page.
+2.  **Run** the application.
+3.  **Create** your first `template.yaml` file by adding your budget categories.
+4.  **Create** your first period from the template and start planning!
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## 🗺️ Roadmap
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+* [ ] Multi-currency support (vNext)
+* [ ] Improved charts and visualizations
+* [ ] Your next great idea...
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## 🤝 Contributing
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+We welcome all ideas and pull requests! If you find a bug or have a feature suggestion, please [open an issue](https://github.com/YOUR_USERNAME/flatplan/issues).
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## ⚖️ License
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is distributed under the MIT License. See the `LICENSE` file for details.
