@@ -1,5 +1,5 @@
 
-Need to create a technical specification for the desktop app. Tech stack - flutter with desktop target (windows, linux, macos) (developing on windows) + local file storage (sorted yaml to avoid lines drift in git). Consider future upgrade to the mobile and web versions.
+Need to create a technical specification for the desktop app. Tech stack - flutter with desktop target (windows, linux, macos) (developing on windows) + local file storage (sorted yaml to avoid lines drift in git). Consider future move to the mobile and web versions.
 The specification should be suitable for the implementation with AI assistance.
 Need to decompose the app into stages to minimize the context overflow for the AI. Put every stage into a separate file.
 
