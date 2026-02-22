@@ -9,5 +9,6 @@ sealed class DueDate with _$DueDate {
   const factory DueDate.dayOfMonth({required int day}) = _DayOfMonth;
   const factory DueDate.dayOfWeek({required int weekday}) = _DayOfWeek;
 
-  factory DueDate.fromJson(Map<String, dynamic> json) => _$DueDateFromJson(json);
+  factory DueDate.fromJson(Map<String, dynamic> json) =>
+      _$DueDateFromJson(json);
 }

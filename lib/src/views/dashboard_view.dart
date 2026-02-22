@@ -3,52 +3,30 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../app_theme.dart';
 import '../components/category_tile.dart';
 import '../components/summary_card.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
 
+/// The main dashboard showing period summary and category breakdown.
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = Theme.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
     final statsAsync = ref.watch(periodStatsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
       body: currentPeriodAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (period) {
           if (period == null) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.account_balance_wallet_outlined, size: 80, color: theme.colorScheme.primary.withValues(alpha: 0.5)),
-                  const SizedBox(height: 24),
-                  Text('Welcome to FlatPlan', style: theme.textTheme.headlineLarge),
-                  const SizedBox(height: 16),
-                  const Text('No active tracking period found.'),
-                  const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    onPressed: () => context.go('/settings'),
-                    icon: const Icon(Icons.settings),
-                    label: const Text('Go to Settings to Generate Period'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    ),
-                  ),
-                ],
-              ),
-            );
+            return _buildEmptyState(context);
           }
 
           final stats = statsAsync.value;
@@ -56,87 +34,117 @@ class DashboardView extends ConsumerWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final currencyFormatter = NumberFormat.simpleCurrency(name: period.baseCurrency);
+          final currencyFormatter = NumberFormat.simpleCurrency(
+            name: period.baseCurrency,
+          );
 
-          // We filter the categoryStats by Mandatory flag
-          final mandatoryCategories = stats.categoryStats.where((c) => c.isMandatory).toList();
-          final optionalCategories = stats.categoryStats.where((c) => !c.isMandatory).toList();
+          final mandatoryCategories = stats.categoryStats
+              .where((c) => c.isMandatory)
+              .toList();
+          final optionalCategories = stats.categoryStats
+              .where((c) => !c.isMandatory)
+              .toList();
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
             child: ListView(
               children: [
-                // Top header for period name
+                // ─── Header ───────────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        period.name,
-                        style: theme.textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome Back',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            period.name,
+                            style: theme.textTheme.headlineLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
                           // TODO: Implement trigger rollover
                         },
-                        icon: const Icon(Icons.arrow_forward),
+                        icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                         label: const Text('Next Period'),
                       ),
                     ],
                   ),
                 ),
 
-                // Summary Row (Using Wrap for responsiveness)
+                // ─── Summary Cards ────────────────────────────────
                 Wrap(
-                  spacing: 16.0,
-                  runSpacing: 16.0,
-                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 16,
+                  runSpacing: 16,
                   children: [
                     SizedBox(
-                      width: 250,
+                      width: 260,
                       child: SummaryCard(
                         title: 'Total Budget',
                         amount: currencyFormatter.format(stats.totalBudget),
-                        icon: Icons.account_balance_wallet,
-                        color: theme.colorScheme.primary,
+                        icon: Icons.account_balance_wallet_rounded,
+                        color: colorScheme.primary,
+                        backgroundColor: AppTheme.cardGold,
                       ),
                     ),
                     SizedBox(
-                      width: 250,
+                      width: 260,
                       child: SummaryCard(
                         title: 'Total Spent',
                         amount: currencyFormatter.format(stats.totalSpent),
-                        icon: Icons.shopping_cart,
-                        color: theme.colorScheme.secondary,
+                        icon: Icons.shopping_cart_rounded,
+                        color: colorScheme.secondary,
+                        backgroundColor: AppTheme.cardTeal,
                       ),
                     ),
                     SizedBox(
-                      width: 250,
+                      width: 260,
                       child: SummaryCard(
                         title: 'Remaining',
-                        amount: currencyFormatter.format(stats.overallRemaining.clamp(0, double.infinity)),
-                        icon: Icons.savings,
-                        color: Colors.green,
+                        amount: currencyFormatter.format(
+                          stats.overallRemaining.clamp(0, double.infinity),
+                        ),
+                        icon: Icons.savings_rounded,
+                        color: const Color(0xFF6ABF69),
+                        backgroundColor: AppTheme.cardGreen,
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 36),
 
-                // Categories Layout
+                // ─── Categories ───────────────────────────────────
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final bool isWide = constraints.maxWidth > 800;
+                    final isWide = constraints.maxWidth > 800;
 
-                    Widget mandatorySection = _buildCategorySection(
-                      context, 'Mandatory Expenses', mandatoryCategories, currencyFormatter,
+                    final mandatorySection = _buildCategorySection(
+                      context,
+                      'Mandatory Expenses',
+                      Icons.lock_rounded,
+                      mandatoryCategories,
+                      currencyFormatter,
                     );
-                    Widget optionalSection = _buildCategorySection(
-                      context, 'Optional Living pool', optionalCategories, currencyFormatter,
+                    final optionalSection = _buildCategorySection(
+                      context,
+                      'Optional Living Pool',
+                      Icons.spa_rounded,
+                      optionalCategories,
+                      currencyFormatter,
                     );
 
                     if (isWide) {
@@ -160,7 +168,7 @@ class DashboardView extends ConsumerWidget {
                     }
                   },
                 ),
-                
+
                 const SizedBox(height: 40),
               ],
             ),
@@ -170,36 +178,97 @@ class DashboardView extends ConsumerWidget {
     );
   }
 
+  /// Empty-state when no period exists.
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.account_balance_wallet_outlined,
+              size: 40,
+              color: colorScheme.primary.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Welcome to FlatPlan',
+            style: theme.textTheme.headlineLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No active tracking period found.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () => GoRouter.of(context).go('/settings'),
+            icon: const Icon(Icons.settings_rounded),
+            label: const Text('Go to Settings to Generate Period'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a titled section of category tiles with a left accent icon.
   Widget _buildCategorySection(
     BuildContext context,
     String title,
+    IconData sectionIcon,
     List<CategoryStats> cats,
     NumberFormat formatter,
   ) {
     if (cats.isEmpty) {
-       return const SizedBox.shrink();
+      return const SizedBox.shrink();
     }
-    
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 16.0, left: 4.0),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.only(bottom: 16, left: 4),
+          child: Row(
+            children: [
+              Icon(sectionIcon, size: 18, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
         ),
-        ...cats.map((c) => CategoryTile(
-              title: c.name,
-              spentAmount: formatter.format(c.totalSpent),
-              limitAmount: formatter.format(c.limit),
-              heatPercentage: c.heatPercentage,
-              isOverBudget: c.isOverBudget,
-              onTap: () {
-                context.go('/category/${c.categoryId}');
-              },
-            )),
+        ...cats.map(
+          (c) => CategoryTile(
+            title: c.name,
+            spentAmount: formatter.format(c.totalSpent),
+            limitAmount: formatter.format(c.limit),
+            heatPercentage: c.heatPercentage,
+            isOverBudget: c.isOverBudget,
+            onTap: () => context.go('/category/${c.categoryId}'),
+          ),
+        ),
       ],
     );
   }

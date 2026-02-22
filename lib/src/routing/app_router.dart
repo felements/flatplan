@@ -10,8 +10,12 @@ import '../views/settings_view.dart';
 part 'app_router.g.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorDashboardKey = GlobalKey<NavigatorState>(debugLabel: 'dashboardShell');
-final _shellNavigatorSettingsKey = GlobalKey<NavigatorState>(debugLabel: 'settingsShell');
+final _shellNavigatorDashboardKey = GlobalKey<NavigatorState>(
+  debugLabel: 'dashboardShell',
+);
+final _shellNavigatorSettingsKey = GlobalKey<NavigatorState>(
+  debugLabel: 'settingsShell',
+);
 
 @riverpod
 GoRouter appRouter(Ref ref) {
@@ -43,7 +47,7 @@ GoRouter appRouter(Ref ref) {
               ),
             ],
           ),
-          
+
           // Settings Branch (Index 1)
           StatefulShellBranch(
             navigatorKey: _shellNavigatorSettingsKey,

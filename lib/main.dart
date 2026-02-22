@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'src/app_theme.dart';
 import 'src/routing/app_router.dart';
 
 void main() {
@@ -15,9 +17,10 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'FlatPlan',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

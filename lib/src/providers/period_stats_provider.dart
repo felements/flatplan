@@ -50,11 +50,15 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   for (final category in currentPeriod.categories) {
     // 1. Calculate Spent
     final spent = category.factExpenses.fold<double>(
-        0, (previousValue, element) => previousValue + element.amount);
+      0,
+      (previousValue, element) => previousValue + element.amount,
+    );
 
     // 2. Calculate Planned constraints
     final planned = category.plannedExpenses.fold<double>(
-        0, (previousValue, element) => previousValue + element.amount);
+      0,
+      (previousValue, element) => previousValue + element.amount,
+    );
 
     // 3. Category budget limit (fallback to planned if no hard limit is set)
     final limit = category.limit ?? planned;
@@ -72,21 +76,25 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
       totalOptionalSpent += spent;
     }
 
-    categoryStatsList.add(CategoryStats(
-      categoryId: category.id,
-      name: category.name,
-      isMandatory: category.isMandatory,
-      limit: limit,
-      totalSpent: spent,
-      totalPlanned: planned,
-      remaining: remaining,
-      heatPercentage: heatPercentage,
-      isOverBudget: isOverBudget,
-    ));
+    categoryStatsList.add(
+      CategoryStats(
+        categoryId: category.id,
+        name: category.name,
+        isMandatory: category.isMandatory,
+        limit: limit,
+        totalSpent: spent,
+        totalPlanned: planned,
+        remaining: remaining,
+        heatPercentage: heatPercentage,
+        isOverBudget: isOverBudget,
+      ),
+    );
   }
 
   // Sort categories by highest heat percentage (closest to over budget)
-  categoryStatsList.sort((a, b) => b.heatPercentage.compareTo(a.heatPercentage));
+  categoryStatsList.sort(
+    (a, b) => b.heatPercentage.compareTo(a.heatPercentage),
+  );
 
   final totalBudget = totalMandatoryBudget + totalOptionalBudget;
   final totalSpent = totalMandatorySpent + totalOptionalSpent;

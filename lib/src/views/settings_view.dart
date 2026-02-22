@@ -6,105 +6,145 @@ import '../logic/period_logic.dart';
 import '../models/models.dart';
 import '../providers/current_period_provider.dart';
 
+/// Settings page for period management and app configuration.
 class SettingsView extends HookConsumerWidget {
   const SettingsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = Theme.of(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
       body: currentPeriodAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (period) {
           return ListView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(32),
             children: [
-              // Section 1: Active Tracking Instance
-              Text(
-                'Active Tracking Instance',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+              // ─── Page header ──────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.only(bottom: 28),
+                child: Text(
+                  'Settings',
+                  style: theme.textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (period != null) ...[
-                        Text(
-                          'Current Period: ${period.name}',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Base Currency: ${period.baseCurrency}'),
-                        Text('Total Categories: ${period.categories.length}'),
-                      ] else ...[
-                        Text(
-                          'No active period found.',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'You need to generate or load a period template to begin tracking.',
-                        ),
-                      ],
-                    ],
+
+              // ─── Active Tracking Instance ─────────────────────
+              _SectionHeader(
+                icon: Icons.timer_rounded,
+                title: 'Active Tracking Instance',
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    width: 0.5,
                   ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (period != null) ...[
+                      Text(
+                        'Current Period: ${period.name}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _InfoRow(
+                        label: 'Base Currency',
+                        value: period.baseCurrency,
+                      ),
+                      const SizedBox(height: 4),
+                      _InfoRow(
+                        label: 'Total Categories',
+                        value: '${period.categories.length}',
+                      ),
+                    ] else ...[
+                      Text(
+                        'No active period found.',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'You need to generate or load a period template to begin tracking.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
 
               const SizedBox(height: 32),
 
-              // Section 2: Rollover / Initialization
-              Text(
-                'Rollover & Initialization',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              // ─── Rollover & Initialization ────────────────────
+              _SectionHeader(
+                icon: Icons.auto_awesome_rounded,
+                title: 'Rollover & Initialization',
               ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (period == null) ...[
-                        const Text(
-                          'No tracking periods exist yet. Create your first period to start budgeting.',
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () =>
-                              _showCreateFirstPeriodDialog(context, ref),
-                          icon: const Icon(Icons.add_circle_outline),
-                          label: const Text('Create First Period'),
-                        ),
-                      ] else ...[
-                        const Text(
-                          'Start a new tracking period based on the current active configuration. This preserves planned expenses and categories while resetting actual factual spending.',
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () =>
-                              _showGenerateDialog(context, ref, period),
-                          icon: const Icon(Icons.auto_awesome),
-                          label: const Text('Generate Next Period'),
-                        ),
-                      ],
-                    ],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    width: 0.5,
                   ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (period == null) ...[
+                      Text(
+                        'No tracking periods exist yet. Create your first period to start budgeting.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _showCreateFirstPeriodDialog(context, ref),
+                        icon: const Icon(Icons.add_circle_outline_rounded),
+                        label: const Text('Create First Period'),
+                      ),
+                    ] else ...[
+                      Text(
+                        'Start a new tracking period based on the current active configuration. '
+                        'This preserves planned expenses and categories while resetting actual spending.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _showGenerateDialog(context, ref, period),
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: const Text('Generate Next Period'),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
@@ -246,13 +286,8 @@ class SettingsView extends HookConsumerWidget {
   ) async {
     final nameController = TextEditingController();
 
-    // Default dates
     DateTime startDate = currentPeriod.endDate.add(const Duration(days: 1));
-    DateTime endDate = DateTime(
-      startDate.year,
-      startDate.month + 1,
-      0,
-    ); // Last day of next month roughly
+    DateTime endDate = DateTime(startDate.year, startDate.month + 1, 0);
 
     await showDialog(
       context: context,
@@ -332,7 +367,6 @@ class SettingsView extends HookConsumerWidget {
                       newName: newName,
                     );
 
-                    // Push state
                     ref
                         .read(currentPeriodProvider.notifier)
                         .updatePeriod(newPeriod);
@@ -355,5 +389,65 @@ class SettingsView extends HookConsumerWidget {
     );
 
     nameController.dispose();
+  }
+}
+
+/// A section header with icon and title.
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const _SectionHeader({required this.icon, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A simple label → value information row.
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Text(
+          '$label: ',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 }

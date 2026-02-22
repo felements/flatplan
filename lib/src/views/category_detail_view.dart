@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
 
+/// Detailed view for managing a single category's expenses.
 class CategoryDetailView extends HookConsumerWidget {
   final String categoryId;
 
@@ -16,8 +17,9 @@ class CategoryDetailView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = Theme.of(context);
-    
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
     final statsAsync = ref.watch(periodStatsProvider);
 
@@ -25,62 +27,110 @@ class CategoryDetailView extends HookConsumerWidget {
     final commentController = useTextEditingController();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Category Detail'),
-        leading: BackButton(
-          onPressed: () => context.go('/'),
-        ),
-      ),
       body: currentPeriodAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (period) {
-          if (period == null) return const Center(child: Text('No active period.'));
+          if (period == null) {
+            return const Center(child: Text('No active period.'));
+          }
 
-          final category = period.categories.where((c) => c.id == categoryId).firstOrNull;
-          if (category == null) return const Center(child: Text('Category not found.'));
+          final category = period.categories
+              .where((c) => c.id == categoryId)
+              .firstOrNull;
+          if (category == null) {
+            return const Center(child: Text('Category not found.'));
+          }
 
           final stats = statsAsync.value;
           CategoryStats? catStats;
           if (stats != null) {
-            catStats = stats.categoryStats.where((c) => c.categoryId == categoryId).firstOrNull;
+            catStats = stats.categoryStats
+                .where((c) => c.categoryId == categoryId)
+                .firstOrNull;
           }
 
           final format = NumberFormat.simpleCurrency(name: period.baseCurrency);
 
           return Column(
             children: [
-              // Top Summary
-              Padding(
-                padding: const EdgeInsets.all(24.0),
+              // ─── Header ─────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colorScheme.outlineVariant,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Back button
+                    Material(
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.arrow_back_rounded,
+                            size: 20,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Title & subtitle
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(category.name, style: theme.textTheme.headlineLarge),
-                          const SizedBox(height: 8),
-                          if (catStats != null)
-                             Text(
-                               'Spent: ${format.format(catStats.totalSpent)} / Limit: ${format.format(catStats.limit)}',
-                               style: theme.textTheme.titleMedium,
-                             ),
+                          Text(
+                            category.name,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          if (catStats != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Spent: ${format.format(catStats.totalSpent)} / Limit: ${format.format(catStats.limit)}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
+
+                    // Remaining badge
                     if (catStats != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
-                          color: catStats.isOverBudget ? theme.colorScheme.errorContainer : theme.colorScheme.primaryContainer,
+                          color: catStats.isOverBudget
+                              ? colorScheme.errorContainer
+                              : colorScheme.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'Remaining: ${format.format(catStats.remaining)}',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: catStats.isOverBudget ? theme.colorScheme.onErrorContainer : theme.colorScheme.onPrimaryContainer,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: catStats.isOverBudget
+                                ? colorScheme.onErrorContainer
+                                : colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -89,117 +139,215 @@ class CategoryDetailView extends HookConsumerWidget {
                 ),
               ),
 
-              const Divider(height: 1),
-
-              // Expanding layout for lists
+              // ─── Content ────────────────────────────────────────
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Left Column: Planned Expenses
+                    // Left: Planned Expenses
                     Expanded(
                       flex: 1,
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border(right: BorderSide(color: theme.dividerColor)),
+                          border: Border(
+                            right: BorderSide(
+                              color: colorScheme.outlineVariant,
+                              width: 0.5,
+                            ),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text('Planned Expenses', style: theme.textTheme.titleLarge),
+                              padding: const EdgeInsets.all(20),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.checklist_rounded,
+                                    size: 18,
+                                    color: colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Planned Expenses',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ),
                             Expanded(
                               child: category.plannedExpenses.isEmpty
-                                ? const Center(child: Text('No planned expenses.'))
-                                : ListView.builder(
-                                    itemCount: category.plannedExpenses.length,
-                                    itemBuilder: (context, index) {
-                                      final planned = category.plannedExpenses[index];
-                                      return CheckboxListTile(
-                                        title: Text(planned.description),
-                                        subtitle: Text(format.format(planned.amount)),
-                                        value: planned.isCompleted,
-                                        onChanged: (val) {
-                                          ref.read(currentPeriodProvider.notifier).togglePlannedExpense(categoryId, planned.id);
-                                        },
-                                      );
-                                    },
-                                  ),
+                                  ? Center(
+                                      child: Text(
+                                        'No planned expenses.',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      itemCount:
+                                          category.plannedExpenses.length,
+                                      itemBuilder: (context, index) {
+                                        final planned =
+                                            category.plannedExpenses[index];
+                                        return CheckboxListTile(
+                                          title: Text(planned.description),
+                                          subtitle: Text(
+                                            format.format(planned.amount),
+                                          ),
+                                          value: planned.isCompleted,
+                                          onChanged: (val) {
+                                            ref
+                                                .read(
+                                                  currentPeriodProvider
+                                                      .notifier,
+                                                )
+                                                .togglePlannedExpense(
+                                                  categoryId,
+                                                  planned.id,
+                                                );
+                                          },
+                                        );
+                                      },
+                                    ),
                             ),
                           ],
                         ),
                       ),
                     ),
 
-                    // Right Column: Fact Expenses & Input
+                    // Right: Fact Expenses & Input
                     Expanded(
                       flex: 2,
                       child: Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(20),
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: Text('Actual Spending', style: theme.textTheme.titleLarge)
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.receipt_long_rounded,
+                                    size: 18,
+                                    color: colorScheme.secondary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Actual Spending',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           Expanded(
                             child: category.factExpenses.isEmpty
-                              ? const Center(child: Text('No actual spending yet.'))
-                              : ListView.builder(
-                                  itemCount: category.factExpenses.length,
-                                  itemBuilder: (context, index) {
-                                    // Reverse order logic for visually newest at bottom, or sort if needed
-                                    // For now iterate normally as they are added
-                                    final fact = category.factExpenses[index];
-                                    return ListTile(
-                                      title: Text(format.format(fact.amount)),
-                                      subtitle: Text(fact.description ?? 'No comment'),
-                                      // Add swipe to delete feature if desired later
-                                    );
-                                  },
-                                ),
+                                ? Center(
+                                    child: Text(
+                                      'No actual spending yet.',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    itemCount: category.factExpenses.length,
+                                    itemBuilder: (context, index) {
+                                      final fact = category.factExpenses[index];
+                                      return ListTile(
+                                        title: Text(
+                                          format.format(fact.amount),
+                                          style: theme.textTheme.bodyLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        subtitle: Text(
+                                          fact.description ?? 'No comment',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
                           ),
 
-                          // Quick Action Row
-                          Material(
-                            elevation: 8,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: 1,
-                                    child: TextField(
-                                      controller: amountController,
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      decoration: const InputDecoration(
-                                        labelText: 'Amount',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    flex: 2,
-                                    child: TextField(
-                                      controller: commentController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Comment / Merchant (Optional)',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      onSubmitted: (_) => _submitExpense(ref, amountController, commentController),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  FloatingActionButton(
-                                    onPressed: () => _submitExpense(ref, amountController, commentController),
-                                    child: const Icon(Icons.add),
-                                  ),
-                                ],
+                          // Quick action input row
+                          Container(
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerLow,
+                              border: Border(
+                                top: BorderSide(
+                                  color: colorScheme.outlineVariant,
+                                  width: 0.5,
+                                ),
                               ),
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: TextField(
+                                    controller: amountController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Amount',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: TextField(
+                                    controller: commentController,
+                                    decoration: const InputDecoration(
+                                      labelText:
+                                          'Comment / Merchant (Optional)',
+                                    ),
+                                    onSubmitted: (_) => _submitExpense(
+                                      ref,
+                                      amountController,
+                                      commentController,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                FloatingActionButton.small(
+                                  onPressed: () => _submitExpense(
+                                    ref,
+                                    amountController,
+                                    commentController,
+                                  ),
+                                  child: const Icon(Icons.add_rounded),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -215,7 +363,11 @@ class CategoryDetailView extends HookConsumerWidget {
     );
   }
 
-  void _submitExpense(WidgetRef ref, TextEditingController amountCtrl, TextEditingController commentCtrl) {
+  void _submitExpense(
+    WidgetRef ref,
+    TextEditingController amountCtrl,
+    TextEditingController commentCtrl,
+  ) {
     final text = amountCtrl.text.replaceAll(',', '.');
     final amount = double.tryParse(text);
     if (amount == null || amount <= 0) return;
@@ -229,7 +381,9 @@ class CategoryDetailView extends HookConsumerWidget {
       timestamp: DateTime.now(),
     );
 
-    ref.read(currentPeriodProvider.notifier).addFactExpense(categoryId, expense);
+    ref
+        .read(currentPeriodProvider.notifier)
+        .addFactExpense(categoryId, expense);
 
     amountCtrl.clear();
     commentCtrl.clear();

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-class CategoryTile extends StatelessWidget {
+/// A category list tile with a heat-indicator progress bar,
+/// styled for the dark dashboard aesthetic.
+class CategoryTile extends StatefulWidget {
   final String title;
   final String spentAmount;
   final String limitAmount;
@@ -19,66 +21,104 @@ class CategoryTile extends StatelessWidget {
   });
 
   @override
+  State<CategoryTile> createState() => _CategoryTileState();
+}
+
+class _CategoryTileState extends State<CategoryTile> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-    var colorScheme = theme.colorScheme;
-    
-    // Determine the color of the heat indicator
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Heat-based color
     Color heatColor;
-    if (isOverBudget) {
+    if (widget.isOverBudget) {
       heatColor = colorScheme.error;
-    } else if (heatPercentage > 0.85) {
-      heatColor = Colors.orange;
+    } else if (widget.heatPercentage > 0.85) {
+      heatColor = const Color(0xFFE0A030);
     } else {
       heatColor = colorScheme.primary;
     }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      elevation: 2,
-      shadowColor: Colors.black12,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? (isDark
+                      ? colorScheme.surfaceContainerHigh
+                      : colorScheme.surfaceContainerHighest)
+                : (isDark
+                      ? colorScheme.surfaceContainerLow
+                      : colorScheme.surfaceContainerLowest),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _isHovered
+                  ? colorScheme.outline.withValues(alpha: 0.4)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.3),
+              width: 0.5,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${widget.spentAmount} / ${widget.limitAmount}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: widget.isOverBudget
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: widget.isOverBudget
+                                ? colorScheme.error
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: widget.heatPercentage.clamp(0.0, 1.0),
+                        minHeight: 6,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(heatColor),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Text(
-                    '\$ $spentAmount / \$ $limitAmount',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: isOverBudget ? FontWeight.bold : FontWeight.normal,
-                      color: isOverBudget ? colorScheme.error : colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: heatPercentage.clamp(0.0, 1.0),
-                  minHeight: 8,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation<Color>(heatColor),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
