@@ -28,7 +28,27 @@ class DashboardView extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (period) {
           if (period == null) {
-            return const Center(child: Text('No active period. Setup required.'));
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.account_balance_wallet_outlined, size: 80, color: theme.colorScheme.primary.withValues(alpha: 0.5)),
+                  const SizedBox(height: 24),
+                  Text('Welcome to FlatPlan', style: theme.textTheme.headlineLarge),
+                  const SizedBox(height: 16),
+                  const Text('No active tracking period found.'),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () => context.go('/settings'),
+                    icon: const Icon(Icons.settings),
+                    label: const Text('Go to Settings to Generate Period'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           final stats = statsAsync.value;

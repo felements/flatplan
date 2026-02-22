@@ -3,8 +3,11 @@
 This document provides context for future AI assistants continuing the development of FlatPlan. Always read this file before proceeding with new implementation phases.
 
 ## Current Progress
-- **Stage 1 (Setup & Storage Models)** is **COMPLETED**.
+- **Stages 1 through 5** are **COMPLETED**.
 - The project is initialized as a Flutter application with Desktop support (Windows, macOS, Linux).
+- The full routing (GoRouter) and responsive `AppShell` with a `NavigationRail` is live.
+- The Dashboard, Category Details, and Settings pages are live, tracking dynamic expenditures mapping via Riverpod.
+- The business logic to generate brand new tracking periods based on previous YAML configs is functional and saves to the user Documents dir.
 
 ## Important Technical Decisions & Deviations
 
@@ -20,9 +23,9 @@ This document provides context for future AI assistants continuing the developme
 
 ## Next Steps
 
-When resuming development, begin with **Phase 4: UI Development (Dashboard & Categories)** found in `05_implementation_plan.md`.
+The defined original implementation pipeline (`05_implementation_plan.md`) is now fully built out. 
 
-**Required Initial Context for Phase 4:**
-- Review `03_ui_pages_components.md` to understand the complex UI structures for the generic desktop elements.
-- We have Riverpod state (`periodStatsProvider` and `currentPeriodProvider`) ready to hook into the Dashboard cards and list tiles.
-- The `Category Detail View` requires implementing the checkboxes for planned expenses and a list of chronologically listed factual expenses.
+When resuming development, you should work with the user to outline **Post-Launch Feature Requests / Upgrades (Phase 6)**. This could involve items like:
+- Integrating Charts for visual analytics.
+- Defining strict `template.yaml` fallback parsing when the user deletes the active tracking period from disk manually.
+- Building the UI implementation for deleting a specific `FactExpense`.
