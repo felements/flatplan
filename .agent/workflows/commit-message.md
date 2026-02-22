@@ -34,9 +34,11 @@ Use one of the following **lowercase** types as the first word:
 | `ci`         | Changes to CI configuration files and scripts                      |
 | `chore`      | Other changes that don't modify `src` or `test` files              |
 | `revert`     | Reverts a previous commit                                         |
+| `ai`         | Any changes in the AI Agent instructions, rules, workflows, etc   |
 
-### Scope (OPTIONAL)
+### Scope (REQUIRED) 
 - A noun in parentheses immediately after the type, describing the section of the codebase affected.
+- ALWAYS set the scope for the message.
 - Examples: `feat(models):`, `fix(storage):`, `refactor(providers):`
 
 ### Breaking Change Indicator (OPTIONAL)
