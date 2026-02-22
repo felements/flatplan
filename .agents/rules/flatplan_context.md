@@ -28,3 +28,6 @@ FlatPlan is a Flutter desktop budget-tracking app (Windows, macOS, Linux) using 
 - `lib/src/routing/` — GoRouter with `StatefulShellRoute` (Dashboard + Settings branches)
 - `lib/src/views/` — `DashboardView`, `CategoryDetailView`, `SettingsView`, `AppShell`
 - `lib/src/components/` — `CategoryTile`, `SummaryCard`
+
+## Domain Glossary
+See `doc/07_domain_glossary.md` for a full reference of domain entities (Period, Category, PlannedExpense, FactExpense, DueDate) and key concepts (Mandatory/Optional scope, Daily Allowance, Heat Indicator, Period Rollover, Cold-Start, Template, Base Currency).

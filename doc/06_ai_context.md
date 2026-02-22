@@ -21,6 +21,10 @@ This document provides context for future AI assistants continuing the developme
    - To satisfy the Git-friendly sorting requirement, we use a recursive key-sorting function utilizing `SplayTreeMap`.
    - We use the `json2yaml` package to output cleanly formatted YAML when saving models.
 
+## Domain Glossary
+
+See [`07_domain_glossary.md`](07_domain_glossary.md) for a full reference of all domain entities and concepts.
+
 ## Next Steps
 
 The defined original implementation pipeline (`05_implementation_plan.md`) is now fully built out. 
