@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+
 import '../models/models.dart';
 
 /// Handles the rollover logic from a current period (or template) to a new period.
@@ -18,7 +19,8 @@ Period createNextPeriod({
     }).toList();
 
     return category.copyWith(
-      id: const Uuid().v4(), // generate new IDs so it's a completely detached copy
+      id: const Uuid()
+          .v4(), // generate new IDs so it's a completely detached copy
       plannedExpenses: newPlannedExpenses,
       factExpenses: const [], // Drop all fact expenses (spending)
     );
@@ -32,5 +34,24 @@ Period createNextPeriod({
     baseCurrency: currentPeriod.baseCurrency,
     lastModified: DateTime.now(),
     categories: newCategories,
+  );
+}
+
+/// Creates a brand-new empty period for cold-start bootstrapping when no
+/// previous periods or templates exist.
+Period createEmptyPeriod({
+  required DateTime startDate,
+  required DateTime endDate,
+  required String name,
+  String baseCurrency = 'EUR',
+}) {
+  return Period(
+    id: const Uuid().v4(),
+    name: name,
+    startDate: startDate,
+    endDate: endDate,
+    baseCurrency: baseCurrency,
+    lastModified: DateTime.now(),
+    categories: const [],
   );
 }

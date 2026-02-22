@@ -14,7 +14,7 @@ class CurrentPeriod extends _$CurrentPeriod {
   FutureOr<Period?> build() async {
     final repo = ref.watch(periodRepositoryProvider);
     final periods = await repo.loadAllPeriods();
-    
+
     if (periods.isEmpty) {
       return null; // Open setup or empty state
     }
@@ -22,6 +22,14 @@ class CurrentPeriod extends _$CurrentPeriod {
     // Return the most recently modified period as the active one
     periods.sort((a, b) => b.lastModified.compareTo(a.lastModified));
     return periods.first;
+  }
+
+  /// Sets a brand-new period (e.g. first period on cold start) and
+  /// persists it immediately without debouncing.
+  Future<void> setPeriod(Period newPeriod) async {
+    state = AsyncData(newPeriod);
+    final repo = ref.read(periodRepositoryProvider);
+    await repo.savePeriod(newPeriod);
   }
 
   /// Mutates the state and triggers a debounced save.
@@ -40,9 +48,7 @@ class CurrentPeriod extends _$CurrentPeriod {
 
     final updatedCategories = current.categories.map((cat) {
       if (cat.id == categoryId) {
-        return cat.copyWith(
-          factExpenses: [...cat.factExpenses, expense],
-        );
+        return cat.copyWith(factExpenses: [...cat.factExpenses, expense]);
       }
       return cat;
     }).toList();
