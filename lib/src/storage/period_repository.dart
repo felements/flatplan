@@ -2,16 +2,19 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:json2yaml/json2yaml.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:yaml/yaml.dart';
 
 import '../models/models.dart';
 
 /// Repository for handling local YAML storage of tracking periods.
 class PeriodRepository {
+  /// The absolute path to the directory where period YAML files are stored.
+  final String directoryPath;
+
+  PeriodRepository({required this.directoryPath});
+
   Future<Directory> _getStorageDirectory() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final dir = Directory('${docsDir.path}/flatplan/periods');
+    final dir = Directory(directoryPath);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

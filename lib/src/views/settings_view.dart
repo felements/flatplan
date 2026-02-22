@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../logic/period_logic.dart';
 import '../models/models.dart';
 import '../providers/current_period_provider.dart';
+import '../providers/storage_settings_provider.dart';
 
 /// Settings page for period management and app configuration.
 class SettingsView extends HookConsumerWidget {
@@ -15,6 +17,7 @@ class SettingsView extends HookConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
+    final storageDirAsync = ref.watch(storageSettingsProvider);
 
     return Scaffold(
       body: currentPeriodAsync.when(
@@ -35,6 +38,93 @@ class SettingsView extends HookConsumerWidget {
                   ),
                 ),
               ),
+
+              // ─── Data Storage ──────────────────────────────────
+              _SectionHeader(icon: Icons.folder_rounded, title: 'Data Storage'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Period files location',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    storageDirAsync.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => Text(
+                        'Error loading path: $e',
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                      data: (dirPath) => Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                dirPath,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontFamily: 'monospace',
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final picked = await FilePicker.platform
+                                  .getDirectoryPath(
+                                    dialogTitle: 'Select periods folder',
+                                  );
+                              if (picked != null) {
+                                await ref
+                                    .read(storageSettingsProvider.notifier)
+                                    .updateDirectory(picked);
+                              }
+                            },
+                            icon: const Icon(Icons.folder_open_rounded),
+                            label: const Text('Change Folder'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Defaults to the application directory. '
+                      'Changing the folder takes effect immediately.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
 
               // ─── Active Tracking Instance ─────────────────────
               _SectionHeader(

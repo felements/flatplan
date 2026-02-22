@@ -8,9 +8,16 @@ part of 'repository_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Provides a [PeriodRepository] wired to the user-selected data directory.
+///
+/// Re-creates automatically whenever [storageSettingsProvider] changes.
 
 @ProviderFor(periodRepository)
 final periodRepositoryProvider = PeriodRepositoryProvider._();
+
+/// Provides a [PeriodRepository] wired to the user-selected data directory.
+///
+/// Re-creates automatically whenever [storageSettingsProvider] changes.
 
 final class PeriodRepositoryProvider
     extends
@@ -20,6 +27,9 @@ final class PeriodRepositoryProvider
           PeriodRepository
         >
     with $Provider<PeriodRepository> {
+  /// Provides a [PeriodRepository] wired to the user-selected data directory.
+  ///
+  /// Re-creates automatically whenever [storageSettingsProvider] changes.
   PeriodRepositoryProvider._()
     : super(
         from: null,
@@ -53,4 +63,4 @@ final class PeriodRepositoryProvider
   }
 }
 
-String _$periodRepositoryHash() => r'9076b2deda30fb08f92a560eb99d72a40e0a84a8';
+String _$periodRepositoryHash() => r'5bafa1ce9136b98d3c138d9379d1a05e1945a394';
