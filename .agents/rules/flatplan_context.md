@@ -9,7 +9,7 @@ FlatPlan is a Flutter desktop budget-tracking app (Windows, macOS, Linux) using 
 
 ## Current Progress
 - **Stages 1 through 5** are **COMPLETED**.
-- Flutter desktop app with GoRouter routing and responsive `AppShell` with `NavigationRail`.
+- Flutter desktop app with GoRouter routing and responsive `AppShell` with a 220 px dark sidebar.
 - Dashboard, Category Details, and Settings pages are live.
 - Period rollover logic generates new periods from existing ones or from scratch (cold-start).
 - Periods are persisted as sorted YAML files in `~/Documents/flatplan/periods/`.
@@ -21,6 +21,7 @@ FlatPlan is a Flutter desktop budget-tracking app (Windows, macOS, Linux) using 
 3. **Storage** (`lib/src/storage/period_repository.dart`): YAML files via `path_provider`, recursive key-sorting with `SplayTreeMap`, output via `json2yaml`.
 
 ## Key Architecture
+- `lib/src/app_theme.dart` — Centralized `AppTheme` with dark (primary) and light themes, Outfit font, gold/teal/coral palette
 - `lib/src/models/` — Freezed data classes: `Period`, `Category`, `PlannedExpense`, `FactExpense`, `DueDate`
 - `lib/src/storage/` — `PeriodRepository` for YAML read/write
 - `lib/src/logic/` — `createNextPeriod`, `createEmptyPeriod` rollover/bootstrap functions
@@ -28,6 +29,9 @@ FlatPlan is a Flutter desktop budget-tracking app (Windows, macOS, Linux) using 
 - `lib/src/routing/` — GoRouter with `StatefulShellRoute` (Dashboard + Settings branches)
 - `lib/src/views/` — `DashboardView`, `CategoryDetailView`, `SettingsView`, `AppShell`
 - `lib/src/components/` — `CategoryTile`, `SummaryCard`
+
+## Design Guidelines
+See `doc/08_design_guidelines.md` for the full visual identity — color palette (gold `#D4A84B`, teal `#5A8F7B`, coral `#E07A5F`), Outfit typography, component standards (16 px radius cards, 12 px buttons/inputs), sidebar spec, and spacing conventions. All new UI must follow this document.
 
 ## Domain Glossary
 See `doc/07_domain_glossary.md` for a full reference of domain entities (Period, Category, PlannedExpense, FactExpense, DueDate) and key concepts (Mandatory/Optional scope, Daily Allowance, Heat Indicator, Period Rollover, Cold-Start, Template, Base Currency).

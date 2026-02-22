@@ -5,7 +5,7 @@ This document provides context for future AI assistants continuing the developme
 ## Current Progress
 - **Stages 1 through 5** are **COMPLETED**.
 - The project is initialized as a Flutter application with Desktop support (Windows, macOS, Linux).
-- The full routing (GoRouter) and responsive `AppShell` with a `NavigationRail` is live.
+- The full routing (GoRouter) and responsive `AppShell` with a 220 px dark sidebar is live.
 - The Dashboard, Category Details, and Settings pages are live, tracking dynamic expenditures mapping via Riverpod.
 - The business logic to generate brand new tracking periods based on previous YAML configs is functional and saves to the user Documents dir.
 
@@ -20,6 +20,10 @@ This document provides context for future AI assistants continuing the developme
    - The app reads and writes YAML files to the local documents directory via `path_provider`.
    - To satisfy the Git-friendly sorting requirement, we use a recursive key-sorting function utilizing `SplayTreeMap`.
    - We use the `json2yaml` package to output cleanly formatted YAML when saving models.
+
+## Design Guidelines
+
+See [`08_design_guidelines.md`](08_design_guidelines.md) for the full visual identity — color palette, typography, component standards, and spacing conventions.
 
 ## Domain Glossary
 
