@@ -433,6 +433,43 @@ class DashboardView extends ConsumerWidget {
         totalOptionalSpent += spent;
       }
 
+      // Daily allowance metrics (daily spend & 20% trimmed-mean frequency).
+      int daysLeft = endDate.difference(DateTime.now()).inDays;
+      if (daysLeft < 1) daysLeft = 1;
+
+      double? dailyAllowanceAmount;
+      int? expectedPurchaseFrequencyDays;
+      double? expectedPurchaseAmount;
+
+      if (category.isDailyAllowance) {
+        dailyAllowanceAmount = remaining > 0 ? remaining / daysLeft : 0.0;
+
+        if (category.factExpenses.length >= 2 && remaining > 0) {
+          // 20% Trimmed Mean — drop the lowest 20% of expenses.
+          final sortedExpenses =
+              category.factExpenses.map((e) => e.amount).toList()..sort();
+          final dropCount = (sortedExpenses.length * 0.2).floor();
+          final keptExpenses = sortedExpenses.sublist(dropCount);
+
+          if (keptExpenses.isNotEmpty) {
+            final keptSpent = keptExpenses.fold<double>(
+              0,
+              (prev, amount) => prev + amount,
+            );
+            final avgExpense = keptSpent / keptExpenses.length;
+
+            if (avgExpense > 0) {
+              final affordablePurchases = remaining / avgExpense;
+              if (affordablePurchases > 0) {
+                expectedPurchaseFrequencyDays =
+                    (daysLeft / affordablePurchases).round();
+                expectedPurchaseAmount = avgExpense;
+              }
+            }
+          }
+        }
+      }
+
       categoryStatsList.add(
         CategoryStats(
           categoryId: category.id,
@@ -445,6 +482,9 @@ class DashboardView extends ConsumerWidget {
           heatPercentage: heat,
           isOverBudget: spent > limit,
           isDailyAllowance: category.isDailyAllowance,
+          dailyAllowanceAmount: dailyAllowanceAmount,
+          expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
+          expectedPurchaseAmount: expectedPurchaseAmount,
         ),
       );
     }
