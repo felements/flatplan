@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/category.dart';
+import '../models/category_type.dart';
 import '../providers/current_period_provider.dart';
 
 /// Shows a dialog or full-page editor for managing a category.
@@ -17,7 +18,7 @@ void showCategoryDialog(
   final limitCtrl = TextEditingController(
     text: existing?.limit?.toStringAsFixed(2) ?? '',
   );
-  var isMandatory = existing?.isMandatory ?? true;
+  var type = existing?.type ?? CategoryType.optionalExpense;
   var isDailyAllowance = existing?.isDailyAllowance ?? false;
 
   showDialog(
@@ -64,23 +65,38 @@ void showCategoryDialog(
                       ),
                     ),
                     const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: Text(
-                        'Mandatory',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Category Type',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
                       ),
-                      subtitle: Text(
-                        'Mandatory expenses are deducted before calculating free budget.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      value: isMandatory,
-                      onChanged: (v) => setState(() => isMandatory = v),
-                      contentPadding: EdgeInsets.zero,
                     ),
+                    const SizedBox(height: 8),
+                    DropdownMenu<CategoryType>(
+                      initialSelection: type,
+                      onSelected: (CategoryType? newValue) {
+                        if (newValue != null) {
+                          setState(() => type = newValue);
+                        }
+                      },
+                      dropdownMenuEntries: const [
+                        DropdownMenuEntry(
+                          value: CategoryType.mandatoryExpense,
+                          label: 'Mandatory Expense',
+                        ),
+                        DropdownMenuEntry(
+                          value: CategoryType.optionalExpense,
+                          label: 'Optional Expense',
+                        ),
+                        DropdownMenuEntry(
+                          value: CategoryType.income,
+                          label: 'Income',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     SwitchListTile(
                       title: Text(
                         'Daily Allowance',
@@ -122,7 +138,7 @@ void showCategoryDialog(
                       existing.copyWith(
                         name: name,
                         description: desc.isEmpty ? null : desc,
-                        isMandatory: isMandatory,
+                        type: type,
                         limit: limit,
                         isDailyAllowance: isDailyAllowance,
                       ),
@@ -133,7 +149,7 @@ void showCategoryDialog(
                         id: const Uuid().v4(),
                         name: name,
                         description: desc.isEmpty ? null : desc,
-                        isMandatory: isMandatory,
+                        type: type,
                         limit: limit,
                         isDailyAllowance: isDailyAllowance,
                       ),

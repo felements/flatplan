@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'current_period_provider.dart';
+import '../models/category_type.dart';
 
 part 'period_stats_provider.freezed.dart';
 part 'period_stats_provider.g.dart';
@@ -11,7 +12,7 @@ sealed class CategoryStats with _$CategoryStats {
   const factory CategoryStats({
     required String categoryId,
     required String name,
-    required bool isMandatory,
+    required CategoryType type,
     required double limit,
     required double totalSpent,
     required double totalPlanned,
@@ -68,10 +69,10 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     final isOverBudget = spent > limit;
 
     // 4. Aggregate totals
-    if (category.isMandatory) {
+    if (category.type == CategoryType.mandatoryExpense) {
       totalMandatoryBudget += limit;
       totalMandatorySpent += spent;
-    } else {
+    } else if (category.type == CategoryType.optionalExpense) {
       totalOptionalBudget += limit;
       totalOptionalSpent += spent;
     }
@@ -80,7 +81,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
       CategoryStats(
         categoryId: category.id,
         name: category.name,
-        isMandatory: category.isMandatory,
+        type: category.type,
         limit: limit,
         totalSpent: spent,
         totalPlanned: planned,

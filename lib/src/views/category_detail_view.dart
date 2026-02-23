@@ -140,7 +140,8 @@ class CategoryDetailView extends HookConsumerWidget {
                         color: colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(10),
                         child: InkWell(
-                          onTap: () => showCategoryDialog(context, ref, category),
+                          onTap: () =>
+                              showCategoryDialog(context, ref, category),
                           borderRadius: BorderRadius.circular(10),
                           child: Padding(
                             padding: const EdgeInsets.all(8),

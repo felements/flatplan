@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../components/category_dialog.dart';
 import '../models/models.dart';
@@ -122,8 +121,7 @@ class CategoryEditorView extends ConsumerWidget {
                           final cat = categories[index];
                           return _CategoryCard(
                             category: cat,
-                            onEdit: () =>
-                                showCategoryDialog(context, ref, cat),
+                            onEdit: () => showCategoryDialog(context, ref, cat),
                             onDelete: () => _confirmDelete(context, ref, cat),
                           );
                         },
@@ -135,8 +133,6 @@ class CategoryEditorView extends ConsumerWidget {
       ),
     );
   }
-
-
 
   // ─── Delete confirmation ────────────────────────────────────────
 
@@ -226,16 +222,24 @@ class _CategoryCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: category.isMandatory
+                    color: category.type == CategoryType.mandatoryExpense
                         ? colorScheme.error.withValues(alpha: 0.15)
+                        : category.type == CategoryType.income
+                        ? const Color(0xFF6ABF69).withValues(alpha: 0.15)
                         : colorScheme.secondary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    category.isMandatory ? 'Mandatory' : 'Optional',
+                    category.type == CategoryType.mandatoryExpense
+                        ? 'Mandatory'
+                        : category.type == CategoryType.income
+                        ? 'Income'
+                        : 'Optional',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: category.isMandatory
+                      color: category.type == CategoryType.mandatoryExpense
                           ? colorScheme.error
+                          : category.type == CategoryType.income
+                          ? const Color(0xFF6ABF69)
                           : colorScheme.secondary,
                       fontWeight: FontWeight.w600,
                     ),

@@ -8,6 +8,7 @@ import '../components/category_tile.dart';
 import '../components/summary_card.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
+import '../models/category_type.dart';
 
 /// The main dashboard showing period summary and category breakdown.
 class DashboardView extends ConsumerWidget {
@@ -39,10 +40,13 @@ class DashboardView extends ConsumerWidget {
           );
 
           final mandatoryCategories = stats.categoryStats
-              .where((c) => c.isMandatory)
+              .where((c) => c.type == CategoryType.mandatoryExpense)
               .toList();
           final optionalCategories = stats.categoryStats
-              .where((c) => !c.isMandatory)
+              .where((c) => c.type == CategoryType.optionalExpense)
+              .toList();
+          final incomeCategories = stats.categoryStats
+              .where((c) => c.type == CategoryType.income)
               .toList();
 
           return Padding(
@@ -147,11 +151,28 @@ class DashboardView extends ConsumerWidget {
                       currencyFormatter,
                     );
 
+                    final incomeSection = _buildCategorySection(
+                      context,
+                      'Incomes',
+                      Icons.arrow_downward_rounded,
+                      incomeCategories,
+                      currencyFormatter,
+                    );
+
                     if (isWide) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: mandatorySection),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                mandatorySection,
+                                if (incomeCategories.isNotEmpty)
+                                  const SizedBox(height: 24),
+                                incomeSection,
+                              ],
+                            ),
+                          ),
                           const SizedBox(width: 32),
                           Expanded(child: optionalSection),
                         ],
@@ -163,6 +184,9 @@ class DashboardView extends ConsumerWidget {
                           mandatorySection,
                           const SizedBox(height: 24),
                           optionalSection,
+                          if (incomeCategories.isNotEmpty)
+                            const SizedBox(height: 24),
+                          incomeSection,
                         ],
                       );
                     }

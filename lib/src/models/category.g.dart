@@ -10,7 +10,9 @@ _Category _$CategoryFromJson(Map<String, dynamic> json) => _Category(
   id: json['id'] as String,
   name: json['name'] as String,
   description: json['description'] as String?,
-  isMandatory: json['is_mandatory'] as bool,
+  type:
+      $enumDecodeNullable(_$CategoryTypeEnumMap, json['type']) ??
+      CategoryType.optionalExpense,
   limit: (json['limit'] as num?)?.toDouble(),
   isDailyAllowance: json['is_daily_allowance'] as bool? ?? false,
   plannedExpenses:
@@ -29,9 +31,15 @@ Map<String, dynamic> _$CategoryToJson(_Category instance) => <String, dynamic>{
   'id': instance.id,
   'name': instance.name,
   'description': instance.description,
-  'is_mandatory': instance.isMandatory,
+  'type': _$CategoryTypeEnumMap[instance.type]!,
   'limit': instance.limit,
   'is_daily_allowance': instance.isDailyAllowance,
   'planned_expenses': instance.plannedExpenses.map((e) => e.toJson()).toList(),
   'fact_expenses': instance.factExpenses.map((e) => e.toJson()).toList(),
+};
+
+const _$CategoryTypeEnumMap = {
+  CategoryType.mandatoryExpense: 'mandatory_expense',
+  CategoryType.optionalExpense: 'optional_expense',
+  CategoryType.income: 'income',
 };

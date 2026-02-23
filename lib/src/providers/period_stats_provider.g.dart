@@ -46,4 +46,4 @@ final class PeriodStatsProvider
   }
 }
 
-String _$periodStatsHash() => r'e1710b61ce9a7faef065e86397b7ac3455c81e0b';
+String _$periodStatsHash() => r'842c34683c018d77da8e97c76657c7c9642a078a';

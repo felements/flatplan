@@ -33,7 +33,7 @@ final class CurrentPeriodProvider
   CurrentPeriod create() => CurrentPeriod();
 }
 
-String _$currentPeriodHash() => r'6f4cf597d3dc2062391b3b4311581ebbb9d6b8c2';
+String _$currentPeriodHash() => r'06611906d88b6d0651813fb14aad98187380185e';
 
 abstract class _$CurrentPeriod extends $AsyncNotifier<Period?> {
   FutureOr<Period?> build();
