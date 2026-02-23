@@ -8,6 +8,7 @@ class CategoryTile extends StatefulWidget {
   final String limitAmount;
   final double heatPercentage;
   final bool isOverBudget;
+  final bool isIncome;
   final VoidCallback onTap;
   final String? dailyAllowanceAmount;
 
@@ -18,6 +19,7 @@ class CategoryTile extends StatefulWidget {
     required this.limitAmount,
     required this.heatPercentage,
     required this.isOverBudget,
+    this.isIncome = false,
     required this.onTap,
     this.dailyAllowanceAmount,
   });
@@ -37,7 +39,9 @@ class _CategoryTileState extends State<CategoryTile> {
 
     // Heat-based color
     Color heatColor;
-    if (widget.isOverBudget) {
+    if (widget.isIncome && widget.isOverBudget) {
+      heatColor = const Color(0xFF6ABF69); // Match AppTheme.cardGreen color
+    } else if (widget.isOverBudget) {
       heatColor = colorScheme.error;
     } else if (widget.heatPercentage > 0.85) {
       heatColor = const Color(0xFFE0A030);
@@ -101,7 +105,9 @@ class _CategoryTileState extends State<CategoryTile> {
                                 ? FontWeight.bold
                                 : FontWeight.w500,
                             color: widget.isOverBudget
-                                ? colorScheme.error
+                                ? (widget.isIncome
+                                    ? const Color(0xFF6ABF69)
+                                    : colorScheme.error)
                                 : colorScheme.onSurfaceVariant,
                           ),
                         ),

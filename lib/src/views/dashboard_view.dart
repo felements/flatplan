@@ -290,6 +290,7 @@ class DashboardView extends ConsumerWidget {
             limitAmount: formatter.format(c.limit),
             heatPercentage: c.heatPercentage,
             isOverBudget: c.isOverBudget,
+            isIncome: c.type == CategoryType.income,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
                     ? formatter.format(c.dailyAllowanceAmount)

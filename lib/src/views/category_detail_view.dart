@@ -164,26 +164,46 @@ class CategoryDetailView extends HookConsumerWidget {
                               ),
                               if (catStats != null) ...[
                                 const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: catStats.isOverBudget
-                                        ? colorScheme.errorContainer
-                                        : colorScheme.primary.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Remaining: ${format.format(catStats.remaining)}',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: catStats.isOverBudget
-                                          ? colorScheme.onErrorContainer
-                                          : colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    final stats = catStats!;
+                                    final isIncome = category.type == CategoryType.income;
+                                    final isSuccess = isIncome && stats.isOverBudget;
+                                    
+                                    final badgeBgColor = isSuccess 
+                                        ? const Color(0xFF6ABF69).withValues(alpha: 0.15)
+                                        : (stats.isOverBudget
+                                            ? colorScheme.errorContainer
+                                            : colorScheme.primary.withValues(alpha: 0.15));
+                                    
+                                    final badgeTextColor = isSuccess
+                                        ? const Color(0xFF6ABF69)
+                                        : (stats.isOverBudget
+                                            ? colorScheme.onErrorContainer
+                                            : colorScheme.primary);
+                                    
+                                    final text = isSuccess
+                                        ? 'Extra: ${format.format(stats.remaining.abs())}'
+                                        : 'Remaining: ${format.format(stats.remaining)}';
+                                    
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: badgeBgColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        text,
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          color: badgeTextColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ],
