@@ -69,7 +69,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     final limit = category.limit ?? planned;
 
     final remaining = limit - spent;
-    final heatPercentage = limit > 0 ? (spent / limit).clamp(0.0, 1.0) : 0.0;
+    final heatPercentage = limit > 0 ? (spent / limit) : 0.0;
     final isOverBudget = spent > limit;
 
     int daysLeft = currentPeriod.endDate.difference(DateTime.now()).inDays;

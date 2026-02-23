@@ -41,16 +41,24 @@ class _CategoryTileState extends State<CategoryTile> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    final bool showCriticalExpense =
+        !widget.isIncome && widget.heatPercentage >= 1.05;
+    final bool showSuccessIncome = widget.isIncome && widget.isOverBudget;
+
     // Heat-based color
     Color heatColor;
-    if (widget.isIncome && widget.isOverBudget) {
-      heatColor = const Color(0xFF6ABF69); // Match AppTheme.cardGreen color
-    } else if (widget.isOverBudget) {
-      heatColor = colorScheme.error;
-    } else if (widget.heatPercentage > 0.85) {
-      heatColor = const Color(0xFFE0A030);
+    if (widget.isIncome) {
+      heatColor = showSuccessIncome
+          ? const Color(0xFF6ABF69)
+          : colorScheme.primary;
     } else {
-      heatColor = colorScheme.primary;
+      if (widget.heatPercentage >= 1.05) {
+        heatColor = colorScheme.error;
+      } else if (widget.heatPercentage >= 0.80) {
+        heatColor = const Color(0xFFE0A030);
+      } else {
+        heatColor = const Color(0xFF6ABF69);
+      }
     }
 
     return Padding(
@@ -105,14 +113,15 @@ class _CategoryTileState extends State<CategoryTile> {
                         Text(
                           '${widget.spentAmount} / ${widget.limitAmount}',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: widget.isOverBudget
-                                ? FontWeight.bold
-                                : FontWeight.w500,
-                            color: widget.isOverBudget
-                                ? (widget.isIncome
-                                      ? const Color(0xFF6ABF69)
-                                      : colorScheme.error)
-                                : colorScheme.onSurfaceVariant,
+                            fontWeight:
+                                (showCriticalExpense || showSuccessIncome)
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                            color: showCriticalExpense
+                                ? colorScheme.error
+                                : (showSuccessIncome
+                                    ? const Color(0xFF6ABF69)
+                                    : colorScheme.onSurfaceVariant),
                           ),
                         ),
                       ],

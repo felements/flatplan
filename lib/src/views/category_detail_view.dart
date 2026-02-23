@@ -174,12 +174,14 @@ class CategoryDetailView extends HookConsumerWidget {
                                         category.type == CategoryType.income;
                                     final isSuccess =
                                         isIncome && stats.isOverBudget;
+                                    final isCriticalExpense =
+                                        !isIncome && stats.heatPercentage >= 1.05;
 
                                     final badgeBgColor = isSuccess
                                         ? const Color(
                                             0xFF6ABF69,
                                           ).withValues(alpha: 0.15)
-                                        : (stats.isOverBudget
+                                        : (isCriticalExpense
                                               ? colorScheme.errorContainer
                                               : colorScheme.primary.withValues(
                                                   alpha: 0.15,
@@ -187,7 +189,7 @@ class CategoryDetailView extends HookConsumerWidget {
 
                                     final badgeTextColor = isSuccess
                                         ? const Color(0xFF6ABF69)
-                                        : (stats.isOverBudget
+                                        : (isCriticalExpense
                                               ? colorScheme.onErrorContainer
                                               : colorScheme.primary);
 
