@@ -290,6 +290,10 @@ class DashboardView extends ConsumerWidget {
             limitAmount: formatter.format(c.limit),
             heatPercentage: c.heatPercentage,
             isOverBudget: c.isOverBudget,
+            dailyAllowanceAmount:
+                c.isDailyAllowance && c.dailyAllowanceAmount != null
+                    ? formatter.format(c.dailyAllowanceAmount)
+                    : null,
             onTap: () => context.go('/category/${c.categoryId}'),
           ),
         ),

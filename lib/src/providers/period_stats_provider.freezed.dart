@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CategoryStats {
 
- String get categoryId; String get name; CategoryType get type; double get limit; double get totalSpent; double get totalPlanned; double get remaining; double get heatPercentage; bool get isOverBudget;
+ String get categoryId; String get name; CategoryType get type; double get limit; double get totalSpent; double get totalPlanned; double get remaining; double get heatPercentage; bool get isOverBudget; bool get isDailyAllowance; double? get dailyAllowanceAmount;
 /// Create a copy of CategoryStats
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CategoryStatsCopyWith<CategoryStats> get copyWith => _$CategoryStatsCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.dailyAllowanceAmount, dailyAllowanceAmount) || other.dailyAllowanceAmount == dailyAllowanceAmount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget);
+int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget,isDailyAllowance,dailyAllowanceAmount);
 
 @override
 String toString() {
-  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget)';
+  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget, isDailyAllowance: $isDailyAllowance, dailyAllowanceAmount: $dailyAllowanceAmount)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $CategoryStatsCopyWith<$Res>  {
   factory $CategoryStatsCopyWith(CategoryStats value, $Res Function(CategoryStats) _then) = _$CategoryStatsCopyWithImpl;
 @useResult
 $Res call({
- String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget
+ String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget, bool isDailyAllowance, double? dailyAllowanceAmount
 });
 
 
@@ -62,7 +62,7 @@ class _$CategoryStatsCopyWithImpl<$Res>
 
 /// Create a copy of CategoryStats
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,Object? isDailyAllowance = null,Object? dailyAllowanceAmount = freezed,}) {
   return _then(_self.copyWith(
 categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -73,7 +73,9 @@ as double,totalPlanned: null == totalPlanned ? _self.totalPlanned : totalPlanned
 as double,remaining: null == remaining ? _self.remaining : remaining // ignore: cast_nullable_to_non_nullable
 as double,heatPercentage: null == heatPercentage ? _self.heatPercentage : heatPercentage // ignore: cast_nullable_to_non_nullable
 as double,isOverBudget: null == isOverBudget ? _self.isOverBudget : isOverBudget // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,isDailyAllowance: null == isDailyAllowance ? _self.isDailyAllowance : isDailyAllowance // ignore: cast_nullable_to_non_nullable
+as bool,dailyAllowanceAmount: freezed == dailyAllowanceAmount ? _self.dailyAllowanceAmount : dailyAllowanceAmount // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -155,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  double? dailyAllowanceAmount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CategoryStats() when $default != null:
-return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget);case _:
+return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.dailyAllowanceAmount);case _:
   return orElse();
 
 }
@@ -176,10 +178,10 @@ return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  double? dailyAllowanceAmount)  $default,) {final _that = this;
 switch (_that) {
 case _CategoryStats():
-return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget);}
+return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.dailyAllowanceAmount);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -193,10 +195,10 @@ return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  double? dailyAllowanceAmount)?  $default,) {final _that = this;
 switch (_that) {
 case _CategoryStats() when $default != null:
-return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget);case _:
+return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.dailyAllowanceAmount);case _:
   return null;
 
 }
@@ -208,7 +210,7 @@ return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSp
 
 
 class _CategoryStats implements CategoryStats {
-  const _CategoryStats({required this.categoryId, required this.name, required this.type, required this.limit, required this.totalSpent, required this.totalPlanned, required this.remaining, required this.heatPercentage, required this.isOverBudget});
+  const _CategoryStats({required this.categoryId, required this.name, required this.type, required this.limit, required this.totalSpent, required this.totalPlanned, required this.remaining, required this.heatPercentage, required this.isOverBudget, required this.isDailyAllowance, this.dailyAllowanceAmount});
   
 
 @override final  String categoryId;
@@ -220,6 +222,8 @@ class _CategoryStats implements CategoryStats {
 @override final  double remaining;
 @override final  double heatPercentage;
 @override final  bool isOverBudget;
+@override final  bool isDailyAllowance;
+@override final  double? dailyAllowanceAmount;
 
 /// Create a copy of CategoryStats
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +235,16 @@ _$CategoryStatsCopyWith<_CategoryStats> get copyWith => __$CategoryStatsCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.dailyAllowanceAmount, dailyAllowanceAmount) || other.dailyAllowanceAmount == dailyAllowanceAmount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget);
+int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget,isDailyAllowance,dailyAllowanceAmount);
 
 @override
 String toString() {
-  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget)';
+  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget, isDailyAllowance: $isDailyAllowance, dailyAllowanceAmount: $dailyAllowanceAmount)';
 }
 
 
@@ -251,7 +255,7 @@ abstract mixin class _$CategoryStatsCopyWith<$Res> implements $CategoryStatsCopy
   factory _$CategoryStatsCopyWith(_CategoryStats value, $Res Function(_CategoryStats) _then) = __$CategoryStatsCopyWithImpl;
 @override @useResult
 $Res call({
- String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget
+ String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget, bool isDailyAllowance, double? dailyAllowanceAmount
 });
 
 
@@ -268,7 +272,7 @@ class __$CategoryStatsCopyWithImpl<$Res>
 
 /// Create a copy of CategoryStats
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,Object? isDailyAllowance = null,Object? dailyAllowanceAmount = freezed,}) {
   return _then(_CategoryStats(
 categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -279,7 +283,9 @@ as double,totalPlanned: null == totalPlanned ? _self.totalPlanned : totalPlanned
 as double,remaining: null == remaining ? _self.remaining : remaining // ignore: cast_nullable_to_non_nullable
 as double,heatPercentage: null == heatPercentage ? _self.heatPercentage : heatPercentage // ignore: cast_nullable_to_non_nullable
 as double,isOverBudget: null == isOverBudget ? _self.isOverBudget : isOverBudget // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,isDailyAllowance: null == isDailyAllowance ? _self.isDailyAllowance : isDailyAllowance // ignore: cast_nullable_to_non_nullable
+as bool,dailyAllowanceAmount: freezed == dailyAllowanceAmount ? _self.dailyAllowanceAmount : dailyAllowanceAmount // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

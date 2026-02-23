@@ -9,6 +9,7 @@ class CategoryTile extends StatefulWidget {
   final double heatPercentage;
   final bool isOverBudget;
   final VoidCallback onTap;
+  final String? dailyAllowanceAmount;
 
   const CategoryTile({
     super.key,
@@ -18,6 +19,7 @@ class CategoryTile extends StatefulWidget {
     required this.heatPercentage,
     required this.isOverBudget,
     required this.onTap,
+    this.dailyAllowanceAmount,
   });
 
   @override
@@ -105,6 +107,26 @@ class _CategoryTileState extends State<CategoryTile> {
                         ),
                       ],
                     ),
+                    if (widget.dailyAllowanceAmount != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.today_rounded,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${widget.dailyAllowanceAmount} / day left',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(6),

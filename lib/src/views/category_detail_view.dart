@@ -137,49 +137,82 @@ class CategoryDetailView extends HookConsumerWidget {
                         ),
                       ),
 
-                      // Edit button
-                      Material(
-                        color: colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(10),
-                        child: InkWell(
-                          onTap: () =>
-                              showCategoryDialog(context, ref, category),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.edit_rounded,
-                              size: 20,
-                              color: colorScheme.onSurface,
-                            ),
+                      // Actions & Remaining badge
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Edit button
+                              Material(
+                                color: colorScheme.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(10),
+                                child: InkWell(
+                                  onTap: () =>
+                                      showCategoryDialog(context, ref, category),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: Icon(
+                                      Icons.edit_rounded,
+                                      size: 20,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (catStats != null) ...[
+                                const SizedBox(width: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: catStats.isOverBudget
+                                        ? colorScheme.errorContainer
+                                        : colorScheme.primary.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Remaining: ${format.format(catStats.remaining)}',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      color: catStats.isOverBudget
+                                          ? colorScheme.onErrorContainer
+                                          : colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ),
+                          if (catStats != null &&
+                              catStats.isDailyAllowance &&
+                              catStats.dailyAllowanceAmount != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.today_rounded,
+                                  size: 14,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${format.format(catStats.dailyAllowanceAmount)} / day left',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(width: 12),
-
-                      // Remaining badge
-                      if (catStats != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: catStats.isOverBudget
-                                ? colorScheme.errorContainer
-                                : colorScheme.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Remaining: ${format.format(catStats.remaining)}',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: catStats.isOverBudget
-                                  ? colorScheme.onErrorContainer
-                                  : colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),

@@ -19,6 +19,8 @@ sealed class CategoryStats with _$CategoryStats {
     required double remaining,
     required double heatPercentage,
     required bool isOverBudget,
+    required bool isDailyAllowance,
+    double? dailyAllowanceAmount,
   }) = _CategoryStats;
 }
 
@@ -68,6 +70,15 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     final heatPercentage = limit > 0 ? (spent / limit).clamp(0.0, 1.0) : 0.0;
     final isOverBudget = spent > limit;
 
+    int daysLeft = currentPeriod.endDate.difference(DateTime.now()).inDays;
+    // ensure at least 1 day to prevent division by zero
+    if (daysLeft < 1) daysLeft = 1;
+
+    double? dailyAllowanceAmount;
+    if (category.isDailyAllowance) {
+      dailyAllowanceAmount = remaining > 0 ? remaining / daysLeft : 0.0;
+    }
+
     // 4. Aggregate totals
     if (category.type == CategoryType.mandatoryExpense) {
       totalMandatoryBudget += limit;
@@ -88,6 +99,8 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
         remaining: remaining,
         heatPercentage: heatPercentage,
         isOverBudget: isOverBudget,
+        isDailyAllowance: category.isDailyAllowance,
+        dailyAllowanceAmount: dailyAllowanceAmount,
       ),
     );
   }

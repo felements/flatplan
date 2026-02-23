@@ -76,3 +76,6 @@ Need to think up the storage structure (models); UI pages and the list of compon
 
 
 
+## Visuals
+
+Reference: https://dribbble.com/shots/27113702-Finance-Dashboard-Design
