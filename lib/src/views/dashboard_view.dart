@@ -293,8 +293,18 @@ class DashboardView extends ConsumerWidget {
             isIncome: c.type == CategoryType.income,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
-                    ? formatter.format(c.dailyAllowanceAmount)
-                    : null,
+                ? NumberFormat.simpleCurrency(
+                    name: formatter.currencyName,
+                    decimalDigits: 0,
+                  ).format(c.dailyAllowanceAmount)
+                : null,
+            expectedPurchaseFrequencyDays: c.expectedPurchaseFrequencyDays,
+            expectedPurchaseAmount: c.expectedPurchaseAmount != null
+                ? NumberFormat.simpleCurrency(
+                    name: formatter.currencyName,
+                    decimalDigits: 0,
+                  ).format(c.expectedPurchaseAmount!)
+                : null,
             onTap: () => context.go('/category/${c.categoryId}'),
           ),
         ),

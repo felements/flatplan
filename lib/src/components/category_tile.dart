@@ -11,6 +11,8 @@ class CategoryTile extends StatefulWidget {
   final bool isIncome;
   final VoidCallback onTap;
   final String? dailyAllowanceAmount;
+  final int? expectedPurchaseFrequencyDays;
+  final String? expectedPurchaseAmount;
 
   const CategoryTile({
     super.key,
@@ -22,6 +24,8 @@ class CategoryTile extends StatefulWidget {
     this.isIncome = false,
     required this.onTap,
     this.dailyAllowanceAmount,
+    this.expectedPurchaseFrequencyDays,
+    this.expectedPurchaseAmount,
   });
 
   @override
@@ -106,8 +110,8 @@ class _CategoryTileState extends State<CategoryTile> {
                                 : FontWeight.w500,
                             color: widget.isOverBudget
                                 ? (widget.isIncome
-                                    ? const Color(0xFF6ABF69)
-                                    : colorScheme.error)
+                                      ? const Color(0xFF6ABF69)
+                                      : colorScheme.error)
                                 : colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -124,12 +128,29 @@ class _CategoryTileState extends State<CategoryTile> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '${widget.dailyAllowanceAmount} / day left',
+                            widget.expectedPurchaseFrequencyDays != null
+                                ? '${widget.dailyAllowanceAmount} / day left or spend ${widget.expectedPurchaseAmount!} every ${widget.expectedPurchaseFrequencyDays} days'
+                                : '${widget.dailyAllowanceAmount} / day left',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          if (widget.expectedPurchaseFrequencyDays != null) ...[
+                            const SizedBox(width: 6),
+                            Tooltip(
+                              message:
+                                  'Calculated using a 20% Trimmed Mean (drops the 20% smallest expenses)\n'
+                                  'to account for typical spend size and ignore small outliers.',
+                              child: Icon(
+                                Icons.info_outline_rounded,
+                                size: 14,
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],

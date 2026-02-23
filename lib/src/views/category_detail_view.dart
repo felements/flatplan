@@ -149,8 +149,11 @@ class CategoryDetailView extends HookConsumerWidget {
                                 color: colorScheme.surfaceContainerHigh,
                                 borderRadius: BorderRadius.circular(10),
                                 child: InkWell(
-                                  onTap: () =>
-                                      showCategoryDialog(context, ref, category),
+                                  onTap: () => showCategoryDialog(
+                                    context,
+                                    ref,
+                                    category,
+                                  ),
                                   borderRadius: BorderRadius.circular(10),
                                   child: Padding(
                                     padding: const EdgeInsets.all(8),
@@ -167,25 +170,31 @@ class CategoryDetailView extends HookConsumerWidget {
                                 Builder(
                                   builder: (context) {
                                     final stats = catStats!;
-                                    final isIncome = category.type == CategoryType.income;
-                                    final isSuccess = isIncome && stats.isOverBudget;
-                                    
-                                    final badgeBgColor = isSuccess 
-                                        ? const Color(0xFF6ABF69).withValues(alpha: 0.15)
+                                    final isIncome =
+                                        category.type == CategoryType.income;
+                                    final isSuccess =
+                                        isIncome && stats.isOverBudget;
+
+                                    final badgeBgColor = isSuccess
+                                        ? const Color(
+                                            0xFF6ABF69,
+                                          ).withValues(alpha: 0.15)
                                         : (stats.isOverBudget
-                                            ? colorScheme.errorContainer
-                                            : colorScheme.primary.withValues(alpha: 0.15));
-                                    
+                                              ? colorScheme.errorContainer
+                                              : colorScheme.primary.withValues(
+                                                  alpha: 0.15,
+                                                ));
+
                                     final badgeTextColor = isSuccess
                                         ? const Color(0xFF6ABF69)
                                         : (stats.isOverBudget
-                                            ? colorScheme.onErrorContainer
-                                            : colorScheme.primary);
-                                    
+                                              ? colorScheme.onErrorContainer
+                                              : colorScheme.primary);
+
                                     final text = isSuccess
                                         ? 'Extra: ${format.format(stats.remaining.abs())}'
                                         : 'Remaining: ${format.format(stats.remaining)}';
-                                    
+
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 16,
@@ -197,10 +206,11 @@ class CategoryDetailView extends HookConsumerWidget {
                                       ),
                                       child: Text(
                                         text,
-                                        style: theme.textTheme.titleMedium?.copyWith(
-                                          color: badgeTextColor,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: badgeTextColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     );
                                   },
@@ -221,13 +231,42 @@ class CategoryDetailView extends HookConsumerWidget {
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  '${format.format(catStats.dailyAllowanceAmount)} / day left',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    final stats = catStats!;
+                                    final roundedFormat =
+                                        NumberFormat.simpleCurrency(
+                                          name: period.baseCurrency,
+                                          decimalDigits: 0,
+                                        );
+                                    return Text(
+                                      stats.expectedPurchaseFrequencyDays !=
+                                              null
+                                          ? '${roundedFormat.format(stats.dailyAllowanceAmount)} / day left or spend ${roundedFormat.format(stats.expectedPurchaseAmount!)} every ${stats.expectedPurchaseFrequencyDays} days'
+                                          : '${roundedFormat.format(stats.dailyAllowanceAmount)} / day left',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    );
+                                  },
                                 ),
+                                if (catStats.expectedPurchaseFrequencyDays !=
+                                    null) ...[
+                                  const SizedBox(width: 6),
+                                  Tooltip(
+                                    message:
+                                        'Calculated using a 20% Trimmed Mean (drops the 20% smallest expenses)\n'
+                                        'to account for typical spend size and ignore small outliers.',
+                                    child: Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 14,
+                                      color: colorScheme.onSurfaceVariant
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ],

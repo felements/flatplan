@@ -21,6 +21,8 @@ sealed class CategoryStats with _$CategoryStats {
     required bool isOverBudget,
     required bool isDailyAllowance,
     double? dailyAllowanceAmount,
+    int? expectedPurchaseFrequencyDays,
+    double? expectedPurchaseAmount,
   }) = _CategoryStats;
 }
 
@@ -75,8 +77,35 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     if (daysLeft < 1) daysLeft = 1;
 
     double? dailyAllowanceAmount;
+    int? expectedPurchaseFrequencyDays;
+    double? expectedPurchaseAmount;
     if (category.isDailyAllowance) {
       dailyAllowanceAmount = remaining > 0 ? remaining / daysLeft : 0.0;
+
+      if (category.factExpenses.length >= 2 && remaining > 0) {
+        // Calculate 20% Trimmed Mean (drop the lowest 20% of expenses)
+        final sortedExpenses =
+            category.factExpenses.map((e) => e.amount).toList()..sort();
+        final dropCount = (sortedExpenses.length * 0.2).floor();
+        final keptExpenses = sortedExpenses.sublist(dropCount);
+
+        if (keptExpenses.isNotEmpty) {
+          final keptSpent = keptExpenses.fold<double>(
+            0,
+            (prev, amount) => prev + amount,
+          );
+          final avgExpense = keptSpent / keptExpenses.length;
+
+          if (avgExpense > 0) {
+            final affordablePurchases = remaining / avgExpense;
+            if (affordablePurchases > 0) {
+              expectedPurchaseFrequencyDays = (daysLeft / affordablePurchases)
+                  .round();
+              expectedPurchaseAmount = avgExpense;
+            }
+          }
+        }
+      }
     }
 
     // 4. Aggregate totals
@@ -101,6 +130,8 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
         isOverBudget: isOverBudget,
         isDailyAllowance: category.isDailyAllowance,
         dailyAllowanceAmount: dailyAllowanceAmount,
+        expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
+        expectedPurchaseAmount: expectedPurchaseAmount,
       ),
     );
   }
