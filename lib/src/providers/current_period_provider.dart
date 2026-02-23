@@ -78,6 +78,40 @@ class CurrentPeriod extends _$CurrentPeriod {
     updatePeriod(current.copyWith(categories: updatedCategories));
   }
 
+  /// Appends a new category to the period.
+  void addCategory(Category category) {
+    final current = state.value;
+    if (current == null) return;
+
+    updatePeriod(
+      current.copyWith(categories: [...current.categories, category]),
+    );
+  }
+
+  /// Replaces a category by matching its `id`.
+  void updateCategory(Category updated) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedCategories = current.categories.map((cat) {
+      return cat.id == updated.id ? updated : cat;
+    }).toList();
+
+    updatePeriod(current.copyWith(categories: updatedCategories));
+  }
+
+  /// Removes a category by `id`.
+  void removeCategory(String categoryId) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedCategories = current.categories
+        .where((cat) => cat.id != categoryId)
+        .toList();
+
+    updatePeriod(current.copyWith(categories: updatedCategories));
+  }
+
   void _debouncedSave(Period period) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {

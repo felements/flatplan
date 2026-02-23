@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../views/app_shell.dart';
 import '../views/category_detail_view.dart';
+import '../views/category_editor_view.dart';
 import '../views/dashboard_view.dart';
 import '../views/settings_view.dart';
 
@@ -55,6 +56,12 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/settings',
                 builder: (context, state) => const SettingsView(),
+                routes: [
+                  GoRoute(
+                    path: 'categories',
+                    builder: (context, state) => const CategoryEditorView(),
+                  ),
+                ],
               ),
             ],
           ),

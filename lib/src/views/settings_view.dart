@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -119,6 +120,62 @@ class SettingsView extends HookConsumerWidget {
                           alpha: 0.7,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // ─── Category Management ───────────────────────────
+              _SectionHeader(
+                icon: Icons.category_rounded,
+                title: 'Category Management',
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            period != null
+                                ? '${period.categories.length} categor${period.categories.length == 1 ? 'y' : 'ies'} configured'
+                                : 'No active period',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Add, edit, or remove budget categories for the current period.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: period != null
+                          ? () =>
+                                GoRouter.of(context).go('/settings/categories')
+                          : null,
+                      icon: const Icon(Icons.edit_rounded),
+                      label: const Text('Manage Categories'),
                     ),
                   ],
                 ),
