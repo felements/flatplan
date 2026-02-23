@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../components/category_dialog.dart';
 import '../models/models.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
@@ -133,6 +134,25 @@ class CategoryDetailView extends HookConsumerWidget {
                           ],
                         ),
                       ),
+
+                      // Edit button
+                      Material(
+                        color: colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(10),
+                        child: InkWell(
+                          onTap: () => showCategoryDialog(context, ref, category),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.edit_rounded,
+                              size: 20,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
 
                       // Remaining badge
                       if (catStats != null)
