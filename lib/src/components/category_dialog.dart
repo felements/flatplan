@@ -4,14 +4,17 @@ import 'package:uuid/uuid.dart';
 
 import '../models/category.dart';
 import '../models/category_type.dart';
-import '../providers/current_period_provider.dart';
+import '../providers/period_notifier_provider.dart';
 
-/// Shows a dialog or full-page editor for managing a category.
+/// Shows a dialog for adding or editing a category.
+///
+/// The [periodId] determines which period's notifier receives the mutation.
 void showCategoryDialog(
   BuildContext context,
   WidgetRef ref,
-  Category? existing,
-) {
+  Category? existing, {
+  required String periodId,
+}) {
   final isEditing = existing != null;
   final nameCtrl = TextEditingController(text: existing?.name ?? '');
   final descCtrl = TextEditingController(text: existing?.description ?? '');
@@ -133,7 +136,9 @@ void showCategoryDialog(
                   final limit = double.tryParse(limitCtrl.text.trim());
                   final desc = descCtrl.text.trim();
 
-                  final notifier = ref.read(currentPeriodProvider.notifier);
+                  final notifier = ref.read(
+                    periodProvider(periodId).notifier,
+                  );
 
                   if (isEditing) {
                     notifier.updateCategory(

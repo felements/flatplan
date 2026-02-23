@@ -4,17 +4,21 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../components/category_dialog.dart';
 import '../models/models.dart';
-import '../providers/current_period_provider.dart';
+import '../providers/period_notifier_provider.dart';
 
-/// Full-page editor for managing the current period's categories.
+/// Full-page editor for managing a specific period's categories.
+///
+/// Requires a [periodId] so that mutations target the correct period.
 class CategoryEditorView extends ConsumerWidget {
-  const CategoryEditorView({super.key});
+  final String periodId;
+
+  const CategoryEditorView({super.key, required this.periodId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final periodAsync = ref.watch(currentPeriodProvider);
+    final periodAsync = ref.watch(periodProvider(periodId));
 
     return Scaffold(
       body: periodAsync.when(
@@ -24,7 +28,7 @@ class CategoryEditorView extends ConsumerWidget {
           if (period == null) {
             return Center(
               child: Text(
-                'No active period. Create one in Settings first.',
+                'Period not found.',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -43,22 +47,38 @@ class CategoryEditorView extends ConsumerWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () => context.go('/period/$periodId'),
                       icon: const Icon(Icons.arrow_back_rounded),
-                      tooltip: 'Back to Settings',
+                      tooltip: 'Back to Period',
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        'Manage Categories',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Manage Categories',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          Text(
+                            period.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () => showCategoryDialog(context, ref, null),
+                      onPressed: () => showCategoryDialog(
+                        context,
+                        ref,
+                        null,
+                        periodId: periodId,
+                      ),
                       icon: const Icon(Icons.add_rounded),
                       label: const Text('Add Category'),
                     ),
@@ -121,8 +141,14 @@ class CategoryEditorView extends ConsumerWidget {
                           final cat = categories[index];
                           return _CategoryCard(
                             category: cat,
-                            onEdit: () => showCategoryDialog(context, ref, cat),
-                            onDelete: () => _confirmDelete(context, ref, cat),
+                            onEdit: () => showCategoryDialog(
+                              context,
+                              ref,
+                              cat,
+                              periodId: periodId,
+                            ),
+                            onDelete: () =>
+                                _confirmDelete(context, ref, cat),
                           );
                         },
                       ),
@@ -158,7 +184,7 @@ class CategoryEditorView extends ConsumerWidget {
               ),
               onPressed: () {
                 ref
-                    .read(currentPeriodProvider.notifier)
+                    .read(periodProvider(periodId).notifier)
                     .removeCategory(category.id);
                 Navigator.pop(ctx);
 

@@ -43,13 +43,28 @@ GoRouter appRouter(Ref ref) {
                       final periodId = state.pathParameters['periodId']!;
                       return DashboardView(periodId: periodId);
                     },
-                  ),
-                  GoRoute(
-                    path: 'category/:id',
-                    builder: (context, state) {
-                      final id = state.pathParameters['id']!;
-                      return CategoryDetailView(categoryId: id);
-                    },
+                    routes: [
+                      // Category detail scoped to a specific period.
+                      GoRoute(
+                        path: 'category/:id',
+                        builder: (context, state) {
+                          final periodId = state.pathParameters['periodId']!;
+                          final id = state.pathParameters['id']!;
+                          return CategoryDetailView(
+                            categoryId: id,
+                            periodId: periodId,
+                          );
+                        },
+                      ),
+                      // Category editor scoped to a specific period.
+                      GoRoute(
+                        path: 'categories',
+                        builder: (context, state) {
+                          final periodId = state.pathParameters['periodId']!;
+                          return CategoryEditorView(periodId: periodId);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -63,12 +78,6 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/settings',
                 builder: (context, state) => const SettingsView(),
-                routes: [
-                  GoRoute(
-                    path: 'categories',
-                    builder: (context, state) => const CategoryEditorView(),
-                  ),
-                ],
               ),
             ],
           ),

@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
-import '../providers/current_period_provider.dart';
+import '../providers/period_notifier_provider.dart';
 
 /// Helper to format a [DueDate] for display.
 String formatDueDate(DueDate dueDate) {
@@ -60,12 +60,15 @@ String _ordinal(int day) {
 enum _DueDateType { exact, dayOfMonth, dayOfWeek }
 
 /// Shows a dialog for adding or editing a planned expense.
+///
+/// The [periodId] determines which period's notifier receives the mutation.
 void showPlannedExpenseDialog(
   BuildContext context,
   WidgetRef ref,
   String categoryId,
-  PlannedExpense? existing,
-) {
+  PlannedExpense? existing, {
+  required String periodId,
+}) {
   final isEditing = existing != null;
   final descCtrl = TextEditingController(text: existing?.description ?? '');
   final amountCtrl = TextEditingController(
@@ -267,7 +270,9 @@ void showPlannedExpenseDialog(
                       dueDate = DueDate.dayOfWeek(weekday: dayOfWeek);
                   }
 
-                  final notifier = ref.read(currentPeriodProvider.notifier);
+                  final notifier = ref.read(
+                    periodProvider(periodId).notifier,
+                  );
 
                   if (isEditing) {
                     notifier.updatePlannedExpense(

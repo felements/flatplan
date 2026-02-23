@@ -93,6 +93,9 @@ class DashboardView extends ConsumerWidget {
               ? '${endDate.difference(now).inDays + 1} days remaining'
               : '$periodLengthDays days';
 
+          // The effective period ID for building routes.
+          final effectivePeriodId = period.id;
+
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
             child: ListView(
@@ -129,12 +132,40 @@ class DashboardView extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: Implement trigger rollover
+                      // Three-dots dropdown menu replacing the old
+                      // "Next Period" button.
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert_rounded,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        tooltip: 'Period actions',
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onSelected: (value) {
+                          if (value == 'manage_categories') {
+                            context.go(
+                              '/period/$effectivePeriodId/categories',
+                            );
+                          }
                         },
-                        icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                        label: const Text('Next Period'),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'manage_categories',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.category_rounded,
+                                  size: 18,
+                                  color: colorScheme.onSurface,
+                                ),
+                                const SizedBox(width: 10),
+                                const Text('Manage Categories'),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -193,6 +224,7 @@ class DashboardView extends ConsumerWidget {
                       Icons.lock_rounded,
                       mandatoryCategories,
                       currencyFormatter,
+                      effectivePeriodId,
                     );
                     final optionalSection = _buildCategorySection(
                       context,
@@ -200,6 +232,7 @@ class DashboardView extends ConsumerWidget {
                       Icons.spa_rounded,
                       optionalCategories,
                       currencyFormatter,
+                      effectivePeriodId,
                     );
 
                     final incomeSection = _buildCategorySection(
@@ -208,6 +241,7 @@ class DashboardView extends ConsumerWidget {
                       Icons.arrow_downward_rounded,
                       incomeCategories,
                       currencyFormatter,
+                      effectivePeriodId,
                     );
 
                     if (isWide) {
@@ -301,12 +335,17 @@ class DashboardView extends ConsumerWidget {
   }
 
   /// Builds a titled section of category tiles with a left accent icon.
+  ///
+  /// The [effectivePeriodId] is used to build period-scoped navigation
+  /// routes so that clicking a tile navigates to the correct period's
+  /// category detail view.
   Widget _buildCategorySection(
     BuildContext context,
     String title,
     IconData sectionIcon,
     List<CategoryStats> cats,
     NumberFormat formatter,
+    String effectivePeriodId,
   ) {
     if (cats.isEmpty) {
       return const SizedBox.shrink();
@@ -356,7 +395,9 @@ class DashboardView extends ConsumerWidget {
                     decimalDigits: 0,
                   ).format(c.expectedPurchaseAmount!)
                 : null,
-            onTap: () => context.go('/category/${c.categoryId}'),
+            onTap: () => context.go(
+              '/period/$effectivePeriodId/category/${c.categoryId}',
+            ),
           ),
         ),
       ],
