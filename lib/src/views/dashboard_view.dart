@@ -76,6 +76,13 @@ class DashboardView extends ConsumerWidget {
                               color: colorScheme.onSurface,
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${DateFormat('MMM d').format(period.startDate)} - ${DateFormat('MMM d').format(period.endDate)} • ${period.endDate.difference(DateTime.now()).inDays + 1} days remaining',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ],
                       ),
                       ElevatedButton.icon(
