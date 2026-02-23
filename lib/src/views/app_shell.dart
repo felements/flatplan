@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../logic/period_extensions.dart';
 import '../models/models.dart';
 import '../providers/all_periods_provider.dart';
 
@@ -23,6 +24,11 @@ class AppShell extends ConsumerWidget {
     final uri = GoRouterState.of(context).uri.toString();
     final periodIdMatch = RegExp(r'/period/(.+)').firstMatch(uri);
     final activePeriodId = periodIdMatch?.group(1);
+
+    // Find the period that covers today.
+    final allPeriods = periodsAsync.value ?? [];
+    final now = DateTime.now();
+    final todayPeriod = _findActivePeriod(allPeriods, now);
 
     return Scaffold(
       body: Row(
@@ -80,18 +86,24 @@ class AppShell extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                // ─── Today (current period) ────────────────────────
+                // ─── Today (active period) ────────────────────────
                 _SidebarItem(
                   icon: Icons.calendar_today_rounded,
                   label: 'Today',
                   isSelected: selectedIndex == 0 && activePeriodId == null,
-                  onTap: () => navigationShell.goBranch(
-                    0,
-                    initialLocation: selectedIndex == 0,
-                  ),
+                  onTap: () {
+                    if (todayPeriod != null) {
+                      context.go('/period/${todayPeriod.id}');
+                    } else {
+                      navigationShell.goBranch(
+                        0,
+                        initialLocation: selectedIndex == 0,
+                      );
+                    }
+                  },
                 ),
 
-                // ─── Historical period links ───────────────────────
+                // ─── Period links ───────────────────────────────────
                 periodsAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.all(16),
@@ -103,8 +115,6 @@ class AppShell extends ConsumerWidget {
                   ),
                   error: (_, _) => const SizedBox.shrink(),
                   data: (periods) {
-                    // Take up to 8, skip the first if it matches the current
-                    // period (already shown as "Today").
                     final historyPeriods = periods.take(8).toList();
 
                     if (historyPeriods.isEmpty) {
@@ -114,10 +124,12 @@ class AppShell extends ConsumerWidget {
                     return Column(
                       children: historyPeriods.map((period) {
                         final label = _formatPeriodLabel(period);
-                        final isActive = activePeriodId == period.id;
+                        final isViewed = activePeriodId == period.id;
+                        final isCurrent = todayPeriod?.id == period.id;
                         return _PeriodSubItem(
                           label: label,
-                          isSelected: isActive,
+                          isSelected: isViewed,
+                          isCurrent: isCurrent,
                           onTap: () => context.go('/period/${period.id}'),
                         );
                       }).toList(),
@@ -161,6 +173,20 @@ class AppShell extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Finds the period whose date range contains [date], or null.
+  Period? _findActivePeriod(List<Period> allPeriods, DateTime date) {
+    if (allPeriods.isEmpty) return null;
+    for (final period in allPeriods) {
+      final endDate = effectiveEndDate(period, allPeriods);
+      final afterStart = date.isAfter(
+        period.startDate.subtract(const Duration(days: 1)),
+      );
+      final beforeEnd = date.isBefore(endDate.add(const Duration(days: 1)));
+      if (afterStart && beforeEnd) return period;
+    }
+    return null;
   }
 
   /// Formats period start date as "Mon YY" (e.g. "Feb 26").
@@ -236,11 +262,13 @@ class _SidebarItem extends StatelessWidget {
 class _PeriodSubItem extends StatelessWidget {
   final String label;
   final bool isSelected;
+  final bool isCurrent;
   final VoidCallback onTap;
 
   const _PeriodSubItem({
     required this.label,
     required this.isSelected,
+    this.isCurrent = false,
     required this.onTap,
   });
 
@@ -248,6 +276,25 @@ class _PeriodSubItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    // Gold accent for the active period.
+    const currentColor = Color(0xFFD4A84B);
+
+    final dotColor = isCurrent
+        ? currentColor
+        : isSelected
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+
+    final textColor = isSelected
+        ? colorScheme.primary
+        : isCurrent
+        ? colorScheme.onSurface
+        : colorScheme.onSurfaceVariant;
+
+    final fontWeight = (isSelected || isCurrent)
+        ? FontWeight.w600
+        : FontWeight.normal;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -274,23 +321,21 @@ class _PeriodSubItem extends StatelessWidget {
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    color: dotColor,
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: textColor,
+                      fontWeight: fontWeight,
+                    ),
                   ),
                 ),
+                if (isCurrent)
+                  Text('●', style: TextStyle(fontSize: 8, color: currentColor)),
               ],
             ),
           ),

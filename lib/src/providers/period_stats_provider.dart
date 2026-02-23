@@ -1,7 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'all_periods_provider.dart';
 import 'current_period_provider.dart';
+import '../logic/period_extensions.dart';
 import '../models/category_type.dart';
 
 part 'period_stats_provider.freezed.dart';
@@ -45,6 +47,9 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   final currentPeriod = await ref.watch(currentPeriodProvider.future);
   if (currentPeriod == null) return null;
 
+  final allPeriods = await ref.watch(allPeriodsProvider.future);
+  final endDate = effectiveEndDate(currentPeriod, allPeriods);
+
   double totalMandatoryBudget = 0;
   double totalMandatorySpent = 0;
   double totalOptionalBudget = 0;
@@ -72,7 +77,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     final heatPercentage = limit > 0 ? (spent / limit) : 0.0;
     final isOverBudget = spent > limit;
 
-    int daysLeft = currentPeriod.endDate.difference(DateTime.now()).inDays;
+    int daysLeft = endDate.difference(DateTime.now()).inDays;
     // ensure at least 1 day to prevent division by zero
     if (daysLeft < 1) daysLeft = 1;
 

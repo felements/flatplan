@@ -24,7 +24,7 @@ void main() {
         id: '1234-uuid',
         name: 'October 2025 Budget',
         startDate: DateTime(2025, 10, 1),
-        endDate: DateTime(2025, 10, 31),
+
         baseCurrency: 'EUR',
         lastModified: DateTime.now(),
       );
@@ -34,7 +34,7 @@ void main() {
       final files = tempDir.listSync().whereType<File>().toList();
       expect(files.length, 1);
       final filename = files.first.path.split(Platform.pathSeparator).last;
-      
+
       expect(filename, '2025-10-october_2025_budget.yaml');
     });
 
@@ -43,7 +43,7 @@ void main() {
         id: '5678-uuid',
         name: 'My Custom Template',
         startDate: DateTime(2025, 1, 1),
-        endDate: DateTime(2025, 1, 31),
+
         baseCurrency: 'EUR',
         lastModified: DateTime.now(),
       );
@@ -53,7 +53,7 @@ void main() {
       final files = tempDir.listSync().whereType<File>().toList();
       expect(files.length, 1);
       final filename = files.first.path.split(Platform.pathSeparator).last;
-      
+
       expect(filename, 'my_custom_template.yaml');
     });
 
@@ -62,7 +62,7 @@ void main() {
         id: 'uuid-1111',
         name: '!!! --- ***',
         startDate: DateTime(2026, 3, 5),
-        endDate: DateTime(2026, 4, 4),
+
         baseCurrency: 'EUR',
         lastModified: DateTime.now(),
       );
@@ -72,7 +72,7 @@ void main() {
       final files = tempDir.listSync().whereType<File>().toList();
       expect(files.length, 1);
       final filename = files.first.path.split(Platform.pathSeparator).last;
-      
+
       expect(filename, '2026-03-uuid-1111.yaml');
     });
 
@@ -84,7 +84,7 @@ void main() {
         id: 'legacy-uuid',
         name: 'March 2026 update',
         startDate: DateTime(2026, 3, 1),
-        endDate: DateTime(2026, 3, 31),
+
         baseCurrency: 'EUR',
         lastModified: DateTime.now(),
       );
@@ -94,7 +94,7 @@ void main() {
       final files = tempDir.listSync().whereType<File>().toList();
       expect(files.length, 1);
       final filename = files.first.path.split(Platform.pathSeparator).last;
-      
+
       expect(filename, '2026-03-march_2026_update.yaml');
       expect(legacyFile.existsSync(), isFalse);
     });

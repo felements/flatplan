@@ -10,7 +10,7 @@ sealed class Period with _$Period {
     required String id,
     required String name,
     required DateTime startDate,
-    required DateTime endDate,
+
     required String baseCurrency,
     required DateTime lastModified,
     @Default([]) List<Category> categories,

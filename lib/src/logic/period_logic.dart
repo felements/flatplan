@@ -6,7 +6,6 @@ import '../models/models.dart';
 Period createNextPeriod({
   required Period currentPeriod,
   required DateTime newStartDate,
-  required DateTime newEndDate,
   required String newName,
 }) {
   final newCategories = currentPeriod.categories.map((category) {
@@ -30,7 +29,7 @@ Period createNextPeriod({
     id: const Uuid().v4(),
     name: newName,
     startDate: newStartDate,
-    endDate: newEndDate,
+
     baseCurrency: currentPeriod.baseCurrency,
     lastModified: DateTime.now(),
     categories: newCategories,
@@ -41,7 +40,6 @@ Period createNextPeriod({
 /// previous periods or templates exist.
 Period createEmptyPeriod({
   required DateTime startDate,
-  required DateTime endDate,
   required String name,
   String baseCurrency = 'EUR',
 }) {
@@ -49,7 +47,7 @@ Period createEmptyPeriod({
     id: const Uuid().v4(),
     name: name,
     startDate: startDate,
-    endDate: endDate,
+
     baseCurrency: baseCurrency,
     lastModified: DateTime.now(),
     categories: const [],

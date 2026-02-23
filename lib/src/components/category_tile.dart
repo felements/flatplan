@@ -115,13 +115,13 @@ class _CategoryTileState extends State<CategoryTile> {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight:
                                 (showCriticalExpense || showSuccessIncome)
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
+                                ? FontWeight.bold
+                                : FontWeight.w500,
                             color: showCriticalExpense
                                 ? colorScheme.error
                                 : (showSuccessIncome
-                                    ? const Color(0xFF6ABF69)
-                                    : colorScheme.onSurfaceVariant),
+                                      ? const Color(0xFF6ABF69)
+                                      : colorScheme.onSurfaceVariant),
                           ),
                         ),
                       ],

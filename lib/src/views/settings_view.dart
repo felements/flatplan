@@ -309,17 +309,15 @@ class SettingsView extends HookConsumerWidget {
     final currencyController = TextEditingController(text: 'EUR');
 
     DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime(
-      startDate.year,
-      startDate.month + 1,
-      startDate.day,
-    ).subtract(const Duration(days: 1));
 
     await showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
+
             return AlertDialog(
               title: const Text('Create First Period'),
               content: Column(
@@ -360,23 +358,22 @@ class SettingsView extends HookConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('End Date: '),
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: endDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() => endDate = picked);
-                          }
-                        },
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
                         child: Text(
-                          '${endDate.year}-${endDate.month}-${endDate.day}',
+                          'End date is computed automatically: 30 days from start, '
+                          'or until the next period begins.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -398,7 +395,6 @@ class SettingsView extends HookConsumerWidget {
 
                     final newPeriod = createEmptyPeriod(
                       startDate: startDate,
-                      endDate: endDate,
                       name: newName,
                       baseCurrency: currency.isEmpty ? 'EUR' : currency,
                     );
@@ -433,14 +429,16 @@ class SettingsView extends HookConsumerWidget {
   ) async {
     final nameController = TextEditingController();
 
-    DateTime startDate = currentPeriod.endDate.add(const Duration(days: 1));
-    DateTime endDate = DateTime(startDate.year, startDate.month + 1, 0);
+    DateTime startDate = DateTime.now();
 
     await showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
+
             return AlertDialog(
               title: const Text('Generate Next Period'),
               content: Column(
@@ -474,23 +472,22 @@ class SettingsView extends HookConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('End Date: '),
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: endDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() => endDate = picked);
-                          }
-                        },
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
                         child: Text(
-                          '${endDate.year}-${endDate.month}-${endDate.day}',
+                          'The previous period will automatically end '
+                          'the day before this start date.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -510,7 +507,6 @@ class SettingsView extends HookConsumerWidget {
                     final newPeriod = createNextPeriod(
                       currentPeriod: currentPeriod,
                       newStartDate: startDate,
-                      newEndDate: endDate,
                       newName: newName,
                     );
 

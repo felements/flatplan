@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Period {
 
- String get id; String get name; DateTime get startDate; DateTime get endDate; String get baseCurrency; DateTime get lastModified; List<Category> get categories;
+ String get id; String get name; DateTime get startDate; String get baseCurrency; DateTime get lastModified; List<Category> get categories;
 /// Create a copy of Period
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $PeriodCopyWith<Period> get copyWith => _$PeriodCopyWithImpl<Period>(this as Per
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Period&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.baseCurrency, baseCurrency) || other.baseCurrency == baseCurrency)&&(identical(other.lastModified, lastModified) || other.lastModified == lastModified)&&const DeepCollectionEquality().equals(other.categories, categories));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Period&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.baseCurrency, baseCurrency) || other.baseCurrency == baseCurrency)&&(identical(other.lastModified, lastModified) || other.lastModified == lastModified)&&const DeepCollectionEquality().equals(other.categories, categories));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,startDate,endDate,baseCurrency,lastModified,const DeepCollectionEquality().hash(categories));
+int get hashCode => Object.hash(runtimeType,id,name,startDate,baseCurrency,lastModified,const DeepCollectionEquality().hash(categories));
 
 @override
 String toString() {
-  return 'Period(id: $id, name: $name, startDate: $startDate, endDate: $endDate, baseCurrency: $baseCurrency, lastModified: $lastModified, categories: $categories)';
+  return 'Period(id: $id, name: $name, startDate: $startDate, baseCurrency: $baseCurrency, lastModified: $lastModified, categories: $categories)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $PeriodCopyWith<$Res>  {
   factory $PeriodCopyWith(Period value, $Res Function(Period) _then) = _$PeriodCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, DateTime startDate, DateTime endDate, String baseCurrency, DateTime lastModified, List<Category> categories
+ String id, String name, DateTime startDate, String baseCurrency, DateTime lastModified, List<Category> categories
 });
 
 
@@ -65,12 +65,11 @@ class _$PeriodCopyWithImpl<$Res>
 
 /// Create a copy of Period
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? startDate = null,Object? endDate = null,Object? baseCurrency = null,Object? lastModified = null,Object? categories = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? startDate = null,Object? baseCurrency = null,Object? lastModified = null,Object? categories = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
-as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
 as DateTime,baseCurrency: null == baseCurrency ? _self.baseCurrency : baseCurrency // ignore: cast_nullable_to_non_nullable
 as String,lastModified: null == lastModified ? _self.lastModified : lastModified // ignore: cast_nullable_to_non_nullable
 as DateTime,categories: null == categories ? _self.categories : categories // ignore: cast_nullable_to_non_nullable
@@ -156,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  DateTime startDate,  DateTime endDate,  String baseCurrency,  DateTime lastModified,  List<Category> categories)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  DateTime startDate,  String baseCurrency,  DateTime lastModified,  List<Category> categories)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Period() when $default != null:
-return $default(_that.id,_that.name,_that.startDate,_that.endDate,_that.baseCurrency,_that.lastModified,_that.categories);case _:
+return $default(_that.id,_that.name,_that.startDate,_that.baseCurrency,_that.lastModified,_that.categories);case _:
   return orElse();
 
 }
@@ -177,10 +176,10 @@ return $default(_that.id,_that.name,_that.startDate,_that.endDate,_that.baseCurr
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  DateTime startDate,  DateTime endDate,  String baseCurrency,  DateTime lastModified,  List<Category> categories)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  DateTime startDate,  String baseCurrency,  DateTime lastModified,  List<Category> categories)  $default,) {final _that = this;
 switch (_that) {
 case _Period():
-return $default(_that.id,_that.name,_that.startDate,_that.endDate,_that.baseCurrency,_that.lastModified,_that.categories);}
+return $default(_that.id,_that.name,_that.startDate,_that.baseCurrency,_that.lastModified,_that.categories);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -194,10 +193,10 @@ return $default(_that.id,_that.name,_that.startDate,_that.endDate,_that.baseCurr
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  DateTime startDate,  DateTime endDate,  String baseCurrency,  DateTime lastModified,  List<Category> categories)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  DateTime startDate,  String baseCurrency,  DateTime lastModified,  List<Category> categories)?  $default,) {final _that = this;
 switch (_that) {
 case _Period() when $default != null:
-return $default(_that.id,_that.name,_that.startDate,_that.endDate,_that.baseCurrency,_that.lastModified,_that.categories);case _:
+return $default(_that.id,_that.name,_that.startDate,_that.baseCurrency,_that.lastModified,_that.categories);case _:
   return null;
 
 }
@@ -209,13 +208,12 @@ return $default(_that.id,_that.name,_that.startDate,_that.endDate,_that.baseCurr
 @JsonSerializable()
 
 class _Period implements Period {
-  const _Period({required this.id, required this.name, required this.startDate, required this.endDate, required this.baseCurrency, required this.lastModified, final  List<Category> categories = const []}): _categories = categories;
+  const _Period({required this.id, required this.name, required this.startDate, required this.baseCurrency, required this.lastModified, final  List<Category> categories = const []}): _categories = categories;
   factory _Period.fromJson(Map<String, dynamic> json) => _$PeriodFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  DateTime startDate;
-@override final  DateTime endDate;
 @override final  String baseCurrency;
 @override final  DateTime lastModified;
  final  List<Category> _categories;
@@ -239,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Period&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.baseCurrency, baseCurrency) || other.baseCurrency == baseCurrency)&&(identical(other.lastModified, lastModified) || other.lastModified == lastModified)&&const DeepCollectionEquality().equals(other._categories, _categories));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Period&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.baseCurrency, baseCurrency) || other.baseCurrency == baseCurrency)&&(identical(other.lastModified, lastModified) || other.lastModified == lastModified)&&const DeepCollectionEquality().equals(other._categories, _categories));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,startDate,endDate,baseCurrency,lastModified,const DeepCollectionEquality().hash(_categories));
+int get hashCode => Object.hash(runtimeType,id,name,startDate,baseCurrency,lastModified,const DeepCollectionEquality().hash(_categories));
 
 @override
 String toString() {
-  return 'Period(id: $id, name: $name, startDate: $startDate, endDate: $endDate, baseCurrency: $baseCurrency, lastModified: $lastModified, categories: $categories)';
+  return 'Period(id: $id, name: $name, startDate: $startDate, baseCurrency: $baseCurrency, lastModified: $lastModified, categories: $categories)';
 }
 
 
@@ -259,7 +257,7 @@ abstract mixin class _$PeriodCopyWith<$Res> implements $PeriodCopyWith<$Res> {
   factory _$PeriodCopyWith(_Period value, $Res Function(_Period) _then) = __$PeriodCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, DateTime startDate, DateTime endDate, String baseCurrency, DateTime lastModified, List<Category> categories
+ String id, String name, DateTime startDate, String baseCurrency, DateTime lastModified, List<Category> categories
 });
 
 
@@ -276,12 +274,11 @@ class __$PeriodCopyWithImpl<$Res>
 
 /// Create a copy of Period
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? startDate = null,Object? endDate = null,Object? baseCurrency = null,Object? lastModified = null,Object? categories = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? startDate = null,Object? baseCurrency = null,Object? lastModified = null,Object? categories = null,}) {
   return _then(_Period(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
-as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
 as DateTime,baseCurrency: null == baseCurrency ? _self.baseCurrency : baseCurrency // ignore: cast_nullable_to_non_nullable
 as String,lastModified: null == lastModified ? _self.lastModified : lastModified // ignore: cast_nullable_to_non_nullable
 as DateTime,categories: null == categories ? _self._categories : categories // ignore: cast_nullable_to_non_nullable

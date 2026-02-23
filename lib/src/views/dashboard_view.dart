@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../app_theme.dart';
 import '../components/category_tile.dart';
 import '../components/summary_card.dart';
+import '../logic/period_extensions.dart';
 import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
@@ -40,6 +41,7 @@ class DashboardView extends ConsumerWidget {
     }
 
     final statsAsync = ref.watch(periodStatsProvider);
+    final allPeriodsAsync = ref.watch(allPeriodsProvider);
 
     return Scaffold(
       body: periodAsync.when(
@@ -50,11 +52,15 @@ class DashboardView extends ConsumerWidget {
             return _buildEmptyState(context);
           }
 
+          // Compute the effective end date from the full list of periods.
+          final allPeriods = allPeriodsAsync.value ?? [];
+          final endDate = effectiveEndDate(period, allPeriods);
+
           // For current period use the existing stats provider;
           // for historical periods compute stats inline.
           final PeriodStats? stats;
           if (periodId != null) {
-            stats = _computeStats(period);
+            stats = _computeStats(period, endDate);
           } else {
             stats = statsAsync.value;
           }
@@ -75,6 +81,17 @@ class DashboardView extends ConsumerWidget {
           final incomeCategories = stats.categoryStats
               .where((c) => c.type == CategoryType.income)
               .toList();
+
+          final now = DateTime.now();
+          final isActivePeriod = now.isAfter(
+                period.startDate.subtract(const Duration(days: 1)),
+              ) &&
+              now.isBefore(endDate.add(const Duration(days: 1)));
+          final periodLengthDays =
+              endDate.difference(period.startDate).inDays + 1;
+          final daysRemainingLabel = isActivePeriod
+              ? '${endDate.difference(now).inDays + 1} days remaining'
+              : '$periodLengthDays days';
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
@@ -105,7 +122,7 @@ class DashboardView extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${DateFormat('MMM d').format(period.startDate)} - ${DateFormat('MMM d').format(period.endDate)} • ${period.endDate.difference(DateTime.now()).inDays + 1} days remaining',
+                            '${DateFormat('MMM d').format(period.startDate)} – ${DateFormat('MMM d').format(endDate)} • $daysRemainingLabel',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -347,7 +364,7 @@ class DashboardView extends ConsumerWidget {
   }
 
   /// Computes stats directly from a period (for historical periods).
-  PeriodStats _computeStats(Period period) {
+  PeriodStats _computeStats(Period period, DateTime endDate) {
     double totalMandatoryBudget = 0;
     double totalMandatorySpent = 0;
     double totalOptionalBudget = 0;

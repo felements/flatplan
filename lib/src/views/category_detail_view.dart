@@ -175,7 +175,8 @@ class CategoryDetailView extends HookConsumerWidget {
                                     final isSuccess =
                                         isIncome && stats.isOverBudget;
                                     final isCriticalExpense =
-                                        !isIncome && stats.heatPercentage >= 1.05;
+                                        !isIncome &&
+                                        stats.heatPercentage >= 1.05;
 
                                     final badgeBgColor = isSuccess
                                         ? const Color(
