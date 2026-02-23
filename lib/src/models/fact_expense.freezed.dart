@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FactExpense {
 
- String get id; double get amount; String? get description; DateTime get timestamp;
+ String get id; double get amount; String? get description; DateTime get timestamp; String? get linkedPlannedExpenseId;
 /// Create a copy of FactExpense
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $FactExpenseCopyWith<FactExpense> get copyWith => _$FactExpenseCopyWithImpl<Fact
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FactExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FactExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.linkedPlannedExpenseId, linkedPlannedExpenseId) || other.linkedPlannedExpenseId == linkedPlannedExpenseId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,amount,description,timestamp);
+int get hashCode => Object.hash(runtimeType,id,amount,description,timestamp,linkedPlannedExpenseId);
 
 @override
 String toString() {
-  return 'FactExpense(id: $id, amount: $amount, description: $description, timestamp: $timestamp)';
+  return 'FactExpense(id: $id, amount: $amount, description: $description, timestamp: $timestamp, linkedPlannedExpenseId: $linkedPlannedExpenseId)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $FactExpenseCopyWith<$Res>  {
   factory $FactExpenseCopyWith(FactExpense value, $Res Function(FactExpense) _then) = _$FactExpenseCopyWithImpl;
 @useResult
 $Res call({
- String id, double amount, String? description, DateTime timestamp
+ String id, double amount, String? description, DateTime timestamp, String? linkedPlannedExpenseId
 });
 
 
@@ -65,13 +65,14 @@ class _$FactExpenseCopyWithImpl<$Res>
 
 /// Create a copy of FactExpense
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? amount = null,Object? description = freezed,Object? timestamp = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? amount = null,Object? description = freezed,Object? timestamp = null,Object? linkedPlannedExpenseId = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
 as double,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,linkedPlannedExpenseId: freezed == linkedPlannedExpenseId ? _self.linkedPlannedExpenseId : linkedPlannedExpenseId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -153,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  double amount,  String? description,  DateTime timestamp)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  double amount,  String? description,  DateTime timestamp,  String? linkedPlannedExpenseId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FactExpense() when $default != null:
-return $default(_that.id,_that.amount,_that.description,_that.timestamp);case _:
+return $default(_that.id,_that.amount,_that.description,_that.timestamp,_that.linkedPlannedExpenseId);case _:
   return orElse();
 
 }
@@ -174,10 +175,10 @@ return $default(_that.id,_that.amount,_that.description,_that.timestamp);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  double amount,  String? description,  DateTime timestamp)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  double amount,  String? description,  DateTime timestamp,  String? linkedPlannedExpenseId)  $default,) {final _that = this;
 switch (_that) {
 case _FactExpense():
-return $default(_that.id,_that.amount,_that.description,_that.timestamp);}
+return $default(_that.id,_that.amount,_that.description,_that.timestamp,_that.linkedPlannedExpenseId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -191,10 +192,10 @@ return $default(_that.id,_that.amount,_that.description,_that.timestamp);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  double amount,  String? description,  DateTime timestamp)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  double amount,  String? description,  DateTime timestamp,  String? linkedPlannedExpenseId)?  $default,) {final _that = this;
 switch (_that) {
 case _FactExpense() when $default != null:
-return $default(_that.id,_that.amount,_that.description,_that.timestamp);case _:
+return $default(_that.id,_that.amount,_that.description,_that.timestamp,_that.linkedPlannedExpenseId);case _:
   return null;
 
 }
@@ -206,13 +207,14 @@ return $default(_that.id,_that.amount,_that.description,_that.timestamp);case _:
 @JsonSerializable()
 
 class _FactExpense implements FactExpense {
-  const _FactExpense({required this.id, required this.amount, this.description, required this.timestamp});
+  const _FactExpense({required this.id, required this.amount, this.description, required this.timestamp, this.linkedPlannedExpenseId});
   factory _FactExpense.fromJson(Map<String, dynamic> json) => _$FactExpenseFromJson(json);
 
 @override final  String id;
 @override final  double amount;
 @override final  String? description;
 @override final  DateTime timestamp;
+@override final  String? linkedPlannedExpenseId;
 
 /// Create a copy of FactExpense
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +229,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FactExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FactExpense&&(identical(other.id, id) || other.id == id)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.linkedPlannedExpenseId, linkedPlannedExpenseId) || other.linkedPlannedExpenseId == linkedPlannedExpenseId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,amount,description,timestamp);
+int get hashCode => Object.hash(runtimeType,id,amount,description,timestamp,linkedPlannedExpenseId);
 
 @override
 String toString() {
-  return 'FactExpense(id: $id, amount: $amount, description: $description, timestamp: $timestamp)';
+  return 'FactExpense(id: $id, amount: $amount, description: $description, timestamp: $timestamp, linkedPlannedExpenseId: $linkedPlannedExpenseId)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class _$FactExpenseCopyWith<$Res> implements $FactExpenseCopyWith
   factory _$FactExpenseCopyWith(_FactExpense value, $Res Function(_FactExpense) _then) = __$FactExpenseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, double amount, String? description, DateTime timestamp
+ String id, double amount, String? description, DateTime timestamp, String? linkedPlannedExpenseId
 });
 
 
@@ -264,13 +266,14 @@ class __$FactExpenseCopyWithImpl<$Res>
 
 /// Create a copy of FactExpense
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? amount = null,Object? description = freezed,Object? timestamp = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? amount = null,Object? description = freezed,Object? timestamp = null,Object? linkedPlannedExpenseId = freezed,}) {
   return _then(_FactExpense(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
 as double,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,linkedPlannedExpenseId: freezed == linkedPlannedExpenseId ? _self.linkedPlannedExpenseId : linkedPlannedExpenseId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

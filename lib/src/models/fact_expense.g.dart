@@ -11,6 +11,7 @@ _FactExpense _$FactExpenseFromJson(Map<String, dynamic> json) => _FactExpense(
   amount: (json['amount'] as num).toDouble(),
   description: json['description'] as String?,
   timestamp: DateTime.parse(json['timestamp'] as String),
+  linkedPlannedExpenseId: json['linked_planned_expense_id'] as String?,
 );
 
 Map<String, dynamic> _$FactExpenseToJson(_FactExpense instance) =>
@@ -19,4 +20,5 @@ Map<String, dynamic> _$FactExpenseToJson(_FactExpense instance) =>
       'amount': instance.amount,
       'description': instance.description,
       'timestamp': instance.timestamp.toIso8601String(),
+      'linked_planned_expense_id': instance.linkedPlannedExpenseId,
     };

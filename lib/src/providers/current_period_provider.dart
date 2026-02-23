@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
 import 'all_periods_provider.dart';
@@ -58,21 +59,109 @@ class CurrentPeriod extends _$CurrentPeriod {
     updatePeriod(current.copyWith(categories: updatedCategories));
   }
 
-  /// Toggles the isCompleted flag of a specific planned expense
+  /// Toggles the isCompleted flag of a specific planned expense.
+  /// On check → creates a linked FactExpense.
+  /// On uncheck → removes the linked FactExpense.
   void togglePlannedExpense(String categoryId, String expenseId) {
     final current = state.value;
     if (current == null) return;
 
     final updatedCategories = current.categories.map((cat) {
       if (cat.id == categoryId) {
-        final updatedPlanned = cat.plannedExpenses.map((planned) {
-          if (planned.id == expenseId) {
-            return planned.copyWith(isCompleted: !planned.isCompleted);
+        final planned = cat.plannedExpenses
+            .where((p) => p.id == expenseId)
+            .firstOrNull;
+        if (planned == null) return cat;
+
+        final nowCompleted = !planned.isCompleted;
+
+        final updatedPlanned = cat.plannedExpenses.map((p) {
+          if (p.id == expenseId) {
+            return p.copyWith(isCompleted: nowCompleted);
           }
-          return planned;
+          return p;
         }).toList();
 
+        List<FactExpense> updatedFacts;
+        if (nowCompleted) {
+          // Create a linked fact expense
+          updatedFacts = [
+            ...cat.factExpenses,
+            FactExpense(
+              id: const Uuid().v4(),
+              amount: planned.amount,
+              description: planned.description,
+              timestamp: DateTime.now(),
+              linkedPlannedExpenseId: planned.id,
+            ),
+          ];
+        } else {
+          // Remove the linked fact expense
+          updatedFacts = cat.factExpenses
+              .where((f) => f.linkedPlannedExpenseId != planned.id)
+              .toList();
+        }
+
+        return cat.copyWith(
+          plannedExpenses: updatedPlanned,
+          factExpenses: updatedFacts,
+        );
+      }
+      return cat;
+    }).toList();
+
+    updatePeriod(current.copyWith(categories: updatedCategories));
+  }
+
+  /// Adds a planned expense to a specific category.
+  void addPlannedExpense(String categoryId, PlannedExpense expense) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedCategories = current.categories.map((cat) {
+      if (cat.id == categoryId) {
+        return cat.copyWith(plannedExpenses: [...cat.plannedExpenses, expense]);
+      }
+      return cat;
+    }).toList();
+
+    updatePeriod(current.copyWith(categories: updatedCategories));
+  }
+
+  /// Replaces a planned expense by matching its `id` in the given category.
+  void updatePlannedExpense(String categoryId, PlannedExpense updated) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedCategories = current.categories.map((cat) {
+      if (cat.id == categoryId) {
+        final updatedPlanned = cat.plannedExpenses.map((p) {
+          return p.id == updated.id ? updated : p;
+        }).toList();
         return cat.copyWith(plannedExpenses: updatedPlanned);
+      }
+      return cat;
+    }).toList();
+
+    updatePeriod(current.copyWith(categories: updatedCategories));
+  }
+
+  /// Removes a planned expense by `id` and cascade-deletes any linked fact
+  /// expense.
+  void removePlannedExpense(String categoryId, String expenseId) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedCategories = current.categories.map((cat) {
+      if (cat.id == categoryId) {
+        return cat.copyWith(
+          plannedExpenses: cat.plannedExpenses
+              .where((p) => p.id != expenseId)
+              .toList(),
+          factExpenses: cat.factExpenses
+              .where((f) => f.linkedPlannedExpenseId != expenseId)
+              .toList(),
+        );
       }
       return cat;
     }).toList();
@@ -115,16 +204,37 @@ class CurrentPeriod extends _$CurrentPeriod {
   }
 
   /// Removes a fact expense by `expenseId` from the given category.
+  /// If the removed fact has a `linkedPlannedExpenseId`, the corresponding
+  /// planned expense is unchecked.
   void removeFactExpense(String categoryId, String expenseId) {
     final current = state.value;
     if (current == null) return;
 
     final updatedCategories = current.categories.map((cat) {
       if (cat.id == categoryId) {
+        final removedFact = cat.factExpenses
+            .where((e) => e.id == expenseId)
+            .firstOrNull;
+
+        final updatedFacts = cat.factExpenses
+            .where((e) => e.id != expenseId)
+            .toList();
+
+        // If the removed fact was linked to a planned expense, uncheck it.
+        var updatedPlanned = cat.plannedExpenses;
+        if (removedFact?.linkedPlannedExpenseId != null) {
+          final linkedId = removedFact!.linkedPlannedExpenseId;
+          updatedPlanned = cat.plannedExpenses.map((p) {
+            if (p.id == linkedId) {
+              return p.copyWith(isCompleted: false);
+            }
+            return p;
+          }).toList();
+        }
+
         return cat.copyWith(
-          factExpenses: cat.factExpenses
-              .where((e) => e.id != expenseId)
-              .toList(),
+          factExpenses: updatedFacts,
+          plannedExpenses: updatedPlanned,
         );
       }
       return cat;

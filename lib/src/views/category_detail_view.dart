@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../components/category_dialog.dart';
+import '../components/planned_expense_dialog.dart';
 import '../models/models.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
@@ -300,7 +301,12 @@ class CategoryDetailView extends HookConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.all(20),
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  20,
+                                  12,
+                                  20,
+                                ),
                                 child: Row(
                                   children: [
                                     Icon(
@@ -309,15 +315,38 @@ class CategoryDetailView extends HookConsumerWidget {
                                       color: colorScheme.primary,
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      category.type == CategoryType.income
-                                          ? 'Planned Incomes'
-                                          : 'Planned Expenses',
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: colorScheme.onSurface,
+                                    Expanded(
+                                      child: Text(
+                                        category.type == CategoryType.income
+                                            ? 'Planned Incomes'
+                                            : 'Planned Expenses',
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                      ),
+                                    ),
+                                    Material(
+                                      color: colorScheme.surfaceContainerHigh,
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: InkWell(
+                                        onTap: () => showPlannedExpenseDialog(
+                                          context,
+                                          ref,
+                                          categoryId,
+                                          null,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(6),
+                                          child: Icon(
+                                            Icons.add_rounded,
+                                            size: 18,
+                                            color: colorScheme.primary,
                                           ),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -345,23 +374,245 @@ class CategoryDetailView extends HookConsumerWidget {
                                         itemBuilder: (context, index) {
                                           final planned =
                                               category.plannedExpenses[index];
-                                          return CheckboxListTile(
-                                            title: Text(planned.description),
-                                            subtitle: Text(
-                                              format.format(planned.amount),
+                                          final periodicityLabel =
+                                              formatDueDate(planned.dueDate);
+
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 2,
                                             ),
-                                            value: planned.isCompleted,
-                                            onChanged: (val) {
-                                              ref
-                                                  .read(
-                                                    currentPeriodProvider
-                                                        .notifier,
-                                                  )
-                                                  .togglePlannedExpense(
-                                                    categoryId,
-                                                    planned.id,
-                                                  );
-                                            },
+                                            child: Material(
+                                              color: planned.isCompleted
+                                                  ? colorScheme.primary
+                                                        .withValues(alpha: 0.06)
+                                                  : Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                onTap: () {
+                                                  ref
+                                                      .read(
+                                                        currentPeriodProvider
+                                                            .notifier,
+                                                      )
+                                                      .togglePlannedExpense(
+                                                        categoryId,
+                                                        planned.id,
+                                                      );
+                                                },
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 6,
+                                                      ),
+                                                  child: Row(
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 24,
+                                                        height: 24,
+                                                        child: Checkbox(
+                                                          value: planned
+                                                              .isCompleted,
+                                                          onChanged: (_) {
+                                                            ref
+                                                                .read(
+                                                                  currentPeriodProvider
+                                                                      .notifier,
+                                                                )
+                                                                .togglePlannedExpense(
+                                                                  categoryId,
+                                                                  planned.id,
+                                                                );
+                                                          },
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              planned
+                                                                  .description,
+                                                              style: theme
+                                                                  .textTheme
+                                                                  .bodyMedium
+                                                                  ?.copyWith(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
+                                                                    color: colorScheme
+                                                                        .onSurface,
+                                                                    decoration:
+                                                                        planned
+                                                                            .isCompleted
+                                                                        ? TextDecoration
+                                                                              .lineThrough
+                                                                        : null,
+                                                                  ),
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 2,
+                                                            ),
+                                                            Row(
+                                                              children: [
+                                                                Text(
+                                                                  format.format(
+                                                                    planned
+                                                                        .amount,
+                                                                  ),
+                                                                  style: theme
+                                                                      .textTheme
+                                                                      .bodySmall
+                                                                      ?.copyWith(
+                                                                        color: colorScheme
+                                                                            .onSurfaceVariant,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                      ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Icon(
+                                                                  Icons
+                                                                      .schedule_rounded,
+                                                                  size: 12,
+                                                                  color: colorScheme
+                                                                      .onSurfaceVariant
+                                                                      .withValues(
+                                                                        alpha:
+                                                                            0.7,
+                                                                      ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 3,
+                                                                ),
+                                                                Flexible(
+                                                                  child: Text(
+                                                                    periodicityLabel,
+                                                                    style: theme
+                                                                        .textTheme
+                                                                        .bodySmall
+                                                                        ?.copyWith(
+                                                                          color: colorScheme.onSurfaceVariant.withValues(
+                                                                            alpha:
+                                                                                0.7,
+                                                                          ),
+                                                                        ),
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      // Edit button
+                                                      IconButton(
+                                                        icon: Icon(
+                                                          Icons.edit_rounded,
+                                                          size: 16,
+                                                          color: colorScheme
+                                                              .onSurfaceVariant,
+                                                        ),
+                                                        tooltip: 'Edit',
+                                                        constraints:
+                                                            const BoxConstraints(
+                                                              minWidth: 32,
+                                                              minHeight: 32,
+                                                            ),
+                                                        padding:
+                                                            EdgeInsets.zero,
+                                                        onPressed: () =>
+                                                            showPlannedExpenseDialog(
+                                                              context,
+                                                              ref,
+                                                              categoryId,
+                                                              planned,
+                                                            ),
+                                                      ),
+                                                      // Remove button
+                                                      IconButton(
+                                                        icon: Icon(
+                                                          Icons.close_rounded,
+                                                          size: 16,
+                                                          color: colorScheme
+                                                              .error
+                                                              .withValues(
+                                                                alpha: 0.7,
+                                                              ),
+                                                        ),
+                                                        tooltip: 'Remove',
+                                                        constraints:
+                                                            const BoxConstraints(
+                                                              minWidth: 32,
+                                                              minHeight: 32,
+                                                            ),
+                                                        padding:
+                                                            EdgeInsets.zero,
+                                                        onPressed: () async {
+                                                          final confirmed = await showDialog<bool>(
+                                                            context: context,
+                                                            builder: (ctx) => AlertDialog(
+                                                              title: const Text(
+                                                                'Remove Planned Expense?',
+                                                              ),
+                                                              content: Text(
+                                                                'This will remove "${planned.description}" and any linked actual record.',
+                                                              ),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.pop(
+                                                                        ctx,
+                                                                        false,
+                                                                      ),
+                                                                  child:
+                                                                      const Text(
+                                                                        'Cancel',
+                                                                      ),
+                                                                ),
+                                                                ElevatedButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.pop(
+                                                                        ctx,
+                                                                        true,
+                                                                      ),
+                                                                  child:
+                                                                      const Text(
+                                                                        'Remove',
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          );
+                                                          if (confirmed ==
+                                                              true) {
+                                                            ref
+                                                                .read(
+                                                                  currentPeriodProvider
+                                                                      .notifier,
+                                                                )
+                                                                .removePlannedExpense(
+                                                                  categoryId,
+                                                                  planned.id,
+                                                                );
+                                                          }
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                           );
                                         },
                                       ),

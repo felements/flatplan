@@ -10,6 +10,7 @@ sealed class FactExpense with _$FactExpense {
     required double amount,
     String? description,
     required DateTime timestamp,
+    String? linkedPlannedExpenseId,
   }) = _FactExpense;
 
   factory FactExpense.fromJson(Map<String, dynamic> json) =>
