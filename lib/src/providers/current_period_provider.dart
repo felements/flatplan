@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../logic/period_extensions.dart';
 import '../models/models.dart';
 import 'all_periods_provider.dart';
 import 'repository_provider.dart';
@@ -21,8 +22,26 @@ class CurrentPeriod extends _$CurrentPeriod {
       return null; // Open setup or empty state
     }
 
-    // Return the most recently modified period as the active one
-    periods.sort((a, b) => b.lastModified.compareTo(a.lastModified));
+    // Find the period whose date range contains today.
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (final period in periods) {
+      final start = DateTime(
+        period.startDate.year,
+        period.startDate.month,
+        period.startDate.day,
+      );
+      final end = effectiveEndDate(period, periods);
+      final endDay = DateTime(end.year, end.month, end.day);
+
+      if (!today.isBefore(start) && !today.isAfter(endDay)) {
+        return period;
+      }
+    }
+
+    // Fallback: no period spans today — pick the latest by start date.
+    periods.sort((a, b) => b.startDate.compareTo(a.startDate));
     return periods.first;
   }
 
