@@ -56,8 +56,10 @@ void showCategoryDialog(
                     const SizedBox(height: 12),
                     TextField(
                       controller: limitCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Spending Limit (optional)',
+                      decoration: InputDecoration(
+                        labelText: type == CategoryType.income
+                            ? 'Expected Amount (optional)'
+                            : 'Spending Limit (optional)',
                         hintText: 'e.g. 500.00',
                       ),
                       keyboardType: const TextInputType.numberWithOptions(

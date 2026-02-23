@@ -125,7 +125,9 @@ class CategoryDetailView extends HookConsumerWidget {
                             if (catStats != null) ...[
                               const SizedBox(height: 4),
                               Text(
-                                'Spent: ${format.format(catStats.totalSpent)} / Limit: ${format.format(catStats.limit)}',
+                                category.type == CategoryType.income
+                                    ? 'Received: ${format.format(catStats.totalSpent)} / Expected: ${format.format(catStats.limit)}'
+                                    : 'Spent: ${format.format(catStats.totalSpent)} / Limit: ${format.format(catStats.limit)}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -213,7 +215,9 @@ class CategoryDetailView extends HookConsumerWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Planned Expenses',
+                                      category.type == CategoryType.income
+                                          ? 'Planned Incomes'
+                                          : 'Planned Expenses',
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.w600,
@@ -227,7 +231,9 @@ class CategoryDetailView extends HookConsumerWidget {
                                 child: category.plannedExpenses.isEmpty
                                     ? Center(
                                         child: Text(
-                                          'No planned expenses.',
+                                          category.type == CategoryType.income
+                                              ? 'No planned incomes.'
+                                              : 'No planned expenses.',
                                           style: theme.textTheme.bodyMedium
                                               ?.copyWith(
                                                 color: colorScheme
@@ -288,7 +294,9 @@ class CategoryDetailView extends HookConsumerWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Actual Spending',
+                                      category.type == CategoryType.income
+                                          ? 'Actual Income'
+                                          : 'Actual Spending',
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.w600,
@@ -303,7 +311,9 @@ class CategoryDetailView extends HookConsumerWidget {
                               child: category.factExpenses.isEmpty
                                   ? Center(
                                       child: Text(
-                                        'No actual spending yet.',
+                                        category.type == CategoryType.income
+                                            ? 'No actual income yet.'
+                                            : 'No actual spending yet.',
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
                                               color:
@@ -343,7 +353,11 @@ class CategoryDetailView extends HookConsumerWidget {
                                               color: colorScheme.error
                                                   .withValues(alpha: 0.7),
                                             ),
-                                            tooltip: 'Remove expense',
+                                            tooltip:
+                                                category.type ==
+                                                    CategoryType.income
+                                                ? 'Remove income'
+                                                : 'Remove expense',
                                             onPressed: () {
                                               ref
                                                   .read(

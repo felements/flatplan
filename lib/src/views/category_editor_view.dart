@@ -144,7 +144,7 @@ class CategoryEditorView extends ConsumerWidget {
           title: const Text('Delete Category'),
           content: Text(
             'Are you sure you want to delete "${category.name}"? '
-            'All planned and recorded expenses in this category will be lost.',
+            'All planned and recorded ${category.type == CategoryType.income ? "incomes" : "expenses"} in this category will be lost.',
           ),
           actions: [
             TextButton(
@@ -289,7 +289,7 @@ class _CategoryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${category.limit!.toStringAsFixed(0)} limit',
+                      '${category.limit!.toStringAsFixed(0)} ${category.type == CategoryType.income ? "expected" : "limit"}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.w600,
@@ -315,7 +315,7 @@ class _CategoryCard extends StatelessWidget {
                 // Planned expense count
                 Tooltip(
                   message:
-                      '${category.plannedExpenses.length} planned expense(s)',
+                      '${category.plannedExpenses.length} planned ${category.type == CategoryType.income ? "income(s)" : "expense(s)"}',
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
