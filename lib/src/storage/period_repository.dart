@@ -47,7 +47,14 @@ class PeriodRepository {
   /// Saves a period to a local YAML file.
   Future<void> savePeriod(Period period) async {
     final dir = await _getStorageDirectory();
-    final file = File('${dir.path}/${period.id}.yaml');
+    final filename = _generateFilename(period);
+    final file = File('${dir.path}/$filename');
+
+    // Remove legacy file if it exists to avoid duplicates
+    final legacyFile = File('${dir.path}/${period.id}.yaml');
+    if (await legacyFile.exists() && legacyFile.path != file.path) {
+      await legacyFile.delete();
+    }
 
     final jsonMap = period.toJson();
     final sortedMap = _sortKeysAlphabetically(jsonMap);
@@ -55,6 +62,25 @@ class PeriodRepository {
     // json2yaml formatting generates clean YAML output.
     final yamlString = json2yaml(sortedMap, yamlStyle: YamlStyle.generic);
     await file.writeAsString(yamlString);
+  }
+
+  String _generateFilename(Period period) {
+    var sanitizedName = period.name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+
+    if (sanitizedName.isEmpty) {
+      sanitizedName = period.id;
+    }
+
+    if (sanitizedName.contains('template')) {
+      return '$sanitizedName.yaml';
+    } else {
+      final yyyy = period.startDate.year.toString();
+      final mm = period.startDate.month.toString().padLeft(2, '0');
+      return '$yyyy-$mm-$sanitizedName.yaml';
+    }
   }
 
   /// recursively converts YamlMap/YamlList to standard Dart Map/List
