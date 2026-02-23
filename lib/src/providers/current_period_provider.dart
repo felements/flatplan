@@ -112,6 +112,25 @@ class CurrentPeriod extends _$CurrentPeriod {
     updatePeriod(current.copyWith(categories: updatedCategories));
   }
 
+  /// Removes a fact expense by `expenseId` from the given category.
+  void removeFactExpense(String categoryId, String expenseId) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedCategories = current.categories.map((cat) {
+      if (cat.id == categoryId) {
+        return cat.copyWith(
+          factExpenses: cat.factExpenses
+              .where((e) => e.id != expenseId)
+              .toList(),
+        );
+      }
+      return cat;
+    }).toList();
+
+    updatePeriod(current.copyWith(categories: updatedCategories));
+  }
+
   void _debouncedSave(Period period) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
