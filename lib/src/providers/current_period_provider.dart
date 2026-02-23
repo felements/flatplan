@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/models.dart';
+import 'all_periods_provider.dart';
 import 'repository_provider.dart';
 
 part 'current_period_provider.g.dart';
@@ -30,6 +31,7 @@ class CurrentPeriod extends _$CurrentPeriod {
     state = AsyncData(newPeriod);
     final repo = ref.read(periodRepositoryProvider);
     await repo.savePeriod(newPeriod);
+    ref.invalidate(allPeriodsProvider);
   }
 
   /// Mutates the state and triggers a debounced save.

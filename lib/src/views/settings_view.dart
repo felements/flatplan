@@ -512,7 +512,7 @@ class SettingsView extends HookConsumerWidget {
 
                     ref
                         .read(currentPeriodProvider.notifier)
-                        .updatePeriod(newPeriod);
+                        .setPeriod(newPeriod);
 
                     Navigator.pop(ctx);
 
