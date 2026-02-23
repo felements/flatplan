@@ -38,6 +38,13 @@ GoRouter appRouter(Ref ref) {
                 builder: (context, state) => const DashboardView(),
                 routes: [
                   GoRoute(
+                    path: 'period/:periodId',
+                    builder: (context, state) {
+                      final periodId = state.pathParameters['periodId']!;
+                      return DashboardView(periodId: periodId);
+                    },
+                  ),
+                  GoRoute(
                     path: 'category/:id',
                     builder: (context, state) {
                       final id = state.pathParameters['id']!;

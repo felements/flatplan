@@ -6,23 +6,43 @@ import 'package:intl/intl.dart';
 import '../app_theme.dart';
 import '../components/category_tile.dart';
 import '../components/summary_card.dart';
+import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
-import '../models/category_type.dart';
+import '../models/models.dart';
 
 /// The main dashboard showing period summary and category breakdown.
 class DashboardView extends ConsumerWidget {
-  const DashboardView({super.key});
+  /// When non-null, displays a historical period rather than the current one.
+  final String? periodId;
+
+  const DashboardView({super.key, this.periodId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final currentPeriodAsync = ref.watch(currentPeriodProvider);
+
+    // When viewing a historical period, load it from allPeriodsProvider
+    // instead of currentPeriodProvider.
+    final AsyncValue<Period?> periodAsync;
+    if (periodId != null) {
+      periodAsync = ref
+          .watch(allPeriodsProvider)
+          .whenData(
+            (periods) => periods.cast<Period?>().firstWhere(
+              (p) => p!.id == periodId,
+              orElse: () => null,
+            ),
+          );
+    } else {
+      periodAsync = ref.watch(currentPeriodProvider);
+    }
+
     final statsAsync = ref.watch(periodStatsProvider);
 
     return Scaffold(
-      body: currentPeriodAsync.when(
+      body: periodAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (period) {
@@ -30,7 +50,14 @@ class DashboardView extends ConsumerWidget {
             return _buildEmptyState(context);
           }
 
-          final stats = statsAsync.value;
+          // For current period use the existing stats provider;
+          // for historical periods compute stats inline.
+          final PeriodStats? stats;
+          if (periodId != null) {
+            stats = _computeStats(period);
+          } else {
+            stats = statsAsync.value;
+          }
           if (stats == null) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -316,6 +343,70 @@ class DashboardView extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Computes stats directly from a period (for historical periods).
+  PeriodStats _computeStats(Period period) {
+    double totalMandatoryBudget = 0;
+    double totalMandatorySpent = 0;
+    double totalOptionalBudget = 0;
+    double totalOptionalSpent = 0;
+    final categoryStatsList = <CategoryStats>[];
+
+    for (final category in period.categories) {
+      final spent = category.factExpenses.fold<double>(
+        0,
+        (prev, e) => prev + e.amount,
+      );
+      final planned = category.plannedExpenses.fold<double>(
+        0,
+        (prev, e) => prev + e.amount,
+      );
+      final limit = category.limit ?? planned;
+      final remaining = limit - spent;
+      final heat = limit > 0 ? (spent / limit) : 0.0;
+
+      if (category.type == CategoryType.mandatoryExpense) {
+        totalMandatoryBudget += limit;
+        totalMandatorySpent += spent;
+      } else if (category.type == CategoryType.optionalExpense) {
+        totalOptionalBudget += limit;
+        totalOptionalSpent += spent;
+      }
+
+      categoryStatsList.add(
+        CategoryStats(
+          categoryId: category.id,
+          name: category.name,
+          type: category.type,
+          limit: limit,
+          totalSpent: spent,
+          totalPlanned: planned,
+          remaining: remaining,
+          heatPercentage: heat,
+          isOverBudget: spent > limit,
+          isDailyAllowance: category.isDailyAllowance,
+        ),
+      );
+    }
+
+    categoryStatsList.sort(
+      (a, b) => b.heatPercentage.compareTo(a.heatPercentage),
+    );
+
+    final totalBudget = totalMandatoryBudget + totalOptionalBudget;
+    final totalSpent = totalMandatorySpent + totalOptionalSpent;
+
+    return PeriodStats(
+      totalMandatoryBudget: totalMandatoryBudget,
+      totalMandatorySpent: totalMandatorySpent,
+      totalOptionalBudget: totalOptionalBudget,
+      totalOptionalSpent: totalOptionalSpent,
+      totalBudget: totalBudget,
+      totalSpent: totalSpent,
+      overallRemaining: totalBudget - totalSpent,
+      categoryStats: categoryStatsList,
     );
   }
 }
