@@ -23,11 +23,3 @@ _DayOfMonth _$DayOfMonthFromJson(Map<String, dynamic> json) => _DayOfMonth(
 
 Map<String, dynamic> _$DayOfMonthToJson(_DayOfMonth instance) =>
     <String, dynamic>{'day': instance.day, 'type': instance.$type};
-
-_DayOfWeek _$DayOfWeekFromJson(Map<String, dynamic> json) => _DayOfWeek(
-  weekday: (json['weekday'] as num).toInt(),
-  $type: json['type'] as String?,
-);
-
-Map<String, dynamic> _$DayOfWeekToJson(_DayOfWeek instance) =>
-    <String, dynamic>{'weekday': instance.weekday, 'type': instance.$type};

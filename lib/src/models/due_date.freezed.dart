@@ -23,10 +23,6 @@ DueDate _$DueDateFromJson(
           return _DayOfMonth.fromJson(
             json
           );
-                case 'day_of_week':
-          return _DayOfWeek.fromJson(
-            json
-          );
         
           default:
             throw CheckedFromJsonException(
@@ -85,13 +81,12 @@ extension DueDatePatterns on DueDate {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Exact value)?  exact,TResult Function( _DayOfMonth value)?  dayOfMonth,TResult Function( _DayOfWeek value)?  dayOfWeek,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Exact value)?  exact,TResult Function( _DayOfMonth value)?  dayOfMonth,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _Exact() when exact != null:
 return exact(_that);case _DayOfMonth() when dayOfMonth != null:
-return dayOfMonth(_that);case _DayOfWeek() when dayOfWeek != null:
-return dayOfWeek(_that);case _:
+return dayOfMonth(_that);case _:
   return orElse();
 
 }
@@ -109,13 +104,12 @@ return dayOfWeek(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Exact value)  exact,required TResult Function( _DayOfMonth value)  dayOfMonth,required TResult Function( _DayOfWeek value)  dayOfWeek,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Exact value)  exact,required TResult Function( _DayOfMonth value)  dayOfMonth,}){
 final _that = this;
 switch (_that) {
 case _Exact():
 return exact(_that);case _DayOfMonth():
-return dayOfMonth(_that);case _DayOfWeek():
-return dayOfWeek(_that);}
+return dayOfMonth(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -129,13 +123,12 @@ return dayOfWeek(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Exact value)?  exact,TResult? Function( _DayOfMonth value)?  dayOfMonth,TResult? Function( _DayOfWeek value)?  dayOfWeek,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Exact value)?  exact,TResult? Function( _DayOfMonth value)?  dayOfMonth,}){
 final _that = this;
 switch (_that) {
 case _Exact() when exact != null:
 return exact(_that);case _DayOfMonth() when dayOfMonth != null:
-return dayOfMonth(_that);case _DayOfWeek() when dayOfWeek != null:
-return dayOfWeek(_that);case _:
+return dayOfMonth(_that);case _:
   return null;
 
 }
@@ -152,12 +145,11 @@ return dayOfWeek(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( DateTime date)?  exact,TResult Function( int day)?  dayOfMonth,TResult Function( int weekday)?  dayOfWeek,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( DateTime date)?  exact,TResult Function( int day)?  dayOfMonth,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Exact() when exact != null:
 return exact(_that.date);case _DayOfMonth() when dayOfMonth != null:
-return dayOfMonth(_that.day);case _DayOfWeek() when dayOfWeek != null:
-return dayOfWeek(_that.weekday);case _:
+return dayOfMonth(_that.day);case _:
   return orElse();
 
 }
@@ -175,12 +167,11 @@ return dayOfWeek(_that.weekday);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( DateTime date)  exact,required TResult Function( int day)  dayOfMonth,required TResult Function( int weekday)  dayOfWeek,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( DateTime date)  exact,required TResult Function( int day)  dayOfMonth,}) {final _that = this;
 switch (_that) {
 case _Exact():
 return exact(_that.date);case _DayOfMonth():
-return dayOfMonth(_that.day);case _DayOfWeek():
-return dayOfWeek(_that.weekday);}
+return dayOfMonth(_that.day);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -194,12 +185,11 @@ return dayOfWeek(_that.weekday);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( DateTime date)?  exact,TResult? Function( int day)?  dayOfMonth,TResult? Function( int weekday)?  dayOfWeek,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( DateTime date)?  exact,TResult? Function( int day)?  dayOfMonth,}) {final _that = this;
 switch (_that) {
 case _Exact() when exact != null:
 return exact(_that.date);case _DayOfMonth() when dayOfMonth != null:
-return dayOfMonth(_that.day);case _DayOfWeek() when dayOfWeek != null:
-return dayOfWeek(_that.weekday);case _:
+return dayOfMonth(_that.day);case _:
   return null;
 
 }
@@ -346,79 +336,6 @@ class __$DayOfMonthCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? day = null,}) {
   return _then(_DayOfMonth(
 day: null == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
-as int,
-  ));
-}
-
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class _DayOfWeek implements DueDate {
-  const _DayOfWeek({required this.weekday, final  String? $type}): $type = $type ?? 'day_of_week';
-  factory _DayOfWeek.fromJson(Map<String, dynamic> json) => _$DayOfWeekFromJson(json);
-
- final  int weekday;
-
-@JsonKey(name: 'type')
-final String $type;
-
-
-/// Create a copy of DueDate
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$DayOfWeekCopyWith<_DayOfWeek> get copyWith => __$DayOfWeekCopyWithImpl<_DayOfWeek>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$DayOfWeekToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DayOfWeek&&(identical(other.weekday, weekday) || other.weekday == weekday));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,weekday);
-
-@override
-String toString() {
-  return 'DueDate.dayOfWeek(weekday: $weekday)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$DayOfWeekCopyWith<$Res> implements $DueDateCopyWith<$Res> {
-  factory _$DayOfWeekCopyWith(_DayOfWeek value, $Res Function(_DayOfWeek) _then) = __$DayOfWeekCopyWithImpl;
-@useResult
-$Res call({
- int weekday
-});
-
-
-
-
-}
-/// @nodoc
-class __$DayOfWeekCopyWithImpl<$Res>
-    implements _$DayOfWeekCopyWith<$Res> {
-  __$DayOfWeekCopyWithImpl(this._self, this._then);
-
-  final _DayOfWeek _self;
-  final $Res Function(_DayOfWeek) _then;
-
-/// Create a copy of DueDate
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? weekday = null,}) {
-  return _then(_DayOfWeek(
-weekday: null == weekday ? _self.weekday : weekday // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

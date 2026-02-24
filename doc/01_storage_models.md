@@ -38,7 +38,6 @@ An expense that is expected/scheduled but hasn't necessarily occurred yet.
 - `dueDate` (DueDate): When it should be paid. Can be:
   - Exact Date (e.g., 2024-01-15)
   - Day of Month (e.g., 15th of every month)
-  - Day of Week (e.g., every Monday)
 - `isCompleted` (bool): True if checked off (completed factually).
 
 ### 4. FactExpense

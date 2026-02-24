@@ -10,7 +10,6 @@ String formatDueDate(DueDate dueDate) {
   return dueDate.when(
     exact: (date) => '${date.day} ${_monthName(date.month)} ${date.year}',
     dayOfMonth: (day) => '${_ordinal(day)} of month',
-    dayOfWeek: (weekday) => 'Every ${_weekdayName(weekday)}',
   );
 }
 
@@ -33,20 +32,6 @@ String _monthName(int month) {
   return months[month];
 }
 
-String _weekdayName(int weekday) {
-  const days = [
-    '',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-  return days[weekday];
-}
-
 String _ordinal(int day) {
   if (day >= 11 && day <= 13) return '${day}th';
   return switch (day % 10) {
@@ -57,7 +42,7 @@ String _ordinal(int day) {
   };
 }
 
-enum _DueDateType { exact, dayOfMonth, dayOfWeek }
+enum _DueDateType { exact, dayOfMonth }
 
 /// Shows a dialog for adding or editing a planned expense.
 ///
@@ -79,7 +64,6 @@ void showPlannedExpenseDialog(
   _DueDateType dueDateType = _DueDateType.dayOfMonth;
   DateTime? exactDate;
   int dayOfMonth = 1;
-  int dayOfWeek = 1; // Monday
 
   if (existing != null) {
     existing.dueDate.when(
@@ -90,10 +74,6 @@ void showPlannedExpenseDialog(
       dayOfMonth: (day) {
         dueDateType = _DueDateType.dayOfMonth;
         dayOfMonth = day;
-      },
-      dayOfWeek: (weekday) {
-        dueDateType = _DueDateType.dayOfWeek;
-        dayOfWeek = weekday;
       },
     );
   }
@@ -154,10 +134,6 @@ void showPlannedExpenseDialog(
                           label: Text('Day of Month'),
                         ),
                         ButtonSegment(
-                          value: _DueDateType.dayOfWeek,
-                          label: Text('Day of Week'),
-                        ),
-                        ButtonSegment(
                           value: _DueDateType.exact,
                           label: Text('Exact Date'),
                         ),
@@ -183,25 +159,6 @@ void showPlannedExpenseDialog(
                             dayOfMonth = parsed;
                           }
                         },
-                      ),
-                    if (dueDateType == _DueDateType.dayOfWeek)
-                      DropdownMenu<int>(
-                        initialSelection: dayOfWeek,
-                        label: const Text('Weekday'),
-                        onSelected: (val) {
-                          if (val != null) {
-                            setState(() => dayOfWeek = val);
-                          }
-                        },
-                        dropdownMenuEntries: const [
-                          DropdownMenuEntry(value: 1, label: 'Monday'),
-                          DropdownMenuEntry(value: 2, label: 'Tuesday'),
-                          DropdownMenuEntry(value: 3, label: 'Wednesday'),
-                          DropdownMenuEntry(value: 4, label: 'Thursday'),
-                          DropdownMenuEntry(value: 5, label: 'Friday'),
-                          DropdownMenuEntry(value: 6, label: 'Saturday'),
-                          DropdownMenuEntry(value: 7, label: 'Sunday'),
-                        ],
                       ),
                     if (dueDateType == _DueDateType.exact)
                       InkWell(
@@ -266,13 +223,9 @@ void showPlannedExpenseDialog(
                       final d = int.tryParse(dayOfMonthCtrl.text) ?? dayOfMonth;
                       if (d < 1 || d > 31) return;
                       dueDate = DueDate.dayOfMonth(day: d);
-                    case _DueDateType.dayOfWeek:
-                      dueDate = DueDate.dayOfWeek(weekday: dayOfWeek);
                   }
 
-                  final notifier = ref.read(
-                    periodProvider(periodId).notifier,
-                  );
+                  final notifier = ref.read(periodProvider(periodId).notifier);
 
                   if (isEditing) {
                     notifier.updatePlannedExpense(
