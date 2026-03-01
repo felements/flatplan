@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../storage/period_repository.dart';
+import '../storage/storage_settings_service.dart';
 import 'storage_settings_provider.dart';
 
 part 'repository_provider.g.dart';
@@ -17,6 +18,5 @@ PeriodRepository periodRepository(Ref ref) {
 
 /// Inline fallback so the provider never blocks on a null.
 String _fallbackPath() {
-  // Same logic as StorageSettingsService._defaultDirectory
-  return '.';
+  return StorageSettingsService.defaultDirectory();
 }

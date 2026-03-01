@@ -136,9 +136,7 @@ void showCategoryDialog(
                   final limit = double.tryParse(limitCtrl.text.trim());
                   final desc = descCtrl.text.trim();
 
-                  final notifier = ref.read(
-                    periodProvider(periodId).notifier,
-                  );
+                  final notifier = ref.read(periodProvider(periodId).notifier);
 
                   if (isEditing) {
                     notifier.updateCategory(

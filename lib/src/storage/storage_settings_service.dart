@@ -12,7 +12,7 @@ class StorageSettingsService {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_key);
     if (saved != null && saved.isNotEmpty) return saved;
-    return _defaultDirectory();
+    return defaultDirectory();
   }
 
   /// Persists a new data directory path.
@@ -22,7 +22,7 @@ class StorageSettingsService {
   }
 
   /// Default: `<executable_dir>/flatplan_data/periods`.
-  static String _defaultDirectory() {
+  static String defaultDirectory() {
     final exeDir = File(Platform.resolvedExecutable).parent.path;
     return '$exeDir/flatplan_data/periods';
   }

@@ -83,9 +83,8 @@ class DashboardView extends ConsumerWidget {
               .toList();
 
           final now = DateTime.now();
-          final isActivePeriod = now.isAfter(
-                period.startDate.subtract(const Duration(days: 1)),
-              ) &&
+          final isActivePeriod =
+              now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
               now.isBefore(endDate.add(const Duration(days: 1)));
           final periodLengthDays =
               endDate.difference(period.startDate).inDays + 1;
@@ -145,9 +144,7 @@ class DashboardView extends ConsumerWidget {
                         ),
                         onSelected: (value) {
                           if (value == 'manage_categories') {
-                            context.go(
-                              '/period/$effectivePeriodId/categories',
-                            );
+                            context.go('/period/$effectivePeriodId/categories');
                           }
                         },
                         itemBuilder: (context) => [
@@ -461,8 +458,8 @@ class DashboardView extends ConsumerWidget {
             if (avgExpense > 0) {
               final affordablePurchases = remaining / avgExpense;
               if (affordablePurchases > 0) {
-                expectedPurchaseFrequencyDays =
-                    (daysLeft / affordablePurchases).round();
+                expectedPurchaseFrequencyDays = (daysLeft / affordablePurchases)
+                    .round();
                 expectedPurchaseAmount = avgExpense;
               }
             }

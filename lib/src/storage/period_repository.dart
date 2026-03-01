@@ -33,6 +33,10 @@ class PeriodRepository {
           if (content.trim().isEmpty) continue;
 
           final yamlDoc = loadYaml(content);
+          if (yamlDoc is! YamlMap) {
+            print('Skipped ${entity.path}: not a valid YamlMap object.');
+            continue;
+          }
           final map = _cloneYamlNode(yamlDoc) as Map<String, dynamic>;
           periods.add(Period.fromJson(map));
         } catch (e) {

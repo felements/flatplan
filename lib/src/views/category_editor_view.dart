@@ -147,8 +147,7 @@ class CategoryEditorView extends ConsumerWidget {
                               cat,
                               periodId: periodId,
                             ),
-                            onDelete: () =>
-                                _confirmDelete(context, ref, cat),
+                            onDelete: () => _confirmDelete(context, ref, cat),
                           );
                         },
                       ),

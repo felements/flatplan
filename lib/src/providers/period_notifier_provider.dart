@@ -58,8 +58,9 @@ class PeriodNotifier extends _$PeriodNotifier {
 
     final updatedCategories = current.categories.map((cat) {
       if (cat.id == categoryId) {
-        final planned =
-            cat.plannedExpenses.where((p) => p.id == expenseId).firstOrNull;
+        final planned = cat.plannedExpenses
+            .where((p) => p.id == expenseId)
+            .firstOrNull;
         if (planned == null) return cat;
 
         final nowCompleted = !planned.isCompleted;
@@ -142,8 +143,9 @@ class PeriodNotifier extends _$PeriodNotifier {
     final updatedCategories = current.categories.map((cat) {
       if (cat.id == categoryId) {
         return cat.copyWith(
-          plannedExpenses:
-              cat.plannedExpenses.where((p) => p.id != expenseId).toList(),
+          plannedExpenses: cat.plannedExpenses
+              .where((p) => p.id != expenseId)
+              .toList(),
           factExpenses: cat.factExpenses
               .where((f) => f.linkedPlannedExpenseId != expenseId)
               .toList(),
@@ -182,8 +184,9 @@ class PeriodNotifier extends _$PeriodNotifier {
     final current = state.value;
     if (current == null) return;
 
-    final updatedCategories =
-        current.categories.where((cat) => cat.id != categoryId).toList();
+    final updatedCategories = current.categories
+        .where((cat) => cat.id != categoryId)
+        .toList();
 
     updatePeriod(current.copyWith(categories: updatedCategories));
   }
@@ -197,11 +200,13 @@ class PeriodNotifier extends _$PeriodNotifier {
 
     final updatedCategories = current.categories.map((cat) {
       if (cat.id == categoryId) {
-        final removedFact =
-            cat.factExpenses.where((e) => e.id == expenseId).firstOrNull;
+        final removedFact = cat.factExpenses
+            .where((e) => e.id == expenseId)
+            .firstOrNull;
 
-        final updatedFacts =
-            cat.factExpenses.where((e) => e.id != expenseId).toList();
+        final updatedFacts = cat.factExpenses
+            .where((e) => e.id != expenseId)
+            .toList();
 
         var updatedPlanned = cat.plannedExpenses;
         if (removedFact?.linkedPlannedExpenseId != null) {

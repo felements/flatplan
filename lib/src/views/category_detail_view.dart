@@ -176,10 +176,7 @@ class CategoryDetailView extends HookConsumerWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outlineVariant,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: colorScheme.outlineVariant, width: 0.5),
         ),
       ),
       child: Row(
@@ -270,12 +267,7 @@ class CategoryDetailView extends HookConsumerWidget {
               if (catStats.isDailyAllowance &&
                   catStats.dailyAllowanceAmount != null) ...[
                 const SizedBox(height: 8),
-                _buildDailyAllowanceRow(
-                  theme,
-                  colorScheme,
-                  period,
-                  catStats,
-                ),
+                _buildDailyAllowanceRow(theme, colorScheme, period, catStats),
               ],
             ],
           ),
@@ -341,7 +333,11 @@ class CategoryDetailView extends HookConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.today_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+        Icon(
+          Icons.today_rounded,
+          size: 14,
+          color: colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 4),
         Text(
           catStats.expectedPurchaseFrequencyDays != null
@@ -382,10 +378,7 @@ class CategoryDetailView extends HookConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border(
-            right: BorderSide(
-              color: colorScheme.outlineVariant,
-              width: 0.5,
-            ),
+            right: BorderSide(color: colorScheme.outlineVariant, width: 0.5),
           ),
         ),
         child: Column(
@@ -715,9 +708,7 @@ class CategoryDetailView extends HookConsumerWidget {
                               : 'Remove expense',
                           onPressed: () {
                             ref
-                                .read(
-                                  periodProvider(periodId).notifier,
-                                )
+                                .read(periodProvider(periodId).notifier)
                                 .removeFactExpense(categoryId, fact.id);
                           },
                         ),
@@ -731,10 +722,7 @@ class CategoryDetailView extends HookConsumerWidget {
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLow,
               border: Border(
-                top: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 0.5,
-                ),
+                top: BorderSide(color: colorScheme.outlineVariant, width: 0.5),
               ),
             ),
             padding: const EdgeInsets.all(16),
