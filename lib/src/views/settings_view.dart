@@ -1,7 +1,9 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../logic/period_logic.dart';
 import '../models/models.dart';
@@ -234,6 +236,80 @@ class SettingsView extends HookConsumerWidget {
                         label: const Text('Generate Next Period'),
                       ),
                     ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // ─── About ────────────────────────────────────────
+              _SectionHeader(icon: Icons.info_outline_rounded, title: 'About'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'FlatPlan is a local-first budgeting application.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final version = snapshot.hasData
+                            ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                            : '...';
+                        return Text(
+                          'Version: $version',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () => launchUrl(
+                        Uri.parse('https://www.flaticon.com/free-icons/budget'),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.open_in_new_rounded,
+                              size: 14,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Budget icons created by Freepik - Flaticon',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                                decorationColor: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

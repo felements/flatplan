@@ -1,0 +1,56 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Flutter Build Windows Release",
+            "type": "shell",
+            "command": "flutter",
+            "args": [
+                "build",
+                "windows"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Create MSIX Package",
+            "type": "shell",
+            "command": "dart",
+            "args": [
+                "run",
+                "msix:create"
+            ],
+            "dependsOn": "Flutter Build Windows Release",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Flutter Build Linux Release",
+            "type": "shell",
+            "command": "flutter",
+            "args": [
+                "build",
+                "linux"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Create Debian Package",
+            "type": "shell",
+            "command": "dart",
+            "args": [
+                "run",
+                "flutter_to_debian"
+            ],
+            "dependsOn": "Flutter Build Linux Release",
+            "group": {
+                "kind": "build"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

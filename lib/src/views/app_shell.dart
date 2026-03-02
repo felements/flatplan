@@ -140,30 +140,19 @@ class AppShell extends ConsumerWidget {
                 const Spacer(),
 
                 // ─── Settings (anchored to bottom) ─────────────────
-                _SidebarItem(
-                  icon: Icons.settings_rounded,
-                  label: 'Settings',
-                  isSelected: selectedIndex == 1,
-                  onTap: () => navigationShell.goBranch(
-                    1,
-                    initialLocation: selectedIndex == 1,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Bottom branding
                 Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Budget Tracker',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.5,
-                      ),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _SidebarItem(
+                    icon: Icons.settings_rounded,
+                    label: 'Settings',
+                    isSelected: selectedIndex == 1,
+                    onTap: () => navigationShell.goBranch(
+                      1,
+                      initialLocation: selectedIndex == 1,
                     ),
                   ),
                 ),
+
               ],
             ),
           ),
