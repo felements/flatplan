@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../providers/period_stats_provider.dart';
+
 /// A category list tile with a heat-indicator progress bar,
 /// styled for the dark dashboard aesthetic.
 class CategoryTile extends StatefulWidget {
@@ -13,6 +15,7 @@ class CategoryTile extends StatefulWidget {
   final String? dailyAllowanceAmount;
   final int? expectedPurchaseFrequencyDays;
   final String? expectedPurchaseAmount;
+  final List<PlannedExpenseStatus> plannedExpenseStatuses;
 
   const CategoryTile({
     super.key,
@@ -26,6 +29,7 @@ class CategoryTile extends StatefulWidget {
     this.dailyAllowanceAmount,
     this.expectedPurchaseFrequencyDays,
     this.expectedPurchaseAmount,
+    this.plannedExpenseStatuses = const [],
   });
 
   @override
@@ -173,6 +177,39 @@ class _CategoryTileState extends State<CategoryTile> {
                         valueColor: AlwaysStoppedAnimation<Color>(heatColor),
                       ),
                     ),
+                    if (widget.plannedExpenseStatuses.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: widget.plannedExpenseStatuses.map((status) {
+                          Color dotColor;
+                          switch (status) {
+                            case PlannedExpenseStatus.completed:
+                              dotColor = const Color(0xFF6ABF69);
+                              break;
+                            case PlannedExpenseStatus.pending:
+                              dotColor = const Color(0xFFE0A030);
+                              break;
+                            case PlannedExpenseStatus.overdue:
+                              dotColor = colorScheme.error;
+                              break;
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Tooltip(
+                              message: 'Planned Expense: ${status.name}',
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: dotColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),

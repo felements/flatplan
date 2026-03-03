@@ -4,10 +4,16 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'all_periods_provider.dart';
 import 'current_period_provider.dart';
 import '../logic/period_extensions.dart';
-import '../models/category_type.dart';
+import '../models/models.dart';
 
 part 'period_stats_provider.freezed.dart';
 part 'period_stats_provider.g.dart';
+
+enum PlannedExpenseStatus {
+  completed,
+  pending,
+  overdue,
+}
 
 @freezed
 sealed class CategoryStats with _$CategoryStats {
@@ -22,6 +28,7 @@ sealed class CategoryStats with _$CategoryStats {
     required double heatPercentage,
     required bool isOverBudget,
     required bool isDailyAllowance,
+    @Default([]) List<PlannedExpenseStatus> plannedExpenseStatuses,
     double? dailyAllowanceAmount,
     int? expectedPurchaseFrequencyDays,
     double? expectedPurchaseAmount,
@@ -60,6 +67,11 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   double totalIncome = 0;
   double totalFactIncome = 0;
   double effectiveTotalExpenseForFreeBalance = 0;
+
+  final now = DateTime.now();
+  final isActivePeriod =
+      now.isAfter(currentPeriod.startDate.subtract(const Duration(days: 1))) &&
+      now.isBefore(endDate.add(const Duration(days: 1)));
 
   final categoryStatsList = <CategoryStats>[];
 
@@ -119,7 +131,35 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
       }
     }
 
-    // 4. Aggregate totals
+    // 4. Calculate statuses for planned expenses
+    final plannedExpenseStatuses = <PlannedExpenseStatus>[];
+    for (final exp in category.plannedExpenses) {
+      if (exp.isCompleted) {
+        plannedExpenseStatuses.add(PlannedExpenseStatus.completed);
+      } else {
+        bool isOverdue = false;
+        if (isActivePeriod) {
+          final expDate = exp.dueDate.when(
+            exact: (d) => d,
+            dayOfMonth: (day) {
+              final d = DateTime(now.year, now.month, day);
+              // Shift into period if needed
+              if (d.isBefore(currentPeriod.startDate)) {
+                return DateTime(now.year, now.month + 1, day);
+              }
+              return d;
+            },
+          );
+          if (now.isAfter(expDate.add(const Duration(days: 1)))) {
+            isOverdue = true;
+          }
+        }
+        plannedExpenseStatuses.add(
+            isOverdue ? PlannedExpenseStatus.overdue : PlannedExpenseStatus.pending);
+      }
+    }
+
+    // 5. Aggregate totals
     if (category.type == CategoryType.mandatoryExpense) {
       totalMandatoryBudget += limit;
       totalMandatorySpent += spent;
@@ -145,6 +185,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
         heatPercentage: heatPercentage,
         isOverBudget: isOverBudget,
         isDailyAllowance: category.isDailyAllowance,
+        plannedExpenseStatuses: plannedExpenseStatuses,
         dailyAllowanceAmount: dailyAllowanceAmount,
         expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
         expectedPurchaseAmount: expectedPurchaseAmount,

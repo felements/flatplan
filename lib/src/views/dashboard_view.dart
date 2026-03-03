@@ -439,6 +439,7 @@ class DashboardView extends ConsumerWidget {
             heatPercentage: c.heatPercentage,
             isOverBudget: c.isOverBudget,
             isIncome: c.type == CategoryType.income,
+            plannedExpenseStatuses: c.plannedExpenseStatuses,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
                 ? NumberFormat.simpleCurrency(
@@ -485,6 +486,37 @@ class DashboardView extends ConsumerWidget {
       final limit = category.limit ?? planned;
       final remaining = limit - spent;
       final heat = limit > 0 ? (spent / limit) : 0.0;
+      
+      final now = DateTime.now();
+      final isActivePeriod =
+          now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+          now.isBefore(endDate.add(const Duration(days: 1)));
+
+      final plannedExpenseStatuses = <PlannedExpenseStatus>[];
+      for (final exp in category.plannedExpenses) {
+        if (exp.isCompleted) {
+          plannedExpenseStatuses.add(PlannedExpenseStatus.completed);
+        } else {
+          bool isOverdue = false;
+          if (isActivePeriod) {
+            final expDate = exp.dueDate.when(
+              exact: (d) => d,
+              dayOfMonth: (day) {
+                final d = DateTime(now.year, now.month, day);
+                if (d.isBefore(period.startDate)) {
+                  return DateTime(now.year, now.month + 1, day);
+                }
+                return d;
+              },
+            );
+            if (now.isAfter(expDate.add(const Duration(days: 1)))) {
+              isOverdue = true;
+            }
+          }
+          plannedExpenseStatuses.add(
+              isOverdue ? PlannedExpenseStatus.overdue : PlannedExpenseStatus.pending);
+        }
+      }
 
       if (category.type == CategoryType.mandatoryExpense) {
         totalMandatoryBudget += limit;
@@ -548,6 +580,7 @@ class DashboardView extends ConsumerWidget {
           heatPercentage: heat,
           isOverBudget: spent > limit,
           isDailyAllowance: category.isDailyAllowance,
+          plannedExpenseStatuses: plannedExpenseStatuses,
           dailyAllowanceAmount: dailyAllowanceAmount,
           expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
           expectedPurchaseAmount: expectedPurchaseAmount,
