@@ -230,6 +230,8 @@ class DashboardView extends ConsumerWidget {
                         amount: currencyFormatter.format(stats.totalBudget),
                         subtitle:
                             'of ${currencyFormatter.format(stats.totalIncome)}',
+                        tooltip:
+                            'Your total planned expenses compared to your planned income. Colors indicate your planned budget safety margin.',
                         icon: Icons.account_balance_wallet_rounded,
                         color: budgetColor,
                         backgroundColor: budgetBgColor,
@@ -242,6 +244,8 @@ class DashboardView extends ConsumerWidget {
                         amount: currencyFormatter.format(stats.totalSpent),
                         subtitle:
                             'vs ${currencyFormatter.format(stats.totalFactIncome)} income',
+                        tooltip:
+                            'Your actual total spending so far compared to your actual income received. Colors indicate your current spending safety margin.',
                         icon: Icons.shopping_cart_rounded,
                         color: spentColor,
                         backgroundColor: spentBgColor,
@@ -255,6 +259,8 @@ class DashboardView extends ConsumerWidget {
                           stats.remainingFreeBalance,
                         ),
                         subtitle: 'fact income – plan expenses',
+                        tooltip:
+                            'The absolute free balance strictly available to you right now. Calculated as actual income received minus total planned expenses required for the period.',
                         icon: Icons.savings_rounded,
                         color: remainingColor,
                         backgroundColor: remainingBgColor,

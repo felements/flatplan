@@ -6,6 +6,7 @@ class SummaryCard extends StatelessWidget {
   final String title;
   final String amount;
   final String? subtitle;
+  final String? tooltip;
   final Color? color;
   final IconData? icon;
 
@@ -17,6 +18,7 @@ class SummaryCard extends StatelessWidget {
     required this.title,
     required this.amount,
     this.subtitle,
+    this.tooltip,
     this.color,
     this.icon,
     this.backgroundColor,
@@ -71,13 +73,41 @@ class SummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                  ),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (tooltip != null) ...[
+                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: tooltip,
+                        triggerMode: TooltipTriggerMode.tap,
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.all(12),
+                        textStyle: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onInverseSurface,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.inverseSurface,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (icon != null)
