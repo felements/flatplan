@@ -301,7 +301,7 @@ as double?,
 /// @nodoc
 mixin _$PeriodStats {
 
- double get totalMandatoryBudget; double get totalMandatorySpent; double get totalOptionalBudget; double get totalOptionalSpent; double get totalBudget; double get totalSpent; double get overallRemaining; double get totalIncome; double get totalFactIncome; List<CategoryStats> get categoryStats;
+ double get totalMandatoryBudget; double get totalMandatorySpent; double get totalOptionalBudget; double get totalOptionalSpent; double get totalBudget; double get totalSpent; double get overallRemaining; double get remainingFreeBalance; double get totalIncome; double get totalFactIncome; List<CategoryStats> get categoryStats;
 /// Create a copy of PeriodStats
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -312,16 +312,16 @@ $PeriodStatsCopyWith<PeriodStats> get copyWith => _$PeriodStatsCopyWithImpl<Peri
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodStats&&(identical(other.totalMandatoryBudget, totalMandatoryBudget) || other.totalMandatoryBudget == totalMandatoryBudget)&&(identical(other.totalMandatorySpent, totalMandatorySpent) || other.totalMandatorySpent == totalMandatorySpent)&&(identical(other.totalOptionalBudget, totalOptionalBudget) || other.totalOptionalBudget == totalOptionalBudget)&&(identical(other.totalOptionalSpent, totalOptionalSpent) || other.totalOptionalSpent == totalOptionalSpent)&&(identical(other.totalBudget, totalBudget) || other.totalBudget == totalBudget)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.overallRemaining, overallRemaining) || other.overallRemaining == overallRemaining)&&(identical(other.totalIncome, totalIncome) || other.totalIncome == totalIncome)&&(identical(other.totalFactIncome, totalFactIncome) || other.totalFactIncome == totalFactIncome)&&const DeepCollectionEquality().equals(other.categoryStats, categoryStats));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PeriodStats&&(identical(other.totalMandatoryBudget, totalMandatoryBudget) || other.totalMandatoryBudget == totalMandatoryBudget)&&(identical(other.totalMandatorySpent, totalMandatorySpent) || other.totalMandatorySpent == totalMandatorySpent)&&(identical(other.totalOptionalBudget, totalOptionalBudget) || other.totalOptionalBudget == totalOptionalBudget)&&(identical(other.totalOptionalSpent, totalOptionalSpent) || other.totalOptionalSpent == totalOptionalSpent)&&(identical(other.totalBudget, totalBudget) || other.totalBudget == totalBudget)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.overallRemaining, overallRemaining) || other.overallRemaining == overallRemaining)&&(identical(other.remainingFreeBalance, remainingFreeBalance) || other.remainingFreeBalance == remainingFreeBalance)&&(identical(other.totalIncome, totalIncome) || other.totalIncome == totalIncome)&&(identical(other.totalFactIncome, totalFactIncome) || other.totalFactIncome == totalFactIncome)&&const DeepCollectionEquality().equals(other.categoryStats, categoryStats));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,totalMandatoryBudget,totalMandatorySpent,totalOptionalBudget,totalOptionalSpent,totalBudget,totalSpent,overallRemaining,totalIncome,totalFactIncome,const DeepCollectionEquality().hash(categoryStats));
+int get hashCode => Object.hash(runtimeType,totalMandatoryBudget,totalMandatorySpent,totalOptionalBudget,totalOptionalSpent,totalBudget,totalSpent,overallRemaining,remainingFreeBalance,totalIncome,totalFactIncome,const DeepCollectionEquality().hash(categoryStats));
 
 @override
 String toString() {
-  return 'PeriodStats(totalMandatoryBudget: $totalMandatoryBudget, totalMandatorySpent: $totalMandatorySpent, totalOptionalBudget: $totalOptionalBudget, totalOptionalSpent: $totalOptionalSpent, totalBudget: $totalBudget, totalSpent: $totalSpent, overallRemaining: $overallRemaining, totalIncome: $totalIncome, totalFactIncome: $totalFactIncome, categoryStats: $categoryStats)';
+  return 'PeriodStats(totalMandatoryBudget: $totalMandatoryBudget, totalMandatorySpent: $totalMandatorySpent, totalOptionalBudget: $totalOptionalBudget, totalOptionalSpent: $totalOptionalSpent, totalBudget: $totalBudget, totalSpent: $totalSpent, overallRemaining: $overallRemaining, remainingFreeBalance: $remainingFreeBalance, totalIncome: $totalIncome, totalFactIncome: $totalFactIncome, categoryStats: $categoryStats)';
 }
 
 
@@ -332,7 +332,7 @@ abstract mixin class $PeriodStatsCopyWith<$Res>  {
   factory $PeriodStatsCopyWith(PeriodStats value, $Res Function(PeriodStats) _then) = _$PeriodStatsCopyWithImpl;
 @useResult
 $Res call({
- double totalMandatoryBudget, double totalMandatorySpent, double totalOptionalBudget, double totalOptionalSpent, double totalBudget, double totalSpent, double overallRemaining, double totalIncome, double totalFactIncome, List<CategoryStats> categoryStats
+ double totalMandatoryBudget, double totalMandatorySpent, double totalOptionalBudget, double totalOptionalSpent, double totalBudget, double totalSpent, double overallRemaining, double remainingFreeBalance, double totalIncome, double totalFactIncome, List<CategoryStats> categoryStats
 });
 
 
@@ -349,7 +349,7 @@ class _$PeriodStatsCopyWithImpl<$Res>
 
 /// Create a copy of PeriodStats
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? totalMandatoryBudget = null,Object? totalMandatorySpent = null,Object? totalOptionalBudget = null,Object? totalOptionalSpent = null,Object? totalBudget = null,Object? totalSpent = null,Object? overallRemaining = null,Object? totalIncome = null,Object? totalFactIncome = null,Object? categoryStats = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? totalMandatoryBudget = null,Object? totalMandatorySpent = null,Object? totalOptionalBudget = null,Object? totalOptionalSpent = null,Object? totalBudget = null,Object? totalSpent = null,Object? overallRemaining = null,Object? remainingFreeBalance = null,Object? totalIncome = null,Object? totalFactIncome = null,Object? categoryStats = null,}) {
   return _then(_self.copyWith(
 totalMandatoryBudget: null == totalMandatoryBudget ? _self.totalMandatoryBudget : totalMandatoryBudget // ignore: cast_nullable_to_non_nullable
 as double,totalMandatorySpent: null == totalMandatorySpent ? _self.totalMandatorySpent : totalMandatorySpent // ignore: cast_nullable_to_non_nullable
@@ -358,6 +358,7 @@ as double,totalOptionalSpent: null == totalOptionalSpent ? _self.totalOptionalSp
 as double,totalBudget: null == totalBudget ? _self.totalBudget : totalBudget // ignore: cast_nullable_to_non_nullable
 as double,totalSpent: null == totalSpent ? _self.totalSpent : totalSpent // ignore: cast_nullable_to_non_nullable
 as double,overallRemaining: null == overallRemaining ? _self.overallRemaining : overallRemaining // ignore: cast_nullable_to_non_nullable
+as double,remainingFreeBalance: null == remainingFreeBalance ? _self.remainingFreeBalance : remainingFreeBalance // ignore: cast_nullable_to_non_nullable
 as double,totalIncome: null == totalIncome ? _self.totalIncome : totalIncome // ignore: cast_nullable_to_non_nullable
 as double,totalFactIncome: null == totalFactIncome ? _self.totalFactIncome : totalFactIncome // ignore: cast_nullable_to_non_nullable
 as double,categoryStats: null == categoryStats ? _self.categoryStats : categoryStats // ignore: cast_nullable_to_non_nullable
@@ -443,10 +444,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double totalMandatoryBudget,  double totalMandatorySpent,  double totalOptionalBudget,  double totalOptionalSpent,  double totalBudget,  double totalSpent,  double overallRemaining,  double totalIncome,  double totalFactIncome,  List<CategoryStats> categoryStats)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double totalMandatoryBudget,  double totalMandatorySpent,  double totalOptionalBudget,  double totalOptionalSpent,  double totalBudget,  double totalSpent,  double overallRemaining,  double remainingFreeBalance,  double totalIncome,  double totalFactIncome,  List<CategoryStats> categoryStats)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PeriodStats() when $default != null:
-return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.totalOptionalBudget,_that.totalOptionalSpent,_that.totalBudget,_that.totalSpent,_that.overallRemaining,_that.totalIncome,_that.totalFactIncome,_that.categoryStats);case _:
+return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.totalOptionalBudget,_that.totalOptionalSpent,_that.totalBudget,_that.totalSpent,_that.overallRemaining,_that.remainingFreeBalance,_that.totalIncome,_that.totalFactIncome,_that.categoryStats);case _:
   return orElse();
 
 }
@@ -464,10 +465,10 @@ return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.total
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double totalMandatoryBudget,  double totalMandatorySpent,  double totalOptionalBudget,  double totalOptionalSpent,  double totalBudget,  double totalSpent,  double overallRemaining,  double totalIncome,  double totalFactIncome,  List<CategoryStats> categoryStats)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double totalMandatoryBudget,  double totalMandatorySpent,  double totalOptionalBudget,  double totalOptionalSpent,  double totalBudget,  double totalSpent,  double overallRemaining,  double remainingFreeBalance,  double totalIncome,  double totalFactIncome,  List<CategoryStats> categoryStats)  $default,) {final _that = this;
 switch (_that) {
 case _PeriodStats():
-return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.totalOptionalBudget,_that.totalOptionalSpent,_that.totalBudget,_that.totalSpent,_that.overallRemaining,_that.totalIncome,_that.totalFactIncome,_that.categoryStats);}
+return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.totalOptionalBudget,_that.totalOptionalSpent,_that.totalBudget,_that.totalSpent,_that.overallRemaining,_that.remainingFreeBalance,_that.totalIncome,_that.totalFactIncome,_that.categoryStats);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -481,10 +482,10 @@ return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.total
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double totalMandatoryBudget,  double totalMandatorySpent,  double totalOptionalBudget,  double totalOptionalSpent,  double totalBudget,  double totalSpent,  double overallRemaining,  double totalIncome,  double totalFactIncome,  List<CategoryStats> categoryStats)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double totalMandatoryBudget,  double totalMandatorySpent,  double totalOptionalBudget,  double totalOptionalSpent,  double totalBudget,  double totalSpent,  double overallRemaining,  double remainingFreeBalance,  double totalIncome,  double totalFactIncome,  List<CategoryStats> categoryStats)?  $default,) {final _that = this;
 switch (_that) {
 case _PeriodStats() when $default != null:
-return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.totalOptionalBudget,_that.totalOptionalSpent,_that.totalBudget,_that.totalSpent,_that.overallRemaining,_that.totalIncome,_that.totalFactIncome,_that.categoryStats);case _:
+return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.totalOptionalBudget,_that.totalOptionalSpent,_that.totalBudget,_that.totalSpent,_that.overallRemaining,_that.remainingFreeBalance,_that.totalIncome,_that.totalFactIncome,_that.categoryStats);case _:
   return null;
 
 }
@@ -496,7 +497,7 @@ return $default(_that.totalMandatoryBudget,_that.totalMandatorySpent,_that.total
 
 
 class _PeriodStats implements PeriodStats {
-  const _PeriodStats({required this.totalMandatoryBudget, required this.totalMandatorySpent, required this.totalOptionalBudget, required this.totalOptionalSpent, required this.totalBudget, required this.totalSpent, required this.overallRemaining, required this.totalIncome, required this.totalFactIncome, required final  List<CategoryStats> categoryStats}): _categoryStats = categoryStats;
+  const _PeriodStats({required this.totalMandatoryBudget, required this.totalMandatorySpent, required this.totalOptionalBudget, required this.totalOptionalSpent, required this.totalBudget, required this.totalSpent, required this.overallRemaining, required this.remainingFreeBalance, required this.totalIncome, required this.totalFactIncome, required final  List<CategoryStats> categoryStats}): _categoryStats = categoryStats;
   
 
 @override final  double totalMandatoryBudget;
@@ -506,6 +507,7 @@ class _PeriodStats implements PeriodStats {
 @override final  double totalBudget;
 @override final  double totalSpent;
 @override final  double overallRemaining;
+@override final  double remainingFreeBalance;
 @override final  double totalIncome;
 @override final  double totalFactIncome;
  final  List<CategoryStats> _categoryStats;
@@ -526,16 +528,16 @@ _$PeriodStatsCopyWith<_PeriodStats> get copyWith => __$PeriodStatsCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodStats&&(identical(other.totalMandatoryBudget, totalMandatoryBudget) || other.totalMandatoryBudget == totalMandatoryBudget)&&(identical(other.totalMandatorySpent, totalMandatorySpent) || other.totalMandatorySpent == totalMandatorySpent)&&(identical(other.totalOptionalBudget, totalOptionalBudget) || other.totalOptionalBudget == totalOptionalBudget)&&(identical(other.totalOptionalSpent, totalOptionalSpent) || other.totalOptionalSpent == totalOptionalSpent)&&(identical(other.totalBudget, totalBudget) || other.totalBudget == totalBudget)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.overallRemaining, overallRemaining) || other.overallRemaining == overallRemaining)&&(identical(other.totalIncome, totalIncome) || other.totalIncome == totalIncome)&&(identical(other.totalFactIncome, totalFactIncome) || other.totalFactIncome == totalFactIncome)&&const DeepCollectionEquality().equals(other._categoryStats, _categoryStats));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PeriodStats&&(identical(other.totalMandatoryBudget, totalMandatoryBudget) || other.totalMandatoryBudget == totalMandatoryBudget)&&(identical(other.totalMandatorySpent, totalMandatorySpent) || other.totalMandatorySpent == totalMandatorySpent)&&(identical(other.totalOptionalBudget, totalOptionalBudget) || other.totalOptionalBudget == totalOptionalBudget)&&(identical(other.totalOptionalSpent, totalOptionalSpent) || other.totalOptionalSpent == totalOptionalSpent)&&(identical(other.totalBudget, totalBudget) || other.totalBudget == totalBudget)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.overallRemaining, overallRemaining) || other.overallRemaining == overallRemaining)&&(identical(other.remainingFreeBalance, remainingFreeBalance) || other.remainingFreeBalance == remainingFreeBalance)&&(identical(other.totalIncome, totalIncome) || other.totalIncome == totalIncome)&&(identical(other.totalFactIncome, totalFactIncome) || other.totalFactIncome == totalFactIncome)&&const DeepCollectionEquality().equals(other._categoryStats, _categoryStats));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,totalMandatoryBudget,totalMandatorySpent,totalOptionalBudget,totalOptionalSpent,totalBudget,totalSpent,overallRemaining,totalIncome,totalFactIncome,const DeepCollectionEquality().hash(_categoryStats));
+int get hashCode => Object.hash(runtimeType,totalMandatoryBudget,totalMandatorySpent,totalOptionalBudget,totalOptionalSpent,totalBudget,totalSpent,overallRemaining,remainingFreeBalance,totalIncome,totalFactIncome,const DeepCollectionEquality().hash(_categoryStats));
 
 @override
 String toString() {
-  return 'PeriodStats(totalMandatoryBudget: $totalMandatoryBudget, totalMandatorySpent: $totalMandatorySpent, totalOptionalBudget: $totalOptionalBudget, totalOptionalSpent: $totalOptionalSpent, totalBudget: $totalBudget, totalSpent: $totalSpent, overallRemaining: $overallRemaining, totalIncome: $totalIncome, totalFactIncome: $totalFactIncome, categoryStats: $categoryStats)';
+  return 'PeriodStats(totalMandatoryBudget: $totalMandatoryBudget, totalMandatorySpent: $totalMandatorySpent, totalOptionalBudget: $totalOptionalBudget, totalOptionalSpent: $totalOptionalSpent, totalBudget: $totalBudget, totalSpent: $totalSpent, overallRemaining: $overallRemaining, remainingFreeBalance: $remainingFreeBalance, totalIncome: $totalIncome, totalFactIncome: $totalFactIncome, categoryStats: $categoryStats)';
 }
 
 
@@ -546,7 +548,7 @@ abstract mixin class _$PeriodStatsCopyWith<$Res> implements $PeriodStatsCopyWith
   factory _$PeriodStatsCopyWith(_PeriodStats value, $Res Function(_PeriodStats) _then) = __$PeriodStatsCopyWithImpl;
 @override @useResult
 $Res call({
- double totalMandatoryBudget, double totalMandatorySpent, double totalOptionalBudget, double totalOptionalSpent, double totalBudget, double totalSpent, double overallRemaining, double totalIncome, double totalFactIncome, List<CategoryStats> categoryStats
+ double totalMandatoryBudget, double totalMandatorySpent, double totalOptionalBudget, double totalOptionalSpent, double totalBudget, double totalSpent, double overallRemaining, double remainingFreeBalance, double totalIncome, double totalFactIncome, List<CategoryStats> categoryStats
 });
 
 
@@ -563,7 +565,7 @@ class __$PeriodStatsCopyWithImpl<$Res>
 
 /// Create a copy of PeriodStats
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? totalMandatoryBudget = null,Object? totalMandatorySpent = null,Object? totalOptionalBudget = null,Object? totalOptionalSpent = null,Object? totalBudget = null,Object? totalSpent = null,Object? overallRemaining = null,Object? totalIncome = null,Object? totalFactIncome = null,Object? categoryStats = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? totalMandatoryBudget = null,Object? totalMandatorySpent = null,Object? totalOptionalBudget = null,Object? totalOptionalSpent = null,Object? totalBudget = null,Object? totalSpent = null,Object? overallRemaining = null,Object? remainingFreeBalance = null,Object? totalIncome = null,Object? totalFactIncome = null,Object? categoryStats = null,}) {
   return _then(_PeriodStats(
 totalMandatoryBudget: null == totalMandatoryBudget ? _self.totalMandatoryBudget : totalMandatoryBudget // ignore: cast_nullable_to_non_nullable
 as double,totalMandatorySpent: null == totalMandatorySpent ? _self.totalMandatorySpent : totalMandatorySpent // ignore: cast_nullable_to_non_nullable
@@ -572,6 +574,7 @@ as double,totalOptionalSpent: null == totalOptionalSpent ? _self.totalOptionalSp
 as double,totalBudget: null == totalBudget ? _self.totalBudget : totalBudget // ignore: cast_nullable_to_non_nullable
 as double,totalSpent: null == totalSpent ? _self.totalSpent : totalSpent // ignore: cast_nullable_to_non_nullable
 as double,overallRemaining: null == overallRemaining ? _self.overallRemaining : overallRemaining // ignore: cast_nullable_to_non_nullable
+as double,remainingFreeBalance: null == remainingFreeBalance ? _self.remainingFreeBalance : remainingFreeBalance // ignore: cast_nullable_to_non_nullable
 as double,totalIncome: null == totalIncome ? _self.totalIncome : totalIncome // ignore: cast_nullable_to_non_nullable
 as double,totalFactIncome: null == totalFactIncome ? _self.totalFactIncome : totalFactIncome // ignore: cast_nullable_to_non_nullable
 as double,categoryStats: null == categoryStats ? _self._categoryStats : categoryStats // ignore: cast_nullable_to_non_nullable

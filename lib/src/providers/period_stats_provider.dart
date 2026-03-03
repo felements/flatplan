@@ -38,6 +38,7 @@ sealed class PeriodStats with _$PeriodStats {
     required double totalBudget,
     required double totalSpent,
     required double overallRemaining,
+    required double remainingFreeBalance,
     required double totalIncome,
     required double totalFactIncome,
     required List<CategoryStats> categoryStats,
@@ -156,6 +157,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   final totalBudget = totalMandatoryBudget + totalOptionalBudget;
   final totalSpent = totalMandatorySpent + totalOptionalSpent;
   final overallRemaining = totalBudget - totalSpent;
+  final remainingFreeBalance = totalFactIncome - totalBudget;
 
   return PeriodStats(
     totalMandatoryBudget: totalMandatoryBudget,
@@ -165,6 +167,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     totalBudget: totalBudget,
     totalSpent: totalSpent,
     overallRemaining: overallRemaining,
+    remainingFreeBalance: remainingFreeBalance,
     totalIncome: totalIncome,
     totalFactIncome: totalFactIncome,
     categoryStats: categoryStatsList,

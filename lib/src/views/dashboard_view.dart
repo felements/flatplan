@@ -109,6 +109,19 @@ class DashboardView extends ConsumerWidget {
             spentBgColor = AppTheme.cardTeal;
           }
 
+          Color remainingColor;
+          Color remainingBgColor;
+          if (stats.remainingFreeBalance >= 10000) {
+            remainingColor = const Color(0xFF6ABF69);
+            remainingBgColor = AppTheme.cardGreen;
+          } else if (stats.remainingFreeBalance >= 0) {
+            remainingColor = colorScheme.primary;
+            remainingBgColor = AppTheme.cardGold;
+          } else {
+            remainingColor = colorScheme.error;
+            remainingBgColor = AppTheme.cardCoral;
+          }
+
           final mandatoryCategories = stats.categoryStats
               .where((c) => c.type == CategoryType.mandatoryExpense)
               .toList();
@@ -237,13 +250,14 @@ class DashboardView extends ConsumerWidget {
                     SizedBox(
                       width: 260,
                       child: SummaryCard(
-                        title: 'Remaining',
+                        title: 'Free Money',
                         amount: currencyFormatter.format(
-                          stats.overallRemaining,
+                          stats.remainingFreeBalance,
                         ),
+                        subtitle: 'fact income – plan expenses',
                         icon: Icons.savings_rounded,
-                        color: const Color(0xFF6ABF69),
-                        backgroundColor: AppTheme.cardGreen,
+                        color: remainingColor,
+                        backgroundColor: remainingBgColor,
                       ),
                     ),
                   ],
@@ -547,6 +561,7 @@ class DashboardView extends ConsumerWidget {
       totalBudget: totalBudget,
       totalSpent: totalSpent,
       overallRemaining: totalBudget - totalSpent,
+      remainingFreeBalance: totalFactIncome - totalBudget,
       totalIncome: totalIncome,
       totalFactIncome: totalFactIncome,
       categoryStats: categoryStatsList,
