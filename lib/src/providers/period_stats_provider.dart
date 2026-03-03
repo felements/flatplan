@@ -59,6 +59,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   double totalOptionalSpent = 0;
   double totalIncome = 0;
   double totalFactIncome = 0;
+  double effectiveTotalExpenseForFreeBalance = 0;
 
   final categoryStatsList = <CategoryStats>[];
 
@@ -122,9 +123,11 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     if (category.type == CategoryType.mandatoryExpense) {
       totalMandatoryBudget += limit;
       totalMandatorySpent += spent;
+      effectiveTotalExpenseForFreeBalance += spent > limit ? spent : limit;
     } else if (category.type == CategoryType.optionalExpense) {
       totalOptionalBudget += limit;
       totalOptionalSpent += spent;
+      effectiveTotalExpenseForFreeBalance += spent > limit ? spent : limit;
     } else if (category.type == CategoryType.income) {
       totalIncome += limit;
       totalFactIncome += spent;
@@ -157,7 +160,8 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   final totalBudget = totalMandatoryBudget + totalOptionalBudget;
   final totalSpent = totalMandatorySpent + totalOptionalSpent;
   final overallRemaining = totalBudget - totalSpent;
-  final remainingFreeBalance = totalFactIncome - totalBudget;
+  final remainingFreeBalance =
+      totalFactIncome - effectiveTotalExpenseForFreeBalance;
 
   return PeriodStats(
     totalMandatoryBudget: totalMandatoryBudget,
