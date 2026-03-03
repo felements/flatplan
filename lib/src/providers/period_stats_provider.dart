@@ -38,6 +38,8 @@ sealed class PeriodStats with _$PeriodStats {
     required double totalBudget,
     required double totalSpent,
     required double overallRemaining,
+    required double totalIncome,
+    required double totalFactIncome,
     required List<CategoryStats> categoryStats,
   }) = _PeriodStats;
 }
@@ -54,6 +56,8 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
   double totalMandatorySpent = 0;
   double totalOptionalBudget = 0;
   double totalOptionalSpent = 0;
+  double totalIncome = 0;
+  double totalFactIncome = 0;
 
   final categoryStatsList = <CategoryStats>[];
 
@@ -120,6 +124,9 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     } else if (category.type == CategoryType.optionalExpense) {
       totalOptionalBudget += limit;
       totalOptionalSpent += spent;
+    } else if (category.type == CategoryType.income) {
+      totalIncome += limit;
+      totalFactIncome += spent;
     }
 
     categoryStatsList.add(
@@ -158,6 +165,8 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     totalBudget: totalBudget,
     totalSpent: totalSpent,
     overallRemaining: overallRemaining,
+    totalIncome: totalIncome,
+    totalFactIncome: totalFactIncome,
     categoryStats: categoryStatsList,
   );
 }

@@ -23,7 +23,6 @@
             "dependsOn": "Flutter Build Windows Release",
             "group": {
                 "kind": "build",
-                "isDefault": true
             },
             "problemMatcher": []
         },

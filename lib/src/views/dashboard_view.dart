@@ -70,7 +70,44 @@ class DashboardView extends ConsumerWidget {
 
           final currencyFormatter = NumberFormat.simpleCurrency(
             name: period.baseCurrency,
+            decimalDigits: 0,
           );
+
+          Color budgetColor;
+          Color budgetBgColor;
+          if (stats.totalIncome > 0) {
+            if (stats.totalBudget > stats.totalIncome) {
+              budgetColor = colorScheme.error;
+              budgetBgColor = AppTheme.cardCoral;
+            } else if (stats.totalBudget >= stats.totalIncome * 0.8) {
+              budgetColor = colorScheme.primary;
+              budgetBgColor = AppTheme.cardGold;
+            } else {
+              budgetColor = const Color(0xFF6ABF69);
+              budgetBgColor = AppTheme.cardGreen;
+            }
+          } else {
+            budgetColor = colorScheme.primary;
+            budgetBgColor = AppTheme.cardGold;
+          }
+
+          Color spentColor;
+          Color spentBgColor;
+          if (stats.totalFactIncome > 0) {
+            if (stats.totalSpent > stats.totalFactIncome) {
+              spentColor = colorScheme.error;
+              spentBgColor = AppTheme.cardCoral;
+            } else if (stats.totalSpent >= stats.totalFactIncome * 0.8) {
+              spentColor = colorScheme.primary;
+              spentBgColor = AppTheme.cardGold;
+            } else {
+              spentColor = const Color(0xFF6ABF69);
+              spentBgColor = AppTheme.cardGreen;
+            }
+          } else {
+            spentColor = colorScheme.secondary;
+            spentBgColor = AppTheme.cardTeal;
+          }
 
           final mandatoryCategories = stats.categoryStats
               .where((c) => c.type == CategoryType.mandatoryExpense)
@@ -176,21 +213,25 @@ class DashboardView extends ConsumerWidget {
                     SizedBox(
                       width: 260,
                       child: SummaryCard(
-                        title: 'Total Budget',
+                        title: 'Total Budget (plan)',
                         amount: currencyFormatter.format(stats.totalBudget),
+                        subtitle:
+                            'of ${currencyFormatter.format(stats.totalIncome)}',
                         icon: Icons.account_balance_wallet_rounded,
-                        color: colorScheme.primary,
-                        backgroundColor: AppTheme.cardGold,
+                        color: budgetColor,
+                        backgroundColor: budgetBgColor,
                       ),
                     ),
                     SizedBox(
                       width: 260,
                       child: SummaryCard(
-                        title: 'Total Spent',
+                        title: 'Total Spent (fact)',
                         amount: currencyFormatter.format(stats.totalSpent),
+                        subtitle:
+                            'vs ${currencyFormatter.format(stats.totalFactIncome)} income',
                         icon: Icons.shopping_cart_rounded,
-                        color: colorScheme.secondary,
-                        backgroundColor: AppTheme.cardTeal,
+                        color: spentColor,
+                        backgroundColor: spentBgColor,
                       ),
                     ),
                     SizedBox(
@@ -198,7 +239,7 @@ class DashboardView extends ConsumerWidget {
                       child: SummaryCard(
                         title: 'Remaining',
                         amount: currencyFormatter.format(
-                          stats.overallRemaining.clamp(0, double.infinity),
+                          stats.overallRemaining,
                         ),
                         icon: Icons.savings_rounded,
                         color: const Color(0xFF6ABF69),
@@ -407,6 +448,8 @@ class DashboardView extends ConsumerWidget {
     double totalMandatorySpent = 0;
     double totalOptionalBudget = 0;
     double totalOptionalSpent = 0;
+    double totalIncome = 0;
+    double totalFactIncome = 0;
     final categoryStatsList = <CategoryStats>[];
 
     for (final category in period.categories) {
@@ -428,6 +471,9 @@ class DashboardView extends ConsumerWidget {
       } else if (category.type == CategoryType.optionalExpense) {
         totalOptionalBudget += limit;
         totalOptionalSpent += spent;
+      } else if (category.type == CategoryType.income) {
+        totalIncome += limit;
+        totalFactIncome += spent;
       }
 
       // Daily allowance metrics (daily spend & 20% trimmed-mean frequency).
@@ -501,6 +547,8 @@ class DashboardView extends ConsumerWidget {
       totalBudget: totalBudget,
       totalSpent: totalSpent,
       overallRemaining: totalBudget - totalSpent,
+      totalIncome: totalIncome,
+      totalFactIncome: totalFactIncome,
       categoryStats: categoryStatsList,
     );
   }
