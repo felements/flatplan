@@ -133,6 +133,17 @@ class DashboardView extends ConsumerWidget {
               .toList();
 
           final now = DateTime.now();
+          String greeting;
+          if (now.hour < 12) {
+            greeting = 'Good Morning';
+          } else if (now.hour < 17) {
+            greeting = 'Good Afternoon';
+          } else {
+            greeting = 'Good Evening';
+          }
+          final dateStr = DateFormat('MMMM d, h:mm a').format(period.lastModified);
+          final headerPrefix = '$greeting • Last revised on $dateStr';
+
           final isActivePeriod =
               now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
               now.isBefore(endDate.add(const Duration(days: 1)));
@@ -159,7 +170,7 @@ class DashboardView extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Welcome Back',
+                            headerPrefix,
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
