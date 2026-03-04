@@ -423,11 +423,14 @@ class DashboardView extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final totalFact = cats.fold<double>(0, (sum, cat) => sum + cat.totalSpent);
+    final totalPlanned = cats.fold<double>(0, (sum, cat) => sum + cat.limit);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 16, left: 4),
+          padding: const EdgeInsets.only(bottom: 16, left: 4, right: 8),
           child: Row(
             children: [
               Icon(sectionIcon, size: 18, color: colorScheme.primary),
@@ -437,6 +440,14 @@ class DashboardView extends ConsumerWidget {
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${formatter.format(totalFact)} / ${formatter.format(totalPlanned)}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
