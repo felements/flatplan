@@ -122,9 +122,12 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
           if (avgExpense > 0) {
             final affordablePurchases = remaining / avgExpense;
             if (affordablePurchases > 0) {
-              expectedPurchaseFrequencyDays = (daysLeft / affordablePurchases)
-                  .round();
-              expectedPurchaseAmount = avgExpense;
+              final frequencyDays = (daysLeft / affordablePurchases).round();
+              final periodLengthDays = endDate.difference(currentPeriod.startDate).inDays + 1;
+              if (frequencyDays <= periodLengthDays / 2) {
+                expectedPurchaseFrequencyDays = frequencyDays;
+                expectedPurchaseAmount = avgExpense;
+              }
             }
           }
         }

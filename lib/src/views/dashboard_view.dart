@@ -111,7 +111,7 @@ class DashboardView extends ConsumerWidget {
 
           Color remainingColor;
           Color remainingBgColor;
-          if (stats.remainingFreeBalance >= 10000) {
+          if (stats.totalFactIncome > 0 && stats.remainingFreeBalance >= stats.totalFactIncome * 0.2) {
             remainingColor = const Color(0xFF6ABF69);
             remainingBgColor = AppTheme.cardGreen;
           } else if (stats.remainingFreeBalance >= 0) {
@@ -581,9 +581,12 @@ class DashboardView extends ConsumerWidget {
             if (avgExpense > 0) {
               final affordablePurchases = remaining / avgExpense;
               if (affordablePurchases > 0) {
-                expectedPurchaseFrequencyDays = (daysLeft / affordablePurchases)
-                    .round();
-                expectedPurchaseAmount = avgExpense;
+                final frequencyDays = (daysLeft / affordablePurchases).round();
+                final periodLengthDays = endDate.difference(period.startDate).inDays + 1;
+                if (frequencyDays <= periodLengthDays / 2) {
+                  expectedPurchaseFrequencyDays = frequencyDays;
+                  expectedPurchaseAmount = avgExpense;
+                }
               }
             }
           }
