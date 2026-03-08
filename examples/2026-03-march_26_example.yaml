@@ -1,0 +1,215 @@
+base_currency: EUR
+categories:
+  - description: Company Salary
+    fact_expenses:
+      - amount: 2863.0
+        id: 653f3ab5-6942-426e-b471-fccee985210a
+        timestamp: 2026-03-08T07:27:57.187493
+      - amount: 100.0
+        id: 20d78531-e34e-48c6-91a7-db8638e0f79c
+        timestamp: 2026-03-08T10:26:01.101011
+    id: 9a78de8b-bb8c-4fc9-bfa2-3151800f7c22
+    is_daily_allowance: false
+    limit: 2500.0
+    name: 💼 Salary
+    planned_expenses:
+    type: income
+  - description: "Rent & Utilities"
+    fact_expenses:
+      - amount: 50.0
+        description: Electricity
+        id: 7cb43c08-e218-4e89-8dcb-5270929fa3a9
+        linked_planned_expense_id: 114c9520-dfaf-4809-b7b5-2fa8ac18deed
+        timestamp: 2026-03-12T09:30:00.000
+      - amount: 750.0
+        description: Apartment Rent
+        id: 358d8b7e-723c-44a9-a341-be1344ab61bd
+        linked_planned_expense_id: cbd04ba8-a764-4bf8-afca-b4618e001c40
+        timestamp: 2026-03-08T10:23:04.908856
+    id: e06ec1da-eb56-42d4-bb39-4d6cb50db818
+    is_daily_allowance: false
+    name: "🏢Housing & Utilities"
+    planned_expenses:
+      - amount: 750.0
+        description: Apartment Rent
+        due_date:
+          day: 10
+          type: day_of_month
+        id: cbd04ba8-a764-4bf8-afca-b4618e001c40
+        is_completed: true
+      - amount: 50.0
+        description: Electricity
+        due_date:
+          day: 12
+          type: day_of_month
+        id: 114c9520-dfaf-4809-b7b5-2fa8ac18deed
+        is_completed: true
+      - amount: 30.0
+        description: Water
+        due_date:
+          day: 15
+          type: day_of_month
+        id: dfa3bdf8-d8f9-4b68-b7eb-8c6fa22765d7
+        is_completed: false
+    type: mandatory_expense
+  - description: Health Insurance
+    fact_expenses:
+      - amount: 100.0
+        description: State Health Insurance
+        id: 9cf2bb53-fa7b-4029-b6aa-022066dcae32
+        linked_planned_expense_id: 2d15fbde-f91b-43a0-ac8e-f14d9b4c09d5
+        timestamp: 2026-03-08T11:00:00.000
+      - amount: 30.0
+        description: fine
+        id: 7c653e1f-5adc-4b7e-a865-aabe3857ccbf
+        timestamp: 2026-03-08T10:25:50.493441
+    id: 6a18d3d9-de46-4cb0-a54f-12c8ff4a37bd
+    is_daily_allowance: false
+    name: "🏛️ Government & State"
+    planned_expenses:
+      - amount: 100.0
+        description: State Health Insurance
+        due_date:
+          day: 8
+          type: day_of_month
+        id: 2d15fbde-f91b-43a0-ac8e-f14d9b4c09d5
+        is_completed: true
+    type: mandatory_expense
+  - description: "Mobile & Internet"
+    fact_expenses:
+      - amount: 35.0
+        description: Combo Plan
+        id: 75a13c9e-64c8-479e-a89a-01dfaa9bdcfe
+        linked_planned_expense_id: f7a63d91-cd7d-4bfa-a4a3-7e4a1aefa14a
+        timestamp: 2026-03-05T08:15:00.000
+    id: 421cabb5-9f5e-4c59-ac8c-7f5b3fc8b185
+    is_daily_allowance: false
+    limit: 35.0
+    name: 📞 Communications
+    planned_expenses:
+      - amount: 35.0
+        description: Combo Plan
+        due_date:
+          day: 5
+          type: day_of_month
+        id: f7a63d91-cd7d-4bfa-a4a3-7e4a1aefa14a
+        is_completed: true
+    type: mandatory_expense
+  - fact_expenses:
+      - amount: 85.0
+        description: Supermarket
+        id: a53bd8cf-b4c9-43c7-95ac-b94f58c7eab8
+        timestamp: 2026-03-02T18:30:00.000
+      - amount: 35.0
+        description: Convenience Store
+        id: 1b9c92cc-7757-418a-9f5e-cfbfa674391e
+        timestamp: 2026-03-07T19:00:00.000
+      - amount: 52.0
+        id: ecc215db-9958-4701-bf48-469c74960a21
+        timestamp: 2026-03-07T22:01:44.116439
+    id: f61bf961-46bb-4d43-9828-dd438feaecff
+    is_daily_allowance: true
+    limit: 400.0
+    name: 🛒 Groceries
+    planned_expenses:
+    type: mandatory_expense
+  - description: Public transport and ride-shares
+    fact_expenses:
+      - amount: 30.0
+        description: Monthly Pass
+        id: 4bbdca83-9b77-4475-ae90-af254a32b98b
+        timestamp: 2026-03-01T07:45:00.000
+      - amount: 15.0
+        description: Uber
+        id: e25ae2df-e152-4e40-8025-a6e5b2257ce3
+        timestamp: 2026-03-08T22:30:00.000
+    id: cc91eb29-bc8f-4ed7-94e4-7935cf911f9f
+    is_daily_allowance: true
+    limit: 50.0
+    name: "🚗 Transport & Auto"
+    planned_expenses:
+    type: mandatory_expense
+  - description: "Streaming & Software"
+    fact_expenses:
+      - amount: 15.0
+        description: Netflix
+        id: dd8f1dbb-9ffb-4a57-b08e-5b1b46a36a7a
+        linked_planned_expense_id: ae6cae09-026c-4869-93e5-82ddf0bed72f
+        timestamp: 2026-03-15T00:00:00.000
+      - amount: 10.0
+        description: Spotify
+        id: 7856cd61-9f93-4fd7-876a-5559d8350eb9
+        linked_planned_expense_id: 38eaba7c-3fcd-40cd-b8a7-acb2fb7b6923
+        timestamp: 2026-03-10T00:00:00.000
+    id: a8eadd46-e76e-4eb3-81b4-b4a159f80a22
+    is_daily_allowance: false
+    limit: 25.0
+    name: ☁️ Digital Subscriptions
+    planned_expenses:
+      - amount: 15.0
+        description: Netflix
+        due_date:
+          day: 15
+          type: day_of_month
+        id: ae6cae09-026c-4869-93e5-82ddf0bed72f
+        is_completed: true
+      - amount: 10.0
+        description: Spotify
+        due_date:
+          day: 10
+          type: day_of_month
+        id: 38eaba7c-3fcd-40cd-b8a7-acb2fb7b6923
+        is_completed: true
+    type: optional_expense
+  - fact_expenses:
+      - amount: 50.0
+        description: Friday Beer
+        id: 30f7855e-cf7b-4d43-b9dc-36c1e5762635
+        timestamp: 2026-03-03T21:00:00.000
+      - amount: 30.0
+        description: Work Lunch
+        id: e30fde2c-cf0f-48d5-8664-dcb4c7524add
+        timestamp: 2026-03-06T13:00:00.000
+    id: a6ba4f63-4d69-4e00-8803-0c33a94820dc
+    is_daily_allowance: true
+    limit: 150.0
+    name: 🍽️ Dining Out
+    planned_expenses:
+    type: optional_expense
+  - fact_expenses:
+      - amount: 15.0
+        description: Cinema
+        id: b9259db8-ae71-419b-a0d4-e4359cd495fd
+        timestamp: 2026-03-04T19:00:00.000
+      - amount: 45.0
+        description: Steam Game
+        id: bee9491b-cc18-4226-aeac-d27e8574c833
+        timestamp: 2026-03-05T14:00:00.000
+    id: d8263539-787f-449e-b816-f762a4a7fe5e
+    is_daily_allowance: true
+    limit: 100.0
+    name: "🎟️ Entertainment & Leisure"
+    planned_expenses:
+    type: optional_expense
+  - fact_expenses:
+    id: fddeba28-765f-4aef-b295-8ece12dd3cce
+    is_daily_allowance: false
+    limit: 100.0
+    name: "👕 Clothing & Shoes"
+    planned_expenses:
+    type: optional_expense
+  - fact_expenses:
+      - amount: 300.0
+        description: Monthly ETF Transfer
+        id: dbbaeedd-11df-4b07-acab-7ff2308c0efc
+        timestamp: 2026-03-01T10:00:00.000
+    id: c928c2e6-df06-49a3-9cc2-2ce954c2574e
+    is_daily_allowance: false
+    limit: 500.0
+    name: "📈 Savings & Investments"
+    planned_expenses:
+    type: optional_expense
+id: cf0622bb-6e1d-4eb4-b333-66a935ab78c5
+last_modified: 2026-03-08T10:26:01.101205
+name: March 26 Example
+start_date: 2026-03-01T00:00:00.000

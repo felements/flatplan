@@ -6,9 +6,9 @@
 
 > Your financial planning in "flat" files. Simple, local, and fully under your control.
 
-> 💡 A screenshot is crucial for user engagement — add one here as soon as you have a build ready.
+<img src="doc/dashboard.png" alt="Main Screen" width="800"/>
 
----
+
 
 ## 💡 What is Flatplan?
 

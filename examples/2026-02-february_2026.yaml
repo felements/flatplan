@@ -1,0 +1,136 @@
+base_currency: EUR
+categories:
+  - description: Company Salary
+    fact_expenses:
+    id: 2848caea-2d9e-43c8-a0ac-c064f341fca0
+    is_daily_allowance: false
+    limit: 2500.0
+    name: 💼 Salary
+    planned_expenses:
+    type: income
+  - description: "Rent & Utilities"
+    fact_expenses:
+    id: ab2a4b45-3a6e-4003-b33a-4e4f125b9ad3
+    is_daily_allowance: false
+    name: "🏢Housing & Utilities"
+    planned_expenses:
+      - amount: 800.0
+        description: Apartment Rent
+        due_date:
+          day: 10
+          type: day_of_month
+        id: ebf116e1-38e4-42b1-bf86-c3fd9005ffd8
+        is_completed: false
+      - amount: 50.0
+        description: Electricity
+        due_date:
+          day: 12
+          type: day_of_month
+        id: 0f5cefd9-f46e-43e4-9133-3fcb1b129627
+        is_completed: false
+      - amount: 30.0
+        description: Water
+        due_date:
+          day: 15
+          type: day_of_month
+        id: caac0d39-cda0-446b-8ea5-7c930e328f0e
+        is_completed: false
+    type: mandatory_expense
+  - description: Health Insurance
+    fact_expenses:
+    id: a76fe5d1-67d6-4974-92a6-3a6f4f4a3f57
+    is_daily_allowance: false
+    name: "🏛️ Government & State"
+    planned_expenses:
+      - amount: 100.0
+        description: State Health Insurance
+        due_date:
+          day: 8
+          type: day_of_month
+        id: b7709a9a-556f-4506-9a3c-6f51788b9170
+        is_completed: false
+    type: mandatory_expense
+  - description: "Mobile & Internet"
+    fact_expenses:
+    id: cbeaeaba-cb80-46da-8c84-064f24d82471
+    is_daily_allowance: false
+    limit: 35.0
+    name: 📞 Communications
+    planned_expenses:
+      - amount: 35.0
+        description: Combo Plan
+        due_date:
+          day: 5
+          type: day_of_month
+        id: 1cdf3ff6-3622-41ba-a5cd-0926f24a62b0
+        is_completed: false
+    type: mandatory_expense
+  - fact_expenses:
+    id: f4ec135e-1690-40c0-8b59-d97d69c5d0a9
+    is_daily_allowance: true
+    limit: 400.0
+    name: 🛒 Groceries
+    planned_expenses:
+    type: mandatory_expense
+  - description: Public transport and ride-shares
+    fact_expenses:
+    id: 08cbe314-dfdc-4836-9211-daab30d329a8
+    is_daily_allowance: true
+    limit: 50.0
+    name: "🚗 Transport & Auto"
+    planned_expenses:
+    type: mandatory_expense
+  - description: "Streaming & Software"
+    fact_expenses:
+    id: 8457d74f-ebc9-4b6e-8d95-4b08cb7873a6
+    is_daily_allowance: false
+    limit: 25.0
+    name: ☁️ Digital Subscriptions
+    planned_expenses:
+      - amount: 15.0
+        description: Netflix
+        due_date:
+          day: 15
+          type: day_of_month
+        id: d51ed8b3-8369-4874-afbe-57e2a3a9575a
+        is_completed: false
+      - amount: 10.0
+        description: Spotify
+        due_date:
+          day: 10
+          type: day_of_month
+        id: 171e6002-0999-411f-a0aa-49305f0e65c2
+        is_completed: false
+    type: optional_expense
+  - fact_expenses:
+    id: b70f0023-fcc6-41ec-a5e1-1ed1ed067857
+    is_daily_allowance: true
+    limit: 150.0
+    name: 🍽️ Dining Out
+    planned_expenses:
+    type: optional_expense
+  - fact_expenses:
+    id: 86213569-9b46-4b87-8d8c-61ad26bd3c17
+    is_daily_allowance: true
+    limit: 100.0
+    name: "🎟️ Entertainment & Leisure"
+    planned_expenses:
+    type: optional_expense
+  - fact_expenses:
+    id: db822e16-d223-4b9c-af73-dd85da6ce0dc
+    is_daily_allowance: false
+    limit: 100.0
+    name: "👕 Clothing & Shoes"
+    planned_expenses:
+    type: optional_expense
+  - fact_expenses:
+    id: 2a4e3d34-c1d0-4fc6-bf39-4ae08707bb14
+    is_daily_allowance: false
+    limit: 500.0
+    name: "📈 Savings & Investments"
+    planned_expenses:
+    type: optional_expense
+id: 6a5e9f42-25aa-4f0b-b235-f0a0ce7a463d
+last_modified: 2026-03-08T07:29:30.063888
+name: February 2026
+start_date: 2026-02-04T00:00:00.000
