@@ -111,7 +111,8 @@ class DashboardView extends ConsumerWidget {
 
           Color remainingColor;
           Color remainingBgColor;
-          if (stats.totalFactIncome > 0 && stats.remainingFreeBalance >= stats.totalFactIncome * 0.2) {
+          if (stats.totalFactIncome > 0 &&
+              stats.remainingFreeBalance >= stats.totalFactIncome * 0.2) {
             remainingColor = const Color(0xFF6ABF69);
             remainingBgColor = AppTheme.cardGreen;
           } else if (stats.remainingFreeBalance >= 0) {
@@ -141,7 +142,9 @@ class DashboardView extends ConsumerWidget {
           } else {
             greeting = 'Good Evening';
           }
-          final dateStr = DateFormat('MMMM d, h:mm a').format(period.lastModified);
+          final dateStr = DateFormat(
+            'MMMM d, h:mm a',
+          ).format(period.lastModified);
           final headerPrefix = '$greeting • Last revised on $dateStr';
 
           final isActivePeriod =
@@ -508,7 +511,7 @@ class DashboardView extends ConsumerWidget {
       final limit = category.limit ?? planned;
       final remaining = limit - spent;
       final heat = limit > 0 ? (spent / limit) : 0.0;
-      
+
       final now = DateTime.now();
       final isActivePeriod =
           now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
@@ -536,7 +539,10 @@ class DashboardView extends ConsumerWidget {
             }
           }
           plannedExpenseStatuses.add(
-              isOverdue ? PlannedExpenseStatus.overdue : PlannedExpenseStatus.pending);
+            isOverdue
+                ? PlannedExpenseStatus.overdue
+                : PlannedExpenseStatus.pending,
+          );
         }
       }
 
@@ -582,7 +588,8 @@ class DashboardView extends ConsumerWidget {
               final affordablePurchases = remaining / avgExpense;
               if (affordablePurchases > 0) {
                 final frequencyDays = (daysLeft / affordablePurchases).round();
-                final periodLengthDays = endDate.difference(period.startDate).inDays + 1;
+                final periodLengthDays =
+                    endDate.difference(period.startDate).inDays + 1;
                 if (frequencyDays <= periodLengthDays / 2) {
                   expectedPurchaseFrequencyDays = frequencyDays;
                   expectedPurchaseAmount = avgExpense;

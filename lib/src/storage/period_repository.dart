@@ -11,6 +11,9 @@ class PeriodRepository {
   /// The absolute path to the directory where period YAML files are stored.
   final String directoryPath;
 
+  /// Cache of period ID to its physical filename to preserve filenames on save.
+  final Map<String, String> _idToFilename = {};
+
   PeriodRepository({required this.directoryPath});
 
   Future<Directory> _getStorageDirectory() async {
@@ -25,6 +28,7 @@ class PeriodRepository {
   Future<List<Period>> loadAllPeriods() async {
     final dir = await _getStorageDirectory();
     final periods = <Period>[];
+    _idToFilename.clear();
 
     await for (final entity in dir.list()) {
       if (entity is File && entity.path.endsWith('.yaml')) {
@@ -38,7 +42,9 @@ class PeriodRepository {
             continue;
           }
           final map = _cloneYamlNode(yamlDoc) as Map<String, dynamic>;
-          periods.add(Period.fromJson(map));
+          final period = Period.fromJson(map);
+          _idToFilename[period.id] = entity.uri.pathSegments.last;
+          periods.add(period);
         } catch (e) {
           // Log or handle corrupt YAML files if needed
           print('Failed to load period from ${entity.path}: $e');
@@ -51,7 +57,11 @@ class PeriodRepository {
   /// Saves a period to a local YAML file.
   Future<void> savePeriod(Period period) async {
     final dir = await _getStorageDirectory();
-    final filename = _generateFilename(period);
+
+    // Keep existing filename if loaded, otherwise generate a new one
+    final filename = _idToFilename[period.id] ?? _generateFilename(period);
+    _idToFilename[period.id] = filename;
+
     final file = File('${dir.path}/$filename');
 
     // Remove legacy file if it exists to avoid duplicates

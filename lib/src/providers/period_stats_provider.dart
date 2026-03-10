@@ -9,11 +9,7 @@ import '../models/models.dart';
 part 'period_stats_provider.freezed.dart';
 part 'period_stats_provider.g.dart';
 
-enum PlannedExpenseStatus {
-  completed,
-  pending,
-  overdue,
-}
+enum PlannedExpenseStatus { completed, pending, overdue }
 
 @freezed
 sealed class CategoryStats with _$CategoryStats {
@@ -123,7 +119,8 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
             final affordablePurchases = remaining / avgExpense;
             if (affordablePurchases > 0) {
               final frequencyDays = (daysLeft / affordablePurchases).round();
-              final periodLengthDays = endDate.difference(currentPeriod.startDate).inDays + 1;
+              final periodLengthDays =
+                  endDate.difference(currentPeriod.startDate).inDays + 1;
               if (frequencyDays <= periodLengthDays / 2) {
                 expectedPurchaseFrequencyDays = frequencyDays;
                 expectedPurchaseAmount = avgExpense;
@@ -158,7 +155,10 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
           }
         }
         plannedExpenseStatuses.add(
-            isOverdue ? PlannedExpenseStatus.overdue : PlannedExpenseStatus.pending);
+          isOverdue
+              ? PlannedExpenseStatus.overdue
+              : PlannedExpenseStatus.pending,
+        );
       }
     }
 

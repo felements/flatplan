@@ -18,6 +18,5 @@ class StorageSettings extends _$StorageSettings {
   Future<void> updateDirectory(String path) async {
     await _service.setDataDirectory(path);
     state = AsyncData(path);
-    ref.invalidate(periodRepositoryProvider);
   }
 }
