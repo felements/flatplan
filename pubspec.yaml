@@ -74,17 +74,20 @@ dev_dependencies:
 
 
 msix_config:
-  display_name: "flatplan - your simple finance tracker"
-  publisher_display_name: "aska.one"
-  identity_name: "one.aska.flatplan"
-  msix_version: "1.0.0.0" 
+  display_name: "flatplan"
+  identity_name: "felements.flatplan"
+  publisher: "CN=61FC502E-186E-4633-89C4-B0109EE3170E"
+  publisher_display_name: "felements"
+  logo_path: "assets\\icon\\budget.png"
+  bgr_color: "transparent"
+  msix_version: "1.0.0.0"
 
 flutter_to_debian:
-  bundle_name: "flatplan" # Название вашего исполняемого файла (обычно совпадает с именем проекта)
-  name: "flatplan" # Имя пакета для системы (только строчные буквы, без пробелов)
-  version: "1.0.0" # Версия пакета
+  bundle_name: "flatplan"
+  name: "flatplan"
+  version: "1.0.0"
   description: "flatplan - your simple finance tracker"
-  maintainer: "aska.one <info@aska.one>"
+  maintainer: "felements"
 
 
 # The following section is specific to Flutter packages.
