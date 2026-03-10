@@ -36,7 +36,7 @@ This Code of Conduct applies within all project spaces and when an individual is
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the project maintainers via the [issue tracker](https://gitlab.com/flatplan/flatplan/-/issues) or by contacting `info@aska.one`.
+Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the project maintainers via the [issue tracker](https://github.com/felements/flatplan/issues).
 
 All complaints will be reviewed and investigated promptly and fairly. All maintainers are obligated to respect the privacy and security of the reporter.
 

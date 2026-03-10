@@ -15,7 +15,7 @@ Thank you for your interest in contributing! Flatplan is a community-driven proj
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold these standards. Please report unacceptable behaviour to the maintainers via the [issue tracker](https://gitlab.com/flatplan/flatplan/-/issues).
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold these standards. Please report unacceptable behaviour to the maintainers via the [issue tracker](https://github.com/felements/flatplan/issues).
 
 ---
 
@@ -23,7 +23,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### 🐛 Reporting Bugs
 
-1. **Search first** — check [existing issues](https://gitlab.com/flatplan/flatplan/-/issues) to avoid duplicates.
+1. **Search first** — check [existing issues](https://github.com/felements/flatplan/issues) to avoid duplicates.
 2. Open a new issue using the **Bug Report** template.
 3. Provide: OS + version, steps to reproduce, expected vs. actual behaviour, and any relevant log output.
 
@@ -58,8 +58,8 @@ Docs live in the `doc/` folder and in the root `README.md`. Fixes, clarification
 ### Steps
 
 ```bash
-# 1. Fork the repo on GitLab, then clone your fork
-git clone git@gitlab.com:<your-username>/flatplan.git
+# 1. Fork the repo on GitHub, then clone your fork
+git clone git@github.com:<your-username>/flatplan.git
 cd flatplan
 
 # 2. Install dependencies

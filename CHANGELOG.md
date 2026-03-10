@@ -33,5 +33,5 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
-[Unreleased]: https://gitlab.com/flatplan/flatplan/-/compare/v1.0.0...HEAD
-[1.0.0]: https://gitlab.com/flatplan/flatplan/-/releases/v1.0.0
+[Unreleased]: https://github.com/felements/flatplan/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/felements/flatplan/releases/tag/v1.0.0

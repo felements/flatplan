@@ -14,8 +14,7 @@ Only the latest minor release in the current major version receives security fix
 
 If you discover a security issue, report it privately so we can address it before it is disclosed publicly:
 
-1. **Email:** `info@aska.one` with the subject line `[SECURITY] Flatplan — <brief description>`.
-2. Alternatively, use GitLab's [confidential issue](https://gitlab.com/flatplan/flatplan/-/issues/new?issue[confidential]=true) feature.
+1. Use GitHub's [security advisory](https://github.com/felements/flatplan/security/advisories/new) feature.
 
 ### What to include
 

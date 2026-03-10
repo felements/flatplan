@@ -1,8 +1,8 @@
 # Flatplan
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Pipeline](https://gitlab.com/flatplan/flatplan/badges/main/pipeline.svg)](https://gitlab.com/flatplan/flatplan/-/pipelines)
-[![Latest Release](https://gitlab.com/flatplan/flatplan/-/badges/release.svg)](https://gitlab.com/flatplan/flatplan/-/releases)
+[![CI](https://github.com/felements/flatplan/actions/workflows/ci.yml/badge.svg)](https://github.com/felements/flatplan/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/felements/flatplan)](https://github.com/felements/flatplan/releases)
 
 > Your financial planning in "flat" files. Simple, local, and fully under your control.
 
@@ -70,7 +70,7 @@ Flatplan doesn't use a database. Your entire setup lives in a folder you choose:
 
 > 💡 Full installation packages (`.deb`, `.msix`, `.dmg`) will be attached to the first public release.
 
-1.  **Download** the latest release from the [Releases](https://gitlab.com/flatplan/flatplan/-/releases) page.
+1.  **Download** the latest release from the [Releases](https://github.com/felements/flatplan/releases) page.
 2.  **Run** the application.
 3.  **Create your first period** — the app guides you through a cold-start wizard to add your budget categories.
 4.  **Record your planned expenses** and start tracking actuals against them!
@@ -87,8 +87,8 @@ Flatplan doesn't use a database. Your entire setup lives in a folder you choose:
 
 We welcome all ideas and merge requests! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
-- 🐛 [Open a Bug Report](https://gitlab.com/flatplan/flatplan/-/issues/new?issuable_template=bug_report)
-- 💡 [Request a Feature](https://gitlab.com/flatplan/flatplan/-/issues/new?issuable_template=feature_request)
+- 🐛 [Open a Bug Report](https://github.com/felements/flatplan/issues/new?template=bug_report.md)
+- 💡 [Request a Feature](https://github.com/felements/flatplan/issues/new?template=feature_request.md)
 
 ## ⚖️ License
 

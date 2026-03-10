@@ -14,7 +14,7 @@ The Application does not require an active internet connection to function and d
 The Application does not use any third-party services, trackers, or advertising frameworks that could collect user information.
 
 ## 4. Open Source
-The source code of the Application is publicly available. You can review it to verify our data handling practices at: [https://gitlab.com/flatplan/flatplan/]
+The source code of the Application is publicly available. You can review it to verify our data handling practices at: [https://github.com/felements/flatplan]
 
 ## 5. Contact Information
-If you have any questions or concerns about this Privacy Policy, please open an issue on our GitHub repository or contact the maintainer at: [https://gitlab.com/flatplan/flatplan/-/issues]
+If you have any questions or concerns about this Privacy Policy, please open an issue on our GitHub repository or contact the maintainer at: [https://github.com/felements/flatplan/issues]
