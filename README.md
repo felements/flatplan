@@ -76,13 +76,6 @@ Flatplan doesn't use a database. Your entire setup lives in a folder you choose:
 4.  **Record your planned expenses** and start tracking actuals against them!
 5.  At the end of the month, **roll over** to a new period with one click — your categories and plan carry over automatically.
 
-## 🗺️ Roadmap
-
-* [ ] **Budget Templates** — a reusable `template.yaml` that seeds every new period automatically.
-* [ ] Multi-currency support
-* [ ] Improved charts and visualisations
-* [ ] Data export (CSV / PDF)
-
 ## 🤝 Contributing
 
 We welcome all ideas and merge requests! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
@@ -93,3 +86,7 @@ We welcome all ideas and merge requests! Please read [CONTRIBUTING.md](CONTRIBUT
 ## ⚖️ License
 
 This project is distributed under the MIT License. See the [`LICENSE`](LICENSE) file for details.
+
+---
+
+<a href="https://www.flaticon.com/free-icons/budget" title="budget icons">Budget icons created by Freepik - Flaticon</a>
