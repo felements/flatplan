@@ -15,6 +15,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [1.0.1] — 2026-03-12
+
+### Fixed
+- Default data directory now uses the system application-support folder instead of the executable's parent directory. Fixes `PathAccessException` crash on MSIX-packaged Windows builds (Microsoft Store).
+
+---
+
 ## [1.0.0] — 2026-03-07
 
 ### Added
@@ -33,5 +40,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
-[Unreleased]: https://github.com/felements/flatplan/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/felements/flatplan/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/felements/flatplan/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felements/flatplan/releases/tag/v1.0.0

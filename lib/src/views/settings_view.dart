@@ -114,7 +114,7 @@ class SettingsView extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Defaults to the application directory. '
+                      'Defaults to the system application data directory. '
                       'Changing the folder takes effect immediately.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(

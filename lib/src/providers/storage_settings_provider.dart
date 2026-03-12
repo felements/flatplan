@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../storage/storage_settings_service.dart';
-import 'repository_provider.dart';
 
 part 'storage_settings_provider.g.dart';
 

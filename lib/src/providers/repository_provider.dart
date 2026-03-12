@@ -1,7 +1,8 @@
+import 'dart:io';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../storage/period_repository.dart';
-import '../storage/storage_settings_service.dart';
 import 'storage_settings_provider.dart';
 
 part 'repository_provider.g.dart';
@@ -16,7 +17,8 @@ PeriodRepository periodRepository(Ref ref) {
   return PeriodRepository(directoryPath: path);
 }
 
-/// Inline fallback so the provider never blocks on a null.
+/// Temporary fallback while [storageSettingsProvider] resolves.
+/// Real path is set once the async provider completes.
 String _fallbackPath() {
-  return StorageSettingsService.defaultDirectory();
+  return '${Directory.systemTemp.path}/flatplan_fallback';
 }
