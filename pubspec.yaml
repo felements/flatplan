@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ^3.11.0
@@ -50,6 +50,7 @@ dependencies:
   file_picker: ^10.3.10
   url_launcher: ^6.3.2
   package_info_plus: ^9.0.0
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
@@ -80,12 +81,12 @@ msix_config:
   publisher_display_name: "felements"
   logo_path: "assets\\icon\\budget.png"
   bgr_color: "transparent"
-  msix_version: "1.0.1.0"
+  msix_version: "1.0.2.0"
 
 flutter_to_debian:
   bundle_name: "flatplan"
   name: "flatplan"
-  version: "1.0.1"
+  version: "1.0.2"
   description: "flatplan - your simple finance tracker"
   maintainer: "felements"
 

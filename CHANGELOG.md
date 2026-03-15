@@ -15,6 +15,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
+## [1.0.2] — 2026-03-15
+
+### Fixed
+- Fixed initial folder path generation for cold start. Resolved an issue where the `flatplan` folder was duplicated in the application support directory pathway (e.g. `c:\Users\{user}\AppData\Roaming\felements\flatplan/flatplan/periods`) by correctly using the platform-specific separator and ignoring the redundant folder creation.
+
+---
+
 ## [1.0.1] — 2026-03-12
 
 ### Fixed
@@ -40,6 +47,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ---
 
-[Unreleased]: https://github.com/felements/flatplan/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/felements/flatplan/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/felements/flatplan/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/felements/flatplan/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/felements/flatplan/releases/tag/v1.0.0

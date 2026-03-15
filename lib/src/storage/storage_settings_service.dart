@@ -1,3 +1,4 @@
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,6 +27,6 @@ class StorageSettingsService {
   /// location on all platforms, including MSIX-packaged Windows apps.
   static Future<String> defaultDirectory() async {
     final appSupport = await getApplicationSupportDirectory();
-    return '${appSupport.path}/flatplan/periods';
+    return p.join(appSupport.path, 'periods');
   }
 }
