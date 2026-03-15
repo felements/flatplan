@@ -81,12 +81,7 @@ jobs:
           if [[ "$1" == "--build" ]]; then
             CONTROL_FILE="$2/DEBIAN/control"
             if [[ -f "$CONTROL_FILE" ]]; then
-              # Remove "diversion," or ", diversion" or "diversion" alone from Defines
-              sed -i -E 's/([ ,]+)?diversion([ ,]+)?/\1/' "$CONTROL_FILE"
-              # Cleanup trailing commas if any remain at the end of Depends
-              sed -i -E 's/Depends: (.*), *$/Depends: \1/' "$CONTROL_FILE"
-              # Cleanup leading commas if any
-              sed -i -E 's/Depends: *, *(.*)/Depends: \1/' "$CONTROL_FILE"
+              perl -pi -e 'if (/^Depends:\s*(.*)/) { my @deps = split(/,\s*/, $1); @deps = grep { $_ !~ /\s/ && $_ !~ /^$/ } @deps; if (@deps) { $_ = "Depends: " . join(", ", @deps) . "\n"; } else { $_ = ""; } }' "$CONTROL_FILE"
             fi
           fi
           /usr/bin/dpkg-deb.real "$@"
