@@ -32,7 +32,7 @@ jobs:
           Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "flatplan-windows.zip"
 
       - name: Build MSIX
-        run: dart run msix:create
+        run: dart run msix:create --install-certificate false
 
       - name: Upload Windows ZIP Artifact
         uses: actions/upload-artifact@v4
@@ -73,7 +73,28 @@ jobs:
         run: tar -czvf flatplan-linux.tar.gz -C build/linux/x64/release/bundle .
 
       - name: Build Debian Package
-        run: dart run flutter_to_debian
+        run: |
+          # Create a wrapper around dpkg-deb to patch the control file before building
+          sudo mv /usr/bin/dpkg-deb /usr/bin/dpkg-deb.real
+          cat << 'EOF' > dpkg-deb
+          #!/bin/bash
+          if [[ "$1" == "--build" ]]; then
+            CONTROL_FILE="$2/DEBIAN/control"
+            if [[ -f "$CONTROL_FILE" ]]; then
+              # Remove "diversion," or ", diversion" or "diversion" alone from Defines
+              sed -i -E 's/([ ,]+)?diversion([ ,]+)?/\1/' "$CONTROL_FILE"
+              # Cleanup trailing commas if any remain at the end of Depends
+              sed -i -E 's/Depends: (.*), *$/Depends: \1/' "$CONTROL_FILE"
+              # Cleanup leading commas if any
+              sed -i -E 's/Depends: *, *(.*)/Depends: \1/' "$CONTROL_FILE"
+            fi
+          fi
+          /usr/bin/dpkg-deb.real "$@"
+          EOF
+          chmod +x dpkg-deb
+          sudo mv dpkg-deb /usr/bin/dpkg-deb
+          
+          dart run flutter_to_debian
 
       - name: Upload Linux Tar Artifact
         uses: actions/upload-artifact@v4

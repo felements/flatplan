@@ -82,6 +82,7 @@ msix_config:
   logo_path: "assets\\icon\\budget.png"
   bgr_color: "transparent"
   msix_version: "1.0.2.0"
+  install_certificate: false
 
 flutter_to_debian:
   bundle_name: "flatplan"
