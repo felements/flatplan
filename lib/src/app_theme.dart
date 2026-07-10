@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Centralized theme configuration for FlatPlan.
 ///
@@ -35,7 +34,7 @@ abstract final class AppTheme {
     final base = brightness == Brightness.dark
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;
-    return GoogleFonts.outfitTextTheme(base);
+    return base.apply(fontFamily: 'Outfit');
   }
 
   // ─── Dark Theme ───────────────────────────────────────────────────────
