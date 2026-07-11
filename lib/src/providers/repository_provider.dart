@@ -13,7 +13,7 @@ part 'repository_provider.g.dart';
 @riverpod
 PeriodRepository periodRepository(Ref ref) {
   final dirAsync = ref.watch(storageSettingsProvider);
-  final path = dirAsync.value ?? _fallbackPath();
+  final path = dirAsync.value?.path ?? _fallbackPath();
   return PeriodRepository(directoryPath: path);
 }
 

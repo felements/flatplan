@@ -8,15 +8,21 @@ part of 'storage_settings_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Exposes and manages the persisted data-directory path.
+/// Exposes and manages the persisted data-directory, resolving sandbox access
+/// (via security-scoped bookmarks on macOS) and falling back safely when the
+/// configured folder is unreachable.
 
 @ProviderFor(StorageSettings)
 final storageSettingsProvider = StorageSettingsProvider._();
 
-/// Exposes and manages the persisted data-directory path.
+/// Exposes and manages the persisted data-directory, resolving sandbox access
+/// (via security-scoped bookmarks on macOS) and falling back safely when the
+/// configured folder is unreachable.
 final class StorageSettingsProvider
-    extends $AsyncNotifierProvider<StorageSettings, String> {
-  /// Exposes and manages the persisted data-directory path.
+    extends $AsyncNotifierProvider<StorageSettings, StorageDirectory> {
+  /// Exposes and manages the persisted data-directory, resolving sandbox access
+  /// (via security-scoped bookmarks on macOS) and falling back safely when the
+  /// configured folder is unreachable.
   StorageSettingsProvider._()
     : super(
         from: null,
@@ -36,21 +42,24 @@ final class StorageSettingsProvider
   StorageSettings create() => StorageSettings();
 }
 
-String _$storageSettingsHash() => r'e1bb528b4865d4d35abef6d6526956177f9c81af';
+String _$storageSettingsHash() => r'fd3999093bae425b4183867240b5b5a055b31eff';
 
-/// Exposes and manages the persisted data-directory path.
+/// Exposes and manages the persisted data-directory, resolving sandbox access
+/// (via security-scoped bookmarks on macOS) and falling back safely when the
+/// configured folder is unreachable.
 
-abstract class _$StorageSettings extends $AsyncNotifier<String> {
-  FutureOr<String> build();
+abstract class _$StorageSettings extends $AsyncNotifier<StorageDirectory> {
+  FutureOr<StorageDirectory> build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<String>, String>;
+    final ref =
+        this.ref as $Ref<AsyncValue<StorageDirectory>, StorageDirectory>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<String>, String>,
-              AsyncValue<String>,
+              AnyNotifier<AsyncValue<StorageDirectory>, StorageDirectory>,
+              AsyncValue<StorageDirectory>,
               Object?,
               Object?
             >;
