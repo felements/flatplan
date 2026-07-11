@@ -63,4 +63,4 @@ final class PeriodRepositoryProvider
   }
 }
 
-String _$periodRepositoryHash() => r'fe88f2016f7acbdc2bc10df1cb68595dde11972d';
+String _$periodRepositoryHash() => r'af5f932bfdeb0d39820af65f715d2ea2c6df4f86';

@@ -21,301 +21,347 @@ class SettingsView extends HookConsumerWidget {
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
     final storageDirAsync = ref.watch(storageSettingsProvider);
 
+    // Storage controls must stay reachable even when period loading fails, so
+    // the page is never gated on currentPeriodProvider. Period-dependent
+    // sections handle their own empty/loading state inline below.
+    final period = currentPeriodAsync.value;
+
     return Scaffold(
-      body: currentPeriodAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (period) {
-          return ListView(
-            padding: const EdgeInsets.all(32),
-            children: [
-              // ─── Page header ──────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.only(bottom: 28),
-                child: Text(
-                  'Settings',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+      body: ListView(
+        padding: const EdgeInsets.all(32),
+        children: [
+          // ─── Page header ──────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(bottom: 28),
+            child: Text(
+              'Settings',
+              style: theme.textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+
+          // ─── Data Storage ──────────────────────────────────
+          _SectionHeader(icon: Icons.folder_rounded, title: 'Data Storage'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Period files location',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
                   ),
                 ),
-              ),
-
-              // ─── Data Storage ──────────────────────────────────
-              _SectionHeader(icon: Icons.folder_rounded, title: 'Data Storage'),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    width: 0.5,
+                const SizedBox(height: 8),
+                storageDirAsync.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, _) => Text(
+                    'Error loading path: $e',
+                    style: TextStyle(color: colorScheme.error),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Period files location',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    storageDirAsync.when(
-                      loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => Text(
-                        'Error loading path: $e',
-                        style: TextStyle(color: colorScheme.error),
-                      ),
-                      data: (dirPath) => Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                dirPath,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontFamily: 'monospace',
+                  data: (storageDir) {
+                    final displayPath =
+                        storageDir.configuredPath ?? storageDir.path;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (storageDir.accessError != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 18,
+                                  color: colorScheme.onErrorContainer,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    storageDir.accessError!,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onErrorContainer,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              final picked = await FilePicker.platform
-                                  .getDirectoryPath(
-                                    dialogTitle: 'Select periods folder',
-                                  );
-                              if (picked != null) {
-                                await ref
-                                    .read(storageSettingsProvider.notifier)
-                                    .updateDirectory(picked);
-                              }
-                            },
-                            icon: const Icon(Icons.folder_open_rounded),
-                            label: const Text('Change Folder'),
+                          const SizedBox(height: 12),
+                        ],
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  displayPath,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final picked = await FilePicker.platform
+                                    .getDirectoryPath(
+                                      dialogTitle: 'Select periods folder',
+                                    );
+                                if (picked != null) {
+                                  await ref
+                                      .read(storageSettingsProvider.notifier)
+                                      .updateDirectory(picked);
+                                }
+                              },
+                              icon: const Icon(Icons.folder_open_rounded),
+                              label: const Text('Change Folder'),
+                            ),
+                          ],
+                        ),
+                        if (storageDir.configuredPath != null) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () => ref
+                                  .read(storageSettingsProvider.notifier)
+                                  .resetToDefault(),
+                              icon: const Icon(
+                                Icons.restart_alt_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Reset to default folder'),
+                            ),
                           ),
                         ],
-                      ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Defaults to the system application data directory. '
+                  'Changing the folder takes effect immediately.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ─── Active Tracking Instance ─────────────────────
+          _SectionHeader(
+            icon: Icons.timer_rounded,
+            title: 'Active Tracking Instance',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (period != null) ...[
+                  Text(
+                    'Current Period: ${period.name}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Defaults to the system application data directory. '
-                      'Changing the folder takes effect immediately.',
+                  ),
+                  const SizedBox(height: 10),
+                  _InfoRow(label: 'Base Currency', value: period.baseCurrency),
+                  const SizedBox(height: 4),
+                  _InfoRow(
+                    label: 'Total Categories',
+                    value: '${period.categories.length}',
+                  ),
+                ] else ...[
+                  Text(
+                    'No active period found.',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'You need to generate or load a period template to begin tracking.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ─── Rollover & Initialization ────────────────────
+          _SectionHeader(
+            icon: Icons.auto_awesome_rounded,
+            title: 'Rollover & Initialization',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (period == null) ...[
+                  Text(
+                    'No tracking periods exist yet. Create your first period to start budgeting.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _showCreateFirstPeriodDialog(context, ref),
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    label: const Text('Create First Period'),
+                  ),
+                ] else ...[
+                  Text(
+                    'Start a new tracking period based on the current active configuration. '
+                    'This preserves planned expenses and categories while resetting actual spending.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _showGenerateDialog(context, ref, period),
+                    icon: const Icon(Icons.auto_awesome_rounded),
+                    label: const Text('Generate Next Period'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ─── About ────────────────────────────────────────
+          _SectionHeader(icon: Icons.info_outline_rounded, title: 'About'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'FlatPlan is a local-first budgeting application.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.hasData
+                        ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                        : '...';
+                    return Text(
+                      'Version: $version',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.7,
                         ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ─── Active Tracking Instance ─────────────────────
-              _SectionHeader(
-                icon: Icons.timer_rounded,
-                title: 'Active Tracking Instance',
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    width: 0.5,
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => launchUrl(
+                    Uri.parse('https://www.flaticon.com/free-icons/budget'),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (period != null) ...[
-                      Text(
-                        'Current Period: ${period.name}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.open_in_new_rounded,
+                          size: 14,
+                          color: colorScheme.primary,
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      _InfoRow(
-                        label: 'Base Currency',
-                        value: period.baseCurrency,
-                      ),
-                      const SizedBox(height: 4),
-                      _InfoRow(
-                        label: 'Total Categories',
-                        value: '${period.categories.length}',
-                      ),
-                    ] else ...[
-                      Text(
-                        'No active period found.',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'You need to generate or load a period template to begin tracking.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ─── Rollover & Initialization ────────────────────
-              _SectionHeader(
-                icon: Icons.auto_awesome_rounded,
-                title: 'Rollover & Initialization',
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    width: 0.5,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (period == null) ...[
-                      Text(
-                        'No tracking periods exist yet. Create your first period to start budgeting.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _showCreateFirstPeriodDialog(context, ref),
-                        icon: const Icon(Icons.add_circle_outline_rounded),
-                        label: const Text('Create First Period'),
-                      ),
-                    ] else ...[
-                      Text(
-                        'Start a new tracking period based on the current active configuration. '
-                        'This preserves planned expenses and categories while resetting actual spending.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _showGenerateDialog(context, ref, period),
-                        icon: const Icon(Icons.auto_awesome_rounded),
-                        label: const Text('Generate Next Period'),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ─── About ────────────────────────────────────────
-              _SectionHeader(icon: Icons.info_outline_rounded, title: 'About'),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    width: 0.5,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'FlatPlan is a local-first budgeting application.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    FutureBuilder<PackageInfo>(
-                      future: PackageInfo.fromPlatform(),
-                      builder: (context, snapshot) {
-                        final version = snapshot.hasData
-                            ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
-                            : '...';
-                        return Text(
-                          'Version: $version',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.7,
-                            ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Budget icons created by Freepik - Flaticon',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.primary,
+                            decoration: TextDecoration.underline,
+                            decorationColor: colorScheme.primary,
                           ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    InkWell(
-                      onTap: () => launchUrl(
-                        Uri.parse('https://www.flaticon.com/free-icons/budget'),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.open_in_new_rounded,
-                              size: 14,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Budget icons created by Freepik - Flaticon',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.primary,
-                                decoration: TextDecoration.underline,
-                                decorationColor: colorScheme.primary,
-                              ),
-                            ),
-                          ],
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
