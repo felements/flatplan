@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/ai_stats_settings_provider.dart';
+import 'package:flatplan/src/providers/all_periods_provider.dart';
+import 'package:flatplan/src/providers/current_period_provider.dart';
 import 'package:flatplan/src/providers/current_period_stats_sync_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
@@ -109,5 +111,35 @@ void main() {
     await container.read(currentPeriodStatsSyncProvider.future);
 
     expect(statsFile().existsSync(), isFalse);
+  });
+
+  test('regenerates the file content when period data changes', () async {
+    final repo = PeriodRepository(directoryPath: tempDir.path);
+    final period = activePeriod();
+    await repo.savePeriod(period);
+    container = await makeContainer();
+
+    await container.read(currentPeriodStatsSyncProvider.future);
+    expect(statsFile().existsSync(), isTrue);
+    final initialContent = statsFile().readAsStringSync();
+    expect(initialContent, contains('| Groceries | Mandatory | no | 500 | 120 | 380 | 24% | no |'));
+
+    // Mimic PeriodNotifier._debouncedSave: persist the change, then
+    // invalidate the providers it invalidates after a real edit.
+    final updatedCategory = period.categories.first.copyWith(
+      factExpenses: [
+        ...period.categories.first.factExpenses,
+        FactExpense(id: 'f2', amount: 80, timestamp: DateTime(2026, 1, 2)),
+      ],
+    );
+    final updatedPeriod = period.copyWith(categories: [updatedCategory]);
+    await repo.savePeriod(updatedPeriod);
+    container.invalidate(allPeriodsProvider);
+    container.invalidate(currentPeriodProvider);
+
+    await container.read(currentPeriodStatsSyncProvider.future);
+
+    final updatedContent = statsFile().readAsStringSync();
+    expect(updatedContent, contains('| Groceries | Mandatory | no | 500 | 200 | 300 | 40% | no |'));
   });
 }

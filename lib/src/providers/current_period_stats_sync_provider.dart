@@ -47,6 +47,7 @@ Future<void> currentPeriodStatsSync(Ref ref) async {
     endDate: endDate,
     now: DateTime.now(),
   );
+  if (!ref.mounted) return;
   try {
     await writer.writeStatsFile(markdown);
   } catch (_) {}

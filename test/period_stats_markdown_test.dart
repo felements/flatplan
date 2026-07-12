@@ -202,4 +202,14 @@ void main() {
     );
     expect(md, contains('(day 28 of 28, 0 days remaining)'));
   });
+
+  test('clamps day number when now is before the period range', () {
+    final md = formatCurrentPeriodStatsMarkdown(
+      period: _period(),
+      stats: _stats([]),
+      endDate: endDate,
+      now: DateTime(2026, 1, 20), // before the period started
+    );
+    expect(md, contains('(day 1 of 28, 27 days remaining)'));
+  });
 }
