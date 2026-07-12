@@ -77,10 +77,18 @@ String formatCurrentPeriodStatsMarkdown({
     ..writeln('|---|---|---|---|---|---|---|---|');
 
   for (final c in stats.categoryStats) {
+    // Spending cadence from the 20% trimmed mean of past purchases,
+    // e.g. "or 1,400 every 3 days" — same figures the category header shows.
+    final cadence =
+        c.expectedPurchaseFrequencyDays != null &&
+            c.expectedPurchaseAmount != null
+        ? ', or ${money.format(c.expectedPurchaseAmount)} '
+              'every ${c.expectedPurchaseFrequencyDays} days'
+        : '';
     final dailyAllow = !c.isDailyAllowance
         ? 'no'
         : c.dailyAllowanceAmount != null
-        ? 'yes (${money.format(c.dailyAllowanceAmount)}/day left)'
+        ? 'yes (${money.format(c.dailyAllowanceAmount)}/day left$cadence)'
         : 'yes';
     buffer.writeln(
       '| ${c.name} | ${_typeLabel(c.type)} | $dailyAllow '

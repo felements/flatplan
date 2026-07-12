@@ -75,7 +75,9 @@ Notes:
   `DateTime.now()`, matching every other date computation in this codebase — no UTC
   conversion.
 - **Daily Allow.** reflects `Category.isDailyAllowance`; when true, that row also
-  carries its daily-allowance-amount figure.
+  carries its daily-allowance-amount figure and, when available, the smart spending
+  cadence derived from the 20% trimmed mean of past purchases (the same figures the
+  category header shows), e.g. `yes (600/day left, or 1,400 every 3 days)`.
 - **Average daily spend** and **projected total at this rate** are new derived metrics —
   simple arithmetic on top of existing `PeriodStats` fields (`totalSpent` / days
   elapsed, projected against `totalBudget`). No new data model needed.
