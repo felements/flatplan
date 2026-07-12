@@ -464,6 +464,7 @@ class DashboardView extends ConsumerWidget {
             heatPercentage: c.heatPercentage,
             isOverBudget: c.isOverBudget,
             isIncome: c.type == CategoryType.income,
+            plannedExceedsLimit: c.plannedExceedsLimit,
             plannedExpenseStatuses: c.plannedExpenseStatuses,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
@@ -504,11 +505,8 @@ class DashboardView extends ConsumerWidget {
         0,
         (prev, e) => prev + e.amount,
       );
-      final planned = category.plannedExpenses.fold<double>(
-        0,
-        (prev, e) => prev + e.amount,
-      );
-      final limit = category.limit ?? planned;
+      final planned = category.plannedTotal;
+      final limit = category.effectiveLimit;
       final remaining = limit - spent;
       final heat = limit > 0 ? (spent / limit) : 0.0;
 
@@ -612,6 +610,7 @@ class DashboardView extends ConsumerWidget {
           heatPercentage: heat,
           isOverBudget: spent > limit,
           isDailyAllowance: category.isDailyAllowance,
+          plannedExceedsLimit: category.plannedExceedsLimit,
           plannedExpenseStatuses: plannedExpenseStatuses,
           dailyAllowanceAmount: dailyAllowanceAmount,
           expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,

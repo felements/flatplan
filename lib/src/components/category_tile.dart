@@ -11,6 +11,7 @@ class CategoryTile extends StatefulWidget {
   final double heatPercentage;
   final bool isOverBudget;
   final bool isIncome;
+  final bool plannedExceedsLimit;
   final VoidCallback onTap;
   final String? dailyAllowanceAmount;
   final int? expectedPurchaseFrequencyDays;
@@ -25,6 +26,7 @@ class CategoryTile extends StatefulWidget {
     required this.heatPercentage,
     required this.isOverBudget,
     this.isIncome = false,
+    this.plannedExceedsLimit = false,
     required this.onTap,
     this.dailyAllowanceAmount,
     this.expectedPurchaseFrequencyDays,
@@ -128,6 +130,17 @@ class _CategoryTileState extends State<CategoryTile> {
                                       : colorScheme.onSurfaceVariant),
                           ),
                         ),
+                        if (widget.plannedExceedsLimit) ...[
+                          const SizedBox(width: 6),
+                          const Tooltip(
+                            message: 'Planned expenses exceed the limit',
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              size: 16,
+                              color: Color(0xFFE0A030),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     if (widget.dailyAllowanceAmount != null) ...[

@@ -139,11 +139,8 @@ class CategoryDetailView extends HookConsumerWidget {
       0,
       (prev, e) => prev + e.amount,
     );
-    final planned = category.plannedExpenses.fold<double>(
-      0,
-      (prev, e) => prev + e.amount,
-    );
-    final limit = category.limit ?? planned;
+    final planned = category.plannedTotal;
+    final limit = category.effectiveLimit;
     final remaining = limit - spent;
     final heat = limit > 0 ? (spent / limit) : 0.0;
 
@@ -158,6 +155,7 @@ class CategoryDetailView extends HookConsumerWidget {
       heatPercentage: heat,
       isOverBudget: spent > limit,
       isDailyAllowance: category.isDailyAllowance,
+      plannedExceedsLimit: category.plannedExceedsLimit,
     );
   }
 
@@ -213,13 +211,29 @@ class CategoryDetailView extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  category.type == CategoryType.income
-                      ? 'Received: ${format.format(catStats.totalSpent)} / Expected: ${format.format(catStats.limit)}'
-                      : 'Spent: ${format.format(catStats.totalSpent)} / Limit: ${format.format(catStats.limit)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      category.type == CategoryType.income
+                          ? 'Received: ${format.format(catStats.totalSpent)} / Expected: ${format.format(catStats.limit)}'
+                          : 'Spent: ${format.format(catStats.totalSpent)} / Limit: ${format.format(catStats.limit)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (catStats.plannedExceedsLimit) ...[
+                      const SizedBox(width: 6),
+                      const Tooltip(
+                        message: 'Planned expenses exceed the limit',
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 16,
+                          color: Color(0xFFE0A030),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
