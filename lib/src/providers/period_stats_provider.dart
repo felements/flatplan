@@ -138,16 +138,10 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
       } else {
         bool isOverdue = false;
         if (isActivePeriod) {
-          final expDate = exp.dueDate.when(
-            exact: (d) => d,
-            dayOfMonth: (day) {
-              final d = DateTime(now.year, now.month, day);
-              // Shift into period if needed
-              if (d.isBefore(currentPeriod.startDate)) {
-                return DateTime(now.year, now.month + 1, day);
-              }
-              return d;
-            },
+          final expDate = resolveDueDate(
+            exp.dueDate,
+            now: now,
+            periodStart: currentPeriod.startDate,
           );
           if (now.isAfter(expDate.add(const Duration(days: 1)))) {
             isOverdue = true;
