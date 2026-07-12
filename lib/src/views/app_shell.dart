@@ -22,7 +22,9 @@ class AppShell extends ConsumerWidget {
 
     // Determine which period ID is currently being viewed via the URL.
     final uri = GoRouterState.of(context).uri.toString();
-    final periodIdMatch = RegExp(r'/period/(.+)').firstMatch(uri);
+    // Capture only the period segment so the selection persists when
+    // navigated deeper (e.g. /period/:id/category/:id).
+    final periodIdMatch = RegExp(r'/period/([^/]+)').firstMatch(uri);
     final activePeriodId = periodIdMatch?.group(1);
 
     // Find the period that covers today.
@@ -268,9 +270,9 @@ class _PeriodSubItem extends StatelessWidget {
     // Gold accent for the active period.
     const currentColor = Color(0xFFD4A84B);
 
-    final dotColor = isCurrent
-        ? currentColor
-        : isSelected
+    // The left dot indicates the selected period only; the current-date
+    // period is highlighted via bold white text and the right-side dot.
+    final dotColor = isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
 
