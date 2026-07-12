@@ -24,6 +24,7 @@ sealed class CategoryStats with _$CategoryStats {
     required double heatPercentage,
     required bool isOverBudget,
     required bool isDailyAllowance,
+    @Default(false) bool plannedExceedsLimit,
     @Default([]) List<PlannedExpenseStatus> plannedExpenseStatuses,
     double? dailyAllowanceAmount,
     int? expectedPurchaseFrequencyDays,
@@ -79,13 +80,11 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
     );
 
     // 2. Calculate Planned constraints
-    final planned = category.plannedExpenses.fold<double>(
-      0,
-      (previousValue, element) => previousValue + element.amount,
-    );
+    final planned = category.plannedTotal;
 
-    // 3. Category budget limit (fallback to planned if no hard limit is set)
-    final limit = category.limit ?? planned;
+    // 3. Effective budget: max of planned total and hard limit when a
+    //    limit is set, otherwise the planned total.
+    final limit = category.effectiveLimit;
 
     final remaining = limit - spent;
     final heatPercentage = limit > 0 ? (spent / limit) : 0.0;
@@ -188,6 +187,7 @@ FutureOr<PeriodStats?> periodStats(Ref ref) async {
         heatPercentage: heatPercentage,
         isOverBudget: isOverBudget,
         isDailyAllowance: category.isDailyAllowance,
+        plannedExceedsLimit: category.plannedExceedsLimit,
         plannedExpenseStatuses: plannedExpenseStatuses,
         dailyAllowanceAmount: dailyAllowanceAmount,
         expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
