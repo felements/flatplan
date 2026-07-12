@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../logic/period_extensions.dart';
 import '../models/models.dart';
 import '../providers/all_periods_provider.dart';
+import '../providers/current_period_stats_sync_provider.dart';
 
 /// The root shell widget providing a rich dark sidebar navigation.
 class AppShell extends ConsumerWidget {
@@ -19,6 +20,10 @@ class AppShell extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final selectedIndex = navigationShell.currentIndex;
     final periodsAsync = ref.watch(allPeriodsProvider);
+
+    // Keep the stats-file sync alive for the app's lifetime; the value is
+    // irrelevant, only the subscription matters.
+    ref.watch(currentPeriodStatsSyncProvider);
 
     // Determine which period ID is currently being viewed via the URL.
     final uri = GoRouterState.of(context).uri.toString();

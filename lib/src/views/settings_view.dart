@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../logic/period_logic.dart';
 import '../models/models.dart';
+import '../providers/ai_stats_settings_provider.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/storage_settings_provider.dart';
 
@@ -20,6 +21,7 @@ class SettingsView extends HookConsumerWidget {
     final colorScheme = theme.colorScheme;
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
     final storageDirAsync = ref.watch(storageSettingsProvider);
+    final aiStatsEnabled = ref.watch(aiStatsSettingsProvider).value ?? true;
 
     // Storage controls must stay reachable even when period loading fails, so
     // the page is never gated on currentPeriodProvider. Period-dependent
@@ -171,6 +173,59 @@ class SettingsView extends HookConsumerWidget {
                 Text(
                   'Defaults to the system application data directory. '
                   'Changing the folder takes effect immediately.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ─── AI Insights Data ─────────────────────────────
+          _SectionHeader(
+            icon: Icons.insights_rounded,
+            title: 'AI Insights Data',
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Generate current period stats',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: aiStatsEnabled,
+                      onChanged: (value) => ref
+                          .read(aiStatsSettingsProvider.notifier)
+                          .setEnabled(value),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Writes a current_stats.md snapshot next to your period '
+                  'files on every change, ready to feed AI spending insights. '
+                  'Disabling removes the file.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
