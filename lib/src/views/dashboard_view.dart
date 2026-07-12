@@ -464,6 +464,7 @@ class DashboardView extends ConsumerWidget {
             heatPercentage: c.heatPercentage,
             isOverBudget: c.isOverBudget,
             isIncome: c.type == CategoryType.income,
+            plannedExceedsLimit: c.plannedExceedsLimit,
             plannedExpenseStatuses: c.plannedExpenseStatuses,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
