@@ -20,6 +20,8 @@ CategoryStats _catStats({
   double spent = 0,
   bool isDailyAllowance = false,
   double? dailyAllowanceAmount,
+  int? expectedPurchaseFrequencyDays,
+  double? expectedPurchaseAmount,
 }) => CategoryStats(
   categoryId: id,
   name: name,
@@ -32,6 +34,8 @@ CategoryStats _catStats({
   isOverBudget: spent > limit,
   isDailyAllowance: isDailyAllowance,
   dailyAllowanceAmount: dailyAllowanceAmount,
+  expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
+  expectedPurchaseAmount: expectedPurchaseAmount,
 );
 
 PeriodStats _stats(List<CategoryStats> categoryStats) => PeriodStats(
@@ -94,6 +98,16 @@ void main() {
           isDailyAllowance: true,
           dailyAllowanceAmount: 50,
         ),
+        _catStats(
+          id: 'groceries',
+          name: 'Groceries',
+          limit: 5000,
+          spent: 3200,
+          isDailyAllowance: true,
+          dailyAllowanceAmount: 600,
+          expectedPurchaseFrequencyDays: 3,
+          expectedPurchaseAmount: 1400,
+        ),
       ]),
       endDate: endDate,
       now: now,
@@ -101,6 +115,13 @@ void main() {
 
     expect(md, contains('| Home | Mandatory | no | 500 | 750 | -250 | 150% | yes |'));
     expect(md, contains('| Fun | Optional | yes (50/day left) | 200 | 50 | 150 | 25% | no |'));
+    expect(
+      md,
+      contains(
+        '| Groceries | Optional | yes (600/day left, or 1,400 every 3 days) '
+        '| 5,000 | 3,200 | 1,800 | 64% | no |',
+      ),
+    );
     // Order preserved (already heat-sorted upstream).
     expect(md.indexOf('| Home |'), lessThan(md.indexOf('| Fun |')));
   });
