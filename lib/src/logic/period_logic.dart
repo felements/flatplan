@@ -9,13 +9,23 @@ Period createNextPeriod({
   required String newName,
 }) {
   final newCategories = currentPeriod.categories.map((category) {
-    // Copy planned expenses but reset the isCompleted flag
-    final newPlannedExpenses = category.plannedExpenses.map((planned) {
-      return planned.copyWith(
-        id: const Uuid().v4(), // generate new IDs for the new period
-        isCompleted: false,
-      );
-    }).toList();
+    // Copy recurring (day-of-month) planned expenses with the isCompleted
+    // flag reset. Exact-date expenses are one-offs tied to the old period,
+    // so they are not carried over.
+    final newPlannedExpenses = category.plannedExpenses
+        .where(
+          (planned) => planned.dueDate.when(
+            exact: (_) => false,
+            dayOfMonth: (_) => true,
+          ),
+        )
+        .map((planned) {
+          return planned.copyWith(
+            id: const Uuid().v4(), // generate new IDs for the new period
+            isCompleted: false,
+          );
+        })
+        .toList();
 
     return category.copyWith(
       id: const Uuid()
