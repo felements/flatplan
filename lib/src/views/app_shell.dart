@@ -268,9 +268,9 @@ class _PeriodSubItem extends StatelessWidget {
     // Gold accent for the active period.
     const currentColor = Color(0xFFD4A84B);
 
-    final dotColor = isCurrent
-        ? currentColor
-        : isSelected
+    // The left dot indicates the selected period only; the current-date
+    // period is highlighted via bold white text and the right-side dot.
+    final dotColor = isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
 
