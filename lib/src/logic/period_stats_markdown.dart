@@ -17,6 +17,7 @@ String formatCurrentPeriodStatsMarkdown({
   required PeriodStats stats,
   required DateTime endDate,
   required DateTime now,
+  String? sourceFileName,
 }) {
   final money = NumberFormat('#,##0.##');
   final dateFmt = DateFormat('yyyy-MM-dd');
@@ -42,7 +43,11 @@ String formatCurrentPeriodStatsMarkdown({
     ..writeln(
       '- Period: ${period.name} '
       '(${dateFmt.format(period.startDate)} → ${dateFmt.format(endDate)})',
-    )
+    );
+  if (sourceFileName != null) {
+    buffer.writeln('- Source: $sourceFileName');
+  }
+  buffer
     ..writeln(
       '- Today: ${dateFmt.format(now)} '
       '(day $dayNumber of $totalDays, $daysRemaining days remaining)',

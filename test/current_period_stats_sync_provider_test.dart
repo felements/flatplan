@@ -81,6 +81,21 @@ void main() {
     expect(content, contains('| Groceries | Mandatory |'));
   });
 
+  test('stats file references the source period yaml filename', () async {
+    await PeriodRepository(directoryPath: tempDir.path)
+        .savePeriod(activePeriod());
+    container = await makeContainer();
+
+    await container.read(currentPeriodStatsSyncProvider.future);
+
+    final yamlName = tempDir
+        .listSync()
+        .whereType<File>()
+        .map((f) => f.uri.pathSegments.last)
+        .firstWhere((n) => n.endsWith('.yaml'));
+    expect(statsFile().readAsStringSync(), contains('- Source: $yamlName'));
+  });
+
   test('deletes the file when the toggle is switched off', () async {
     await PeriodRepository(directoryPath: tempDir.path)
         .savePeriod(activePeriod());

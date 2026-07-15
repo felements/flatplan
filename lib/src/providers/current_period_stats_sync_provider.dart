@@ -46,6 +46,7 @@ Future<void> currentPeriodStatsSync(Ref ref) async {
     stats: stats,
     endDate: endDate,
     now: DateTime.now(),
+    sourceFileName: repo.filenameForPeriod(period.id),
   );
   if (!ref.mounted) return;
   try {

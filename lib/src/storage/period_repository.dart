@@ -16,6 +16,10 @@ class PeriodRepository {
 
   PeriodRepository({required this.directoryPath});
 
+  /// The physical YAML filename for [periodId], or null if the period has
+  /// not been loaded or saved by this repository instance yet.
+  String? filenameForPeriod(String periodId) => _idToFilename[periodId];
+
   Future<Directory> _getStorageDirectory() async {
     final dir = Directory(directoryPath);
     if (!await dir.exists()) {

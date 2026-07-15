@@ -57,6 +57,28 @@ void main() {
       expect(filename, 'my_custom_template.yaml');
     });
 
+    test('filenameForPeriod returns the physical filename after save and load',
+        () async {
+      final period = Period(
+        id: 'abc-uuid',
+        name: 'March 2026',
+        startDate: DateTime(2026, 3, 1),
+        baseCurrency: 'EUR',
+        lastModified: DateTime.now(),
+      );
+
+      await repo.savePeriod(period);
+      expect(repo.filenameForPeriod('abc-uuid'), '2026-03-march_2026.yaml');
+
+      final freshRepo = PeriodRepository(directoryPath: tempDir.path);
+      expect(freshRepo.filenameForPeriod('abc-uuid'), isNull);
+      await freshRepo.loadAllPeriods();
+      expect(
+        freshRepo.filenameForPeriod('abc-uuid'),
+        '2026-03-march_2026.yaml',
+      );
+    });
+
     test('handles empty or special character names gracefully', () async {
       final period = Period(
         id: 'uuid-1111',
