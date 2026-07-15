@@ -79,6 +79,32 @@ void main() {
     expect(md, contains('- Income: 3,500 planned / 2,000 actual'));
   });
 
+  test('includes Source line in Meta when sourceFileName is given', () {
+    final md = formatCurrentPeriodStatsMarkdown(
+      period: _period(),
+      stats: _stats([]),
+      endDate: endDate,
+      now: now,
+      sourceFileName: '2026-02-february_2026.yaml',
+    );
+
+    expect(md, contains('- Source: 2026-02-february_2026.yaml'));
+    // Placed right after the Period line, before Today.
+    expect(md.indexOf('- Period:'), lessThan(md.indexOf('- Source:')));
+    expect(md.indexOf('- Source:'), lessThan(md.indexOf('- Today:')));
+  });
+
+  test('omits Source line when sourceFileName is null', () {
+    final md = formatCurrentPeriodStatsMarkdown(
+      period: _period(),
+      stats: _stats([]),
+      endDate: endDate,
+      now: now,
+    );
+
+    expect(md, isNot(contains('- Source:')));
+  });
+
   test('renders category rows in given order with type and heat', () {
     final md = formatCurrentPeriodStatsMarkdown(
       period: _period(),
