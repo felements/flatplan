@@ -15,6 +15,7 @@ concurrency:
 jobs:
   version:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     outputs:
       version: ${{ steps.svu.outputs.version }}
     steps:
@@ -29,10 +30,12 @@ jobs:
           VERSION="$(docker run --rm -v "$PWD:/repo" -w /repo \
             ghcr.io/caarlos0/svu:v3.2.4 next --always --tag.pattern 'v*' | sed 's/^v//')"
           echo "computed version: $VERSION"
+          if [ -z "$VERSION" ]; then echo "::error::svu produced empty version"; exit 1; fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   test:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -7,6 +7,11 @@ next version from git history, tests, builds Windows (zip + MSIX) and Linux
 Microsoft Store. Pull requests are gated by `.github/workflows/ci.yml`
 (analyze + test).
 
+Note on rapid merges: overlapping runs share a concurrency group and GitHub
+keeps only the newest pending run — with three quick merges, the middle run
+is cancelled (shows as ❌) and its commits are simply included in the next
+run's release. Every commit still ends up in a release; versions never race.
+
 Design: `docs/superpowers/specs/2026-07-20-release-pipeline-design.md`.
 
 ## How versioning works
