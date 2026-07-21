@@ -2,15 +2,40 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  version:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      version: ${{ steps.svu.outputs.version }}
+    steps:
+      - name: Checkout repository (full history for svu)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version with svu
+        id: svu
+        run: |
+          VERSION="$(docker run --rm -v "$PWD:/repo" -w /repo \
+            ghcr.io/caarlos0/svu:v3.2.4 next --always --tag.pattern 'v*' | sed 's/^v//')"
+          echo "computed version: $VERSION"
+          if [ -z "$VERSION" ]; then echo "::error::svu produced empty version"; exit 1; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  test:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,12 +49,34 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Test
+        run: flutter test
+
+  build-windows:
+    runs-on: windows-latest
+    needs: version
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Patch version into pubspec
+        run: dart run ci/patch_version.dart ${{ needs.version.outputs.version }} ${{ github.run_number }}
+
       - name: Build Windows
         run: flutter build windows
 
       - name: Create ZIP
         run: |
-          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "flatplan-windows.zip"
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "flatplan-windows-${{ needs.version.outputs.version }}.zip"
 
       - name: Build MSIX
         run: dart run msix:create --install-certificate false
@@ -38,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: flatplan-windows-zip
-          path: flatplan-windows.zip
+          path: flatplan-windows-*.zip
 
       - name: Upload Windows MSIX Artifact
         uses: actions/upload-artifact@v4
@@ -48,6 +95,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
+    needs: version
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -66,11 +114,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Patch version into pubspec
+        run: dart run ci/patch_version.dart ${{ needs.version.outputs.version }} ${{ github.run_number }}
+
       - name: Build Linux
         run: flutter build linux
 
       - name: Create Tar
-        run: tar -czvf flatplan-linux.tar.gz -C build/linux/x64/release/bundle .
+        run: tar -czvf flatplan-linux-${{ needs.version.outputs.version }}.tar.gz -C build/linux/x64/release/bundle .
 
       - name: Build Debian Package
         run: |
@@ -88,14 +139,14 @@ jobs:
           EOF
           chmod +x dpkg-deb
           sudo mv dpkg-deb /usr/bin/dpkg-deb
-          
+
           dart run flutter_to_debian
 
       - name: Upload Linux Tar Artifact
         uses: actions/upload-artifact@v4
         with:
           name: flatplan-linux-tar
-          path: flatplan-linux.tar.gz
+          path: flatplan-linux-*.tar.gz
 
       - name: Upload Linux DEB Artifact
         uses: actions/upload-artifact@v4
@@ -103,13 +154,37 @@ jobs:
           name: flatplan-linux-deb
           path: "**/*.deb"
 
-  publish-release:
-    needs: [build-windows, build-linux]
+  notes:
     runs-on: ubuntu-latest
+    needs: version
+    continue-on-error: true
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (full history for commit range)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Generate release notes
+        env:
+          PRODUCT_VERSION: ${{ needs.version.outputs.version }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RELEASE_NOTES_ENABLED: ${{ vars.RELEASE_NOTES_ENABLED || 'true' }}
+        run: |
+          sh ci/gen-release-notes.sh
+          echo "----- release-notes.md -----"
+          cat release-notes.md
+
+      - name: Upload release notes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [version, test, build-windows, build-linux, notes]
+    steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -118,14 +193,53 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release-files
-          find artifacts -name "flatplan-windows.zip" -exec cp {} release-files/ \;
+          find artifacts -name "flatplan-windows-*.zip" -exec cp {} release-files/ \;
           find artifacts -name "*.msix" -exec cp {} release-files/ \;
-          find artifacts -name "flatplan-linux.tar.gz" -exec cp {} release-files/ \;
+          find artifacts -name "flatplan-linux-*.tar.gz" -exec cp {} release-files/ \;
           find artifacts -name "*.deb" -exec cp {} release-files/ \;
+          ls -la release-files
+
+      - name: Ensure release notes exist
+        run: |
+          if [ ! -f artifacts/release-notes/release-notes.md ]; then
+            mkdir -p artifacts/release-notes
+            echo "flatplan v${{ needs.version.outputs.version }}" > artifacts/release-notes/release-notes.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: flatplan v${{ needs.version.outputs.version }}
+          body_path: artifacts/release-notes/release-notes.md
           files: release-files/*
           draft: false
-          generate_release_notes: true
+
+  publish-store:
+    runs-on: ubuntu-latest
+    needs: release
+    environment: ms-store
+    steps:
+      - name: Download MSIX artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: flatplan-windows-msix
+
+      - name: Locate MSIX
+        run: |
+          MSIX_FILE=$(find . -maxdepth 1 -name '*.msix' -printf '%f\n' | head -n 1)
+          if [ -z "$MSIX_FILE" ]; then
+            echo "::error::Could not find .msix artifact"
+            exit 1
+          fi
+          echo "MSIX_PATH=$MSIX_FILE" >> "$GITHUB_ENV"
+
+      - name: Publish MSIX to Microsoft Store
+        uses: microsoft/store-submission@v1
+        with:
+          tenant-id: ${{ secrets.TENANT_ID }}
+          client-id: ${{ secrets.CLIENT_ID }}
+          client-secret: ${{ secrets.CLIENT_SECRET }}
+          seller-id: ${{ secrets.SELLER_ID }}
+          app-id: ${{ secrets.APP_ID }}
+          package-path: ${{ env.MSIX_PATH }}
