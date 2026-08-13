@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:developer' show log;
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -269,7 +271,7 @@ class CurrentPeriod extends _$CurrentPeriod {
         final repo = ref.read(periodRepositoryProvider);
         await repo.savePeriod(period);
       } catch (e) {
-        print('Failed to auto-save period: $e');
+        log('Failed to auto-save period: $e', name: 'flatplan.storage');
         // Handle error visually via a separate notification provider if needed
       }
     });
