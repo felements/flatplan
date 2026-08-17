@@ -425,121 +425,24 @@ class SettingsView extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final nameController = TextEditingController();
-    final currencyController = TextEditingController(text: 'EUR');
-
-    DateTime startDate = DateTime.now();
-
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final theme = Theme.of(context);
-            final colorScheme = theme.colorScheme;
-
-            return AlertDialog(
-              title: const Text('Create First Period'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Period Name (e.g. February 2026)',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: currencyController,
-                    decoration: const InputDecoration(
-                      labelText: 'Base Currency (e.g. EUR, USD)',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Start Date: '),
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: startDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() => startDate = picked);
-                          }
-                        },
-                        child: Text(
-                          '${startDate.year}-${startDate.month}-${startDate.day}',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'End date is computed automatically: 30 days from start, '
-                          'or until the next period begins.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final newName = nameController.text.trim();
-                    final currency = currencyController.text
-                        .trim()
-                        .toUpperCase();
-                    if (newName.isEmpty) return;
-
-                    final newPeriod = createEmptyPeriod(
-                      startDate: startDate,
-                      name: newName,
-                      baseCurrency: currency.isEmpty ? 'EUR' : currency,
-                    );
-
-                    ref
-                        .read(currentPeriodProvider.notifier)
-                        .setPeriod(newPeriod);
-
-                    Navigator.pop(ctx);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Period "$newName" created!')),
-                    );
-                  },
-                  child: const Text('Create'),
-                ),
-              ],
-            );
-          },
+    final result =
+        await showDialog<({String name, String currency, DateTime startDate})>(
+          context: context,
+          builder: (ctx) => const _CreateFirstPeriodDialog(),
         );
-      },
+    if (result == null || !context.mounted) return;
+
+    final newPeriod = createEmptyPeriod(
+      startDate: result.startDate,
+      name: result.name,
+      baseCurrency: result.currency,
     );
 
-    nameController.dispose();
-    currencyController.dispose();
+    ref.read(currentPeriodProvider.notifier).setPeriod(newPeriod);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Period "${result.name}" created!')));
   }
 
   Future<void> _showGenerateDialog(
@@ -547,111 +450,237 @@ class SettingsView extends HookConsumerWidget {
     WidgetRef ref,
     Period currentPeriod,
   ) async {
-    final nameController = TextEditingController();
-
-    DateTime startDate = DateTime.now();
-
-    await showDialog(
+    final result = await showDialog<({String name, DateTime startDate})>(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final theme = Theme.of(context);
-            final colorScheme = theme.colorScheme;
+      builder: (ctx) => const _GeneratePeriodDialog(),
+    );
+    if (result == null || !context.mounted) return;
 
-            return AlertDialog(
-              title: const Text('Generate Next Period'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'New Period Name (e.g. March 2026)',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Start Date: '),
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: startDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() => startDate = picked);
-                          }
-                        },
-                        child: Text(
-                          '${startDate.year}-${startDate.month}-${startDate.day}',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'The previous period will automatically end '
-                          'the day before this start date.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final newName = nameController.text.trim();
-                    if (newName.isEmpty) return;
-
-                    final newPeriod = createNextPeriod(
-                      currentPeriod: currentPeriod,
-                      newStartDate: startDate,
-                      newName: newName,
-                    );
-
-                    ref
-                        .read(currentPeriodProvider.notifier)
-                        .setPeriod(newPeriod);
-
-                    Navigator.pop(ctx);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Successfully rolled over to $newName!'),
-                      ),
-                    );
-                  },
-                  child: const Text('Generate'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final newPeriod = createNextPeriod(
+      currentPeriod: currentPeriod,
+      newStartDate: result.startDate,
+      newName: result.name,
     );
 
-    nameController.dispose();
+    ref.read(currentPeriodProvider.notifier).setPeriod(newPeriod);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Successfully rolled over to ${result.name}!')),
+    );
+  }
+}
+
+/// Dialog collecting the name, currency, and start date for the first period.
+///
+/// Owns its [TextEditingController]s so they are disposed only after the
+/// dialog's exit animation completes (disposing them right after
+/// `showDialog` returns crashes any rebuild during the closing transition).
+class _CreateFirstPeriodDialog extends StatefulWidget {
+  const _CreateFirstPeriodDialog();
+
+  @override
+  State<_CreateFirstPeriodDialog> createState() =>
+      _CreateFirstPeriodDialogState();
+}
+
+class _CreateFirstPeriodDialogState extends State<_CreateFirstPeriodDialog> {
+  final _nameController = TextEditingController();
+  final _currencyController = TextEditingController(text: 'EUR');
+  DateTime _startDate = DateTime.now();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _currencyController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    final currency = _currencyController.text.trim().toUpperCase();
+    if (name.isEmpty) return;
+
+    Navigator.pop(context, (
+      name: name,
+      currency: currency.isEmpty ? 'EUR' : currency,
+      startDate: _startDate,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AlertDialog(
+      title: const Text('Create First Period'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Period Name (e.g. February 2026)',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _currencyController,
+            decoration: const InputDecoration(
+              labelText: 'Base Currency (e.g. EUR, USD)',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Text('Start Date: '),
+              TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setState(() => _startDate = picked);
+                  }
+                },
+                child: Text(
+                  '${_startDate.year}-${_startDate.month}-${_startDate.day}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'End date is computed automatically: 30 days from start, '
+                  'or until the next period begins.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(onPressed: _submit, child: const Text('Create')),
+      ],
+    );
+  }
+}
+
+/// Dialog collecting the name and start date for the next period.
+///
+/// Owns its [TextEditingController] so it is disposed only after the
+/// dialog's exit animation completes.
+class _GeneratePeriodDialog extends StatefulWidget {
+  const _GeneratePeriodDialog();
+
+  @override
+  State<_GeneratePeriodDialog> createState() => _GeneratePeriodDialogState();
+}
+
+class _GeneratePeriodDialogState extends State<_GeneratePeriodDialog> {
+  final _nameController = TextEditingController();
+  DateTime _startDate = DateTime.now();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    Navigator.pop(context, (name: name, startDate: _startDate));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AlertDialog(
+      title: const Text('Generate Next Period'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'New Period Name (e.g. March 2026)',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Text('Start Date: '),
+              TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setState(() => _startDate = picked);
+                  }
+                },
+                child: Text(
+                  '${_startDate.year}-${_startDate.month}-${_startDate.day}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'The previous period will automatically end '
+                  'the day before this start date.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(onPressed: _submit, child: const Text('Generate')),
+      ],
+    );
   }
 }
 

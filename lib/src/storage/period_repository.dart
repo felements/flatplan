@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:developer' show log;
 import 'dart:io';
 
 import 'package:json2yaml/json2yaml.dart';
@@ -42,7 +43,10 @@ class PeriodRepository {
 
           final yamlDoc = loadYaml(content);
           if (yamlDoc is! YamlMap) {
-            print('Skipped ${entity.path}: not a valid YamlMap object.');
+            log(
+              'Skipped ${entity.path}: not a valid YamlMap object.',
+              name: 'flatplan.storage',
+            );
             continue;
           }
           final map = _cloneYamlNode(yamlDoc) as Map<String, dynamic>;
@@ -51,7 +55,10 @@ class PeriodRepository {
           periods.add(period);
         } catch (e) {
           // Log or handle corrupt YAML files if needed
-          print('Failed to load period from ${entity.path}: $e');
+          log(
+            'Failed to load period from ${entity.path}: $e',
+            name: 'flatplan.storage',
+          );
         }
       }
     }
