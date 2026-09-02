@@ -5,11 +5,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../components/period_load_warning.dart';
 import '../logic/period_logic.dart';
 import '../models/models.dart';
 import '../providers/ai_stats_settings_provider.dart';
+import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/storage_settings_provider.dart';
+import '../storage/period_repository.dart';
 
 /// Settings page for period management and app configuration.
 class SettingsView extends HookConsumerWidget {
@@ -22,6 +25,9 @@ class SettingsView extends HookConsumerWidget {
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
     final storageDirAsync = ref.watch(storageSettingsProvider);
     final aiStatsEnabled = ref.watch(aiStatsSettingsProvider).value ?? true;
+    final loadFailures =
+        ref.watch(periodLoadFailuresProvider).value ??
+        const <PeriodLoadFailure>[];
 
     // Storage controls must stay reachable even when period loading fails, so
     // the page is never gated on currentPeriodProvider. Period-dependent
@@ -107,6 +113,10 @@ class SettingsView extends HookConsumerWidget {
                               ],
                             ),
                           ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (loadFailures.isNotEmpty) ...[
+                          PeriodLoadFailureList(failures: loadFailures),
                           const SizedBox(height: 12),
                         ],
                         Row(
