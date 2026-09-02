@@ -5,12 +5,14 @@ import 'package:intl/intl.dart';
 
 import '../app_theme.dart';
 import '../components/category_tile.dart';
+import '../components/period_load_warning.dart';
 import '../components/summary_card.dart';
 import '../logic/period_extensions.dart';
 import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
 import '../models/models.dart';
+import '../storage/period_repository.dart';
 
 /// The main dashboard showing period summary and category breakdown.
 class DashboardView extends ConsumerWidget {
@@ -43,318 +45,338 @@ class DashboardView extends ConsumerWidget {
     final statsAsync = ref.watch(periodStatsProvider);
     final allPeriodsAsync = ref.watch(allPeriodsProvider);
 
-    return Scaffold(
-      body: periodAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (period) {
-          if (period == null) {
-            return _buildEmptyState(context);
-          }
+    // Period files that could not be parsed. Surfaced as a banner above every
+    // branch below, including the empty state — otherwise a folder of broken
+    // files looks identical to a folder with no periods at all.
+    final loadFailures =
+        ref.watch(periodLoadFailuresProvider).value ??
+        const <PeriodLoadFailure>[];
 
-          // Compute the effective end date from the full list of periods.
-          final allPeriods = allPeriodsAsync.value ?? [];
-          final endDate = effectiveEndDate(period, allPeriods);
+    final body = periodAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (period) {
+        if (period == null) {
+          return _buildEmptyState(context);
+        }
 
-          // For current period use the existing stats provider;
-          // for historical periods compute stats inline.
-          final PeriodStats? stats;
-          if (periodId != null) {
-            stats = _computeStats(period, endDate);
-          } else {
-            stats = statsAsync.value;
-          }
-          if (stats == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        // Compute the effective end date from the full list of periods.
+        final allPeriods = allPeriodsAsync.value ?? [];
+        final endDate = effectiveEndDate(period, allPeriods);
 
-          final currencyFormatter = NumberFormat.simpleCurrency(
-            name: period.baseCurrency,
-            decimalDigits: 0,
-          );
+        // For current period use the existing stats provider;
+        // for historical periods compute stats inline.
+        final PeriodStats? stats;
+        if (periodId != null) {
+          stats = _computeStats(period, endDate);
+        } else {
+          stats = statsAsync.value;
+        }
+        if (stats == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          Color budgetColor;
-          Color budgetBgColor;
-          if (stats.totalIncome > 0) {
-            if (stats.totalBudget > stats.totalIncome) {
-              budgetColor = colorScheme.error;
-              budgetBgColor = AppTheme.cardCoral;
-            } else if (stats.totalBudget >= stats.totalIncome * 0.8) {
-              budgetColor = colorScheme.primary;
-              budgetBgColor = AppTheme.cardGold;
-            } else {
-              budgetColor = const Color(0xFF6ABF69);
-              budgetBgColor = AppTheme.cardGreen;
-            }
-          } else {
+        final currencyFormatter = NumberFormat.simpleCurrency(
+          name: period.baseCurrency,
+          decimalDigits: 0,
+        );
+
+        Color budgetColor;
+        Color budgetBgColor;
+        if (stats.totalIncome > 0) {
+          if (stats.totalBudget > stats.totalIncome) {
+            budgetColor = colorScheme.error;
+            budgetBgColor = AppTheme.cardCoral;
+          } else if (stats.totalBudget >= stats.totalIncome * 0.8) {
             budgetColor = colorScheme.primary;
             budgetBgColor = AppTheme.cardGold;
-          }
-
-          Color spentColor;
-          Color spentBgColor;
-          if (stats.totalFactIncome > 0) {
-            if (stats.totalSpent > stats.totalFactIncome) {
-              spentColor = colorScheme.error;
-              spentBgColor = AppTheme.cardCoral;
-            } else if (stats.totalSpent >= stats.totalFactIncome * 0.8) {
-              spentColor = colorScheme.primary;
-              spentBgColor = AppTheme.cardGold;
-            } else {
-              spentColor = const Color(0xFF6ABF69);
-              spentBgColor = AppTheme.cardGreen;
-            }
           } else {
-            spentColor = colorScheme.secondary;
-            spentBgColor = AppTheme.cardTeal;
+            budgetColor = const Color(0xFF6ABF69);
+            budgetBgColor = AppTheme.cardGreen;
           }
+        } else {
+          budgetColor = colorScheme.primary;
+          budgetBgColor = AppTheme.cardGold;
+        }
 
-          Color remainingColor;
-          Color remainingBgColor;
-          if (stats.totalFactIncome > 0 &&
-              stats.remainingFreeBalance >= stats.totalFactIncome * 0.2) {
-            remainingColor = const Color(0xFF6ABF69);
-            remainingBgColor = AppTheme.cardGreen;
-          } else if (stats.remainingFreeBalance >= 0) {
-            remainingColor = colorScheme.primary;
-            remainingBgColor = AppTheme.cardGold;
+        Color spentColor;
+        Color spentBgColor;
+        if (stats.totalFactIncome > 0) {
+          if (stats.totalSpent > stats.totalFactIncome) {
+            spentColor = colorScheme.error;
+            spentBgColor = AppTheme.cardCoral;
+          } else if (stats.totalSpent >= stats.totalFactIncome * 0.8) {
+            spentColor = colorScheme.primary;
+            spentBgColor = AppTheme.cardGold;
           } else {
-            remainingColor = colorScheme.error;
-            remainingBgColor = AppTheme.cardCoral;
+            spentColor = const Color(0xFF6ABF69);
+            spentBgColor = AppTheme.cardGreen;
           }
+        } else {
+          spentColor = colorScheme.secondary;
+          spentBgColor = AppTheme.cardTeal;
+        }
 
-          final mandatoryCategories = stats.categoryStats
-              .where((c) => c.type == CategoryType.mandatoryExpense)
-              .toList();
-          final optionalCategories = stats.categoryStats
-              .where((c) => c.type == CategoryType.optionalExpense)
-              .toList();
-          final incomeCategories = stats.categoryStats
-              .where((c) => c.type == CategoryType.income)
-              .toList();
+        Color remainingColor;
+        Color remainingBgColor;
+        if (stats.totalFactIncome > 0 &&
+            stats.remainingFreeBalance >= stats.totalFactIncome * 0.2) {
+          remainingColor = const Color(0xFF6ABF69);
+          remainingBgColor = AppTheme.cardGreen;
+        } else if (stats.remainingFreeBalance >= 0) {
+          remainingColor = colorScheme.primary;
+          remainingBgColor = AppTheme.cardGold;
+        } else {
+          remainingColor = colorScheme.error;
+          remainingBgColor = AppTheme.cardCoral;
+        }
 
-          final now = DateTime.now();
-          String greeting;
-          if (now.hour < 12) {
-            greeting = 'Good Morning';
-          } else if (now.hour < 17) {
-            greeting = 'Good Afternoon';
-          } else {
-            greeting = 'Good Evening';
-          }
-          final dateStr = DateFormat(
-            'MMMM d, h:mm a',
-          ).format(period.lastModified);
-          final headerPrefix = '$greeting • Last revised on $dateStr';
+        final mandatoryCategories = stats.categoryStats
+            .where((c) => c.type == CategoryType.mandatoryExpense)
+            .toList();
+        final optionalCategories = stats.categoryStats
+            .where((c) => c.type == CategoryType.optionalExpense)
+            .toList();
+        final incomeCategories = stats.categoryStats
+            .where((c) => c.type == CategoryType.income)
+            .toList();
 
-          final isActivePeriod =
-              now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
-              now.isBefore(endDate.add(const Duration(days: 1)));
-          final periodLengthDays =
-              endDate.difference(period.startDate).inDays + 1;
-          final daysRemainingLabel = isActivePeriod
-              ? '${endDate.difference(now).inDays + 1} days remaining'
-              : '$periodLengthDays days';
+        final now = DateTime.now();
+        String greeting;
+        if (now.hour < 12) {
+          greeting = 'Good Morning';
+        } else if (now.hour < 17) {
+          greeting = 'Good Afternoon';
+        } else {
+          greeting = 'Good Evening';
+        }
+        final dateStr = DateFormat(
+          'MMMM d, h:mm a',
+        ).format(period.lastModified);
+        final headerPrefix = '$greeting • Last revised on $dateStr';
 
-          // The effective period ID for building routes.
-          final effectivePeriodId = period.id;
+        final isActivePeriod =
+            now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
+            now.isBefore(endDate.add(const Duration(days: 1)));
+        final periodLengthDays =
+            endDate.difference(period.startDate).inDays + 1;
+        final daysRemainingLabel = isActivePeriod
+            ? '${endDate.difference(now).inDays + 1} days remaining'
+            : '$periodLengthDays days';
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-            child: ListView(
-              children: [
-                // ─── Header ───────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            headerPrefix,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            period.name,
-                            style: theme.textTheme.headlineLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${DateFormat('MMM d').format(period.startDate)} – ${DateFormat('MMM d').format(endDate)} • $daysRemainingLabel',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Three-dots dropdown menu replacing the old
-                      // "Next Period" button.
-                      PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.more_vert_rounded,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        tooltip: 'Period actions',
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        onSelected: (value) {
-                          if (value == 'manage_categories') {
-                            context.go('/period/$effectivePeriodId/categories');
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'manage_categories',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.category_rounded,
-                                  size: 18,
-                                  color: colorScheme.onSurface,
-                                ),
-                                const SizedBox(width: 10),
-                                const Text('Manage Categories'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+        // The effective period ID for building routes.
+        final effectivePeriodId = period.id;
 
-                // ─── Summary Cards ────────────────────────────────
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+          child: ListView(
+            children: [
+              // ─── Header ───────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(
-                      width: 260,
-                      child: SummaryCard(
-                        title: 'Total Budget (plan)',
-                        amount: currencyFormatter.format(stats.totalBudget),
-                        subtitle:
-                            'of ${currencyFormatter.format(stats.totalIncome)}',
-                        tooltip:
-                            'Your total planned expenses compared to your planned income. Colors indicate your planned budget safety margin.',
-                        icon: Icons.account_balance_wallet_rounded,
-                        color: budgetColor,
-                        backgroundColor: budgetBgColor,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 260,
-                      child: SummaryCard(
-                        title: 'Total Spent (fact)',
-                        amount: currencyFormatter.format(stats.totalSpent),
-                        subtitle:
-                            'vs ${currencyFormatter.format(stats.totalFactIncome)} income',
-                        tooltip:
-                            'Your actual total spending so far compared to your actual income received. Colors indicate your current spending safety margin.',
-                        icon: Icons.shopping_cart_rounded,
-                        color: spentColor,
-                        backgroundColor: spentBgColor,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 260,
-                      child: SummaryCard(
-                        title: 'Free Money',
-                        amount: currencyFormatter.format(
-                          stats.remainingFreeBalance,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          headerPrefix,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                        subtitle: 'fact income – plan expenses',
-                        tooltip:
-                            'The absolute free balance strictly available to you right now. Calculated as actual income received minus total planned expenses required for the period.',
-                        icon: Icons.savings_rounded,
-                        color: remainingColor,
-                        backgroundColor: remainingBgColor,
+                        const SizedBox(height: 4),
+                        Text(
+                          period.name,
+                          style: theme.textTheme.headlineLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${DateFormat('MMM d').format(period.startDate)} – ${DateFormat('MMM d').format(endDate)} • $daysRemainingLabel',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Three-dots dropdown menu replacing the old
+                    // "Next Period" button.
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert_rounded,
+                        color: colorScheme.onSurfaceVariant,
                       ),
+                      tooltip: 'Period actions',
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onSelected: (value) {
+                        if (value == 'manage_categories') {
+                          context.go('/period/$effectivePeriodId/categories');
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'manage_categories',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.category_rounded,
+                                size: 18,
+                                color: colorScheme.onSurface,
+                              ),
+                              const SizedBox(width: 10),
+                              const Text('Manage Categories'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+              ),
 
-                const SizedBox(height: 36),
+              // ─── Summary Cards ────────────────────────────────
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: 260,
+                    child: SummaryCard(
+                      title: 'Total Budget (plan)',
+                      amount: currencyFormatter.format(stats.totalBudget),
+                      subtitle:
+                          'of ${currencyFormatter.format(stats.totalIncome)}',
+                      tooltip:
+                          'Your total planned expenses compared to your planned income. Colors indicate your planned budget safety margin.',
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: budgetColor,
+                      backgroundColor: budgetBgColor,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 260,
+                    child: SummaryCard(
+                      title: 'Total Spent (fact)',
+                      amount: currencyFormatter.format(stats.totalSpent),
+                      subtitle:
+                          'vs ${currencyFormatter.format(stats.totalFactIncome)} income',
+                      tooltip:
+                          'Your actual total spending so far compared to your actual income received. Colors indicate your current spending safety margin.',
+                      icon: Icons.shopping_cart_rounded,
+                      color: spentColor,
+                      backgroundColor: spentBgColor,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 260,
+                    child: SummaryCard(
+                      title: 'Free Money',
+                      amount: currencyFormatter.format(
+                        stats.remainingFreeBalance,
+                      ),
+                      subtitle: 'fact income – plan expenses',
+                      tooltip:
+                          'The absolute free balance strictly available to you right now. Calculated as actual income received minus total planned expenses required for the period.',
+                      icon: Icons.savings_rounded,
+                      color: remainingColor,
+                      backgroundColor: remainingBgColor,
+                    ),
+                  ),
+                ],
+              ),
 
-                // ─── Categories ───────────────────────────────────
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth > 800;
+              const SizedBox(height: 36),
 
-                    final mandatorySection = _buildCategorySection(
-                      context,
-                      'Mandatory Expenses',
-                      Icons.lock_rounded,
-                      mandatoryCategories,
-                      currencyFormatter,
-                      effectivePeriodId,
-                    );
-                    final optionalSection = _buildCategorySection(
-                      context,
-                      'Optional Living Pool',
-                      Icons.spa_rounded,
-                      optionalCategories,
-                      currencyFormatter,
-                      effectivePeriodId,
-                    );
+              // ─── Categories ───────────────────────────────────
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 800;
 
-                    final incomeSection = _buildCategorySection(
-                      context,
-                      'Incomes',
-                      Icons.arrow_downward_rounded,
-                      incomeCategories,
-                      currencyFormatter,
-                      effectivePeriodId,
-                    );
+                  final mandatorySection = _buildCategorySection(
+                    context,
+                    'Mandatory Expenses',
+                    Icons.lock_rounded,
+                    mandatoryCategories,
+                    currencyFormatter,
+                    effectivePeriodId,
+                  );
+                  final optionalSection = _buildCategorySection(
+                    context,
+                    'Optional Living Pool',
+                    Icons.spa_rounded,
+                    optionalCategories,
+                    currencyFormatter,
+                    effectivePeriodId,
+                  );
 
-                    if (isWide) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              children: [
-                                mandatorySection,
-                                if (incomeCategories.isNotEmpty)
-                                  const SizedBox(height: 24),
-                                incomeSection,
-                              ],
-                            ),
+                  final incomeSection = _buildCategorySection(
+                    context,
+                    'Incomes',
+                    Icons.arrow_downward_rounded,
+                    incomeCategories,
+                    currencyFormatter,
+                    effectivePeriodId,
+                  );
+
+                  if (isWide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              mandatorySection,
+                              if (incomeCategories.isNotEmpty)
+                                const SizedBox(height: 24),
+                              incomeSection,
+                            ],
                           ),
-                          const SizedBox(width: 32),
-                          Expanded(child: optionalSection),
-                        ],
-                      );
-                    } else {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          mandatorySection,
+                        ),
+                        const SizedBox(width: 32),
+                        Expanded(child: optionalSection),
+                      ],
+                    );
+                  } else {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        mandatorySection,
+                        const SizedBox(height: 24),
+                        optionalSection,
+                        if (incomeCategories.isNotEmpty)
                           const SizedBox(height: 24),
-                          optionalSection,
-                          if (incomeCategories.isNotEmpty)
-                            const SizedBox(height: 24),
-                          incomeSection,
-                        ],
-                      );
-                    }
-                  },
-                ),
+                        incomeSection,
+                      ],
+                    );
+                  }
+                },
+              ),
 
-                const SizedBox(height: 40),
-              ],
+              const SizedBox(height: 40),
+            ],
+          ),
+        );
+      },
+    );
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: PeriodLoadBanner(
+              failures: loadFailures,
+              onViewDetails: () => context.go('/settings'),
             ),
-          );
-        },
+          ),
+          Expanded(child: body),
+        ],
       ),
     );
   }

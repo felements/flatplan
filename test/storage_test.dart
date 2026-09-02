@@ -98,6 +98,68 @@ void main() {
       expect(filename, '2026-03-uuid-1111.yaml');
     });
 
+    test('loadAll reports malformed YAML and still returns valid periods',
+        () async {
+      final period = Period(
+        id: 'good-uuid',
+        name: 'March 2026',
+        startDate: DateTime(2026, 3, 1),
+        baseCurrency: 'EUR',
+        lastModified: DateTime.now(),
+      );
+      await repo.savePeriod(period);
+      await File('${tempDir.path}/broken.yaml').writeAsString('foo: [1, 2');
+
+      final result =
+          await PeriodRepository(directoryPath: tempDir.path).loadAll();
+
+      expect(result.periods.map((p) => p.id), ['good-uuid']);
+      expect(result.failures.length, 1);
+      expect(result.failures.single.fileName, 'broken.yaml');
+      expect(result.failures.single.message, contains('line 1'));
+    });
+
+    test('loadAll reports a document whose top level is not a mapping',
+        () async {
+      await File('${tempDir.path}/list.yaml').writeAsString('- one\n- two\n');
+
+      final result = await repo.loadAll();
+
+      expect(result.periods, isEmpty);
+      expect(result.failures.single.fileName, 'list.yaml');
+      expect(result.failures.single.message, contains('not a mapping'));
+    });
+
+    test('loadAll reports a period with an invalid field', () async {
+      await File('${tempDir.path}/bad_field.yaml')
+          .writeAsString('id: x\nname: y\nstart_date: not-a-date\n');
+
+      final result = await repo.loadAll();
+
+      expect(result.periods, isEmpty);
+      expect(result.failures.single.fileName, 'bad_field.yaml');
+    });
+
+    test('savePeriod does not reuse the filename of a file that failed to load',
+        () async {
+      final corrupt = File('${tempDir.path}/2026-03-march_2026.yaml');
+      await corrupt.writeAsString('foo: [1, 2');
+      await repo.loadAll();
+
+      final period = Period(
+        id: 'new-uuid',
+        name: 'March 2026',
+        startDate: DateTime(2026, 3, 1),
+        baseCurrency: 'EUR',
+        lastModified: DateTime.now(),
+      );
+      await repo.savePeriod(period);
+
+      expect(corrupt.readAsStringSync(), 'foo: [1, 2');
+      expect(repo.filenameForPeriod('new-uuid'),
+          isNot('2026-03-march_2026.yaml'));
+    });
+
     test('deletes legacy file when saving with new filename', () async {
       final legacyFile = File('${tempDir.path}/legacy-uuid.yaml');
       await legacyFile.writeAsString('fake content');
