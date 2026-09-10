@@ -237,7 +237,13 @@ class PeriodNotifier extends _$PeriodNotifier {
         final repo = ref.read(periodRepositoryProvider);
         await repo.savePeriod(period);
         // Invalidate global providers so the rest of the app stays in sync.
-        ref.invalidate(allPeriodsProvider);
+        // This must target periodLoadResultProvider, the single disk read:
+        // allPeriodsProvider only derives from it, and the dashboard's load
+        // warning banner holds it alive, so invalidating the derived provider
+        // alone would just replay the cached, pre-save result.
+        ref.invalidate(periodLoadResultProvider);
+        // currentPeriodProvider reads the repository directly, so it needs
+        // its own invalidation.
         ref.invalidate(currentPeriodProvider);
       } catch (_) {
         // Handle error visually via a separate notification provider if needed.
