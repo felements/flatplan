@@ -44,3 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .superpowers/
+
+# Real budget data — this repository is public.
+# The app stores periods under the user's documents folder, but guard against
+# a copy, symlink, or export landing in the tree. The examples/ fixtures are
+# synthetic and stay committable.
+/periods/
+/flatplan/
+current_stats.md
+insights/
+20[0-9][0-9]-[0-9][0-9]-*.yaml
+!examples/20[0-9][0-9]-[0-9][0-9]-*.yaml
