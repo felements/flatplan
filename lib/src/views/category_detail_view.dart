@@ -8,9 +8,11 @@ import 'package:uuid/uuid.dart';
 
 import '../components/category_dialog.dart';
 import '../components/planned_expense_dialog.dart';
+import '../logic/period_extensions.dart';
+import '../logic/period_stats.dart';
 import '../models/models.dart';
+import '../providers/all_periods_provider.dart';
 import '../providers/period_notifier_provider.dart';
-import '../providers/period_stats_provider.dart';
 
 /// Detailed view for managing a single category's expenses.
 ///
@@ -33,6 +35,9 @@ class CategoryDetailView extends HookConsumerWidget {
 
     // Use the period-specific notifier instead of currentPeriodProvider.
     final periodAsync = ref.watch(periodProvider(periodId));
+    // Needed to date this period and to read spending history from the
+    // periods around it.
+    final allPeriods = ref.watch(allPeriodsProvider).value ?? const <Period>[];
 
     final amountController = useTextEditingController();
     final commentController = useTextEditingController();
@@ -72,8 +77,14 @@ class CategoryDetailView extends HookConsumerWidget {
               return const Center(child: Text('Category not found.'));
             }
 
-            // Compute inline stats for this specific period.
-            final catStats = _computeCategoryStats(category);
+            // Stats for this specific period, not whichever one is current.
+            final catStats = categoryStatsFor(
+              category: category,
+              period: period,
+              endDate: effectiveEndDate(period, allPeriods),
+              allPeriods: allPeriods,
+              now: DateTime.now(),
+            );
 
             final format = NumberFormat.simpleCurrency(
               name: period.baseCurrency,
@@ -129,33 +140,6 @@ class CategoryDetailView extends HookConsumerWidget {
           },
         ),
       ),
-    );
-  }
-
-  /// Computes stats for a single category without depending on another
-  /// provider, so it works correctly for any period.
-  CategoryStats _computeCategoryStats(Category category) {
-    final spent = category.factExpenses.fold<double>(
-      0,
-      (prev, e) => prev + e.amount,
-    );
-    final planned = category.plannedTotal;
-    final limit = category.effectiveLimit;
-    final remaining = limit - spent;
-    final heat = limit > 0 ? (spent / limit) : 0.0;
-
-    return CategoryStats(
-      categoryId: category.id,
-      name: category.name,
-      type: category.type,
-      limit: limit,
-      totalSpent: spent,
-      totalPlanned: planned,
-      remaining: remaining,
-      heatPercentage: heat,
-      isOverBudget: spent > limit,
-      isDailyAllowance: category.isDailyAllowance,
-      plannedExceedsLimit: category.plannedExceedsLimit,
     );
   }
 
