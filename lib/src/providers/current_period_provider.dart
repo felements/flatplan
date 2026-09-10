@@ -53,7 +53,9 @@ class CurrentPeriod extends _$CurrentPeriod {
     state = AsyncData(newPeriod);
     final repo = ref.read(periodRepositoryProvider);
     await repo.savePeriod(newPeriod);
-    ref.invalidate(allPeriodsProvider);
+    // Invalidate the underlying disk read, not the derived allPeriodsProvider
+    // — see the note in PeriodNotifier._debouncedSave.
+    ref.invalidate(periodLoadResultProvider);
   }
 
   /// Mutates the state and triggers a debounced save.
