@@ -28,20 +28,33 @@ void showCategoryDialog(
   var type = existing?.type ?? CategoryType.optionalExpense;
   var isDailyAllowance = existing?.isDailyAllowance ?? false;
 
+  // The suggestion is shown, never written. Pre-filling the field would
+  // make an untouched Save persist an inferred threshold and silently
+  // switch on an opt-in insight; `Category.bigPurchaseThreshold` is
+  // seeded from history but never inferred, so this stays helper text
+  // until the user types it in themselves.
+  double? suggestedThreshold;
   if (existing != null && existing.bigPurchaseThreshold == null) {
     final periods = ref.read(allPeriodsProvider).value ?? const <Period>[];
     final period = periods.where((p) => p.id == periodId).firstOrNull;
     if (period != null) {
-      final suggestion = suggestedBigPurchaseThreshold(
+      suggestedThreshold = suggestedBigPurchaseThreshold(
         category: existing,
         period: period,
         allPeriods: periods,
       );
-      if (suggestion != null) {
-        thresholdCtrl.text = suggestion.toStringAsFixed(0);
-      }
     }
   }
+
+  const thresholdExplanation =
+      'Amounts at or above this count as a shop; below it as small '
+      'incidental spending. Leave empty to skip the per-shop advice.';
+  final thresholdHelper = suggestedThreshold == null
+      ? thresholdExplanation
+      : 'Suggested from your history: '
+            '${suggestedThreshold.toStringAsFixed(0)} — '
+            'amounts at or above this count as a shop; below it as small '
+            'incidental spending. Leave empty to skip the per-shop advice.';
 
   showDialog(
     context: context,
@@ -141,12 +154,10 @@ void showCategoryDialog(
                     if (isDailyAllowance)
                       TextField(
                         controller: thresholdCtrl,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Big-purchase threshold',
-                          helperText:
-                              'Amounts at or above this count as a shop; '
-                              'below it as small incidental spending. '
-                              'Leave empty to skip the per-shop advice.',
+                          helperText: thresholdHelper,
+                          helperMaxLines: 3,
                         ),
                         keyboardType: TextInputType.number,
                       ),
