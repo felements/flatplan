@@ -40,7 +40,7 @@ SpendingTrend? spendingTrendFor({
 }) {
   if (!category.isDailyAllowance) return null;
 
-  final daysLeft = endDate.difference(now).inDays + 1;
+  final daysLeft = endDate.difference(now).inDays;
   if (daysLeft < 1) return null;
 
   final history = priorCategoryHistory(

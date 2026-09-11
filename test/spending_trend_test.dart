@@ -45,7 +45,7 @@ void main() {
     categories: [_groceries('c2', [200])],
   );
   final all = [previous, current];
-  final endDate = DateTime(2026, 3, 31);
+  final endDate = DateTime(2026, 3, 25);
 
   test('projects the period total from the previous period rate', () {
     final trend = spendingTrendFor(
@@ -53,7 +53,7 @@ void main() {
       period: current,
       endDate: endDate,
       allPeriods: all,
-      now: DateTime(2026, 3, 11),
+      now: DateTime(2026, 3, 5),
     );
 
     // previous: 3000 / 30 days = 100 / day
@@ -77,7 +77,7 @@ void main() {
       period: roomy,
       endDate: endDate,
       allPeriods: [previous, roomy],
-      now: DateTime(2026, 3, 11),
+      now: DateTime(2026, 3, 5),
     );
 
     expect(trend!.projectedTotal, 2200);
@@ -98,7 +98,7 @@ void main() {
         period: plain,
         endDate: endDate,
         allPeriods: [previous, plain],
-        now: DateTime(2026, 3, 11),
+        now: DateTime(2026, 3, 5),
       ),
       isNull,
     );
