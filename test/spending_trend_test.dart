@@ -176,4 +176,36 @@ void main() {
       isNull,
     );
   });
+  test('reports no trend when the category did not exist last period', () {
+    // The preceding period has a Transport category but no Groceries at all,
+    // so there is no rate to quote — distinct from a Groceries category that
+    // existed and simply saw no spending.
+    final absent = Period(
+      id: 'absent',
+      name: 'absent',
+      startDate: DateTime.utc(2026, 2, 1),
+      baseCurrency: 'EUR',
+      lastModified: DateTime.utc(2026, 2, 1),
+      categories: [
+        Category(
+          id: 'other',
+          name: 'Transport',
+          limit: 1000,
+          isDailyAllowance: true,
+          factExpenses: [_fact(500)],
+        ),
+      ],
+    );
+
+    expect(
+      spendingTrendFor(
+        category: current.categories.first,
+        period: current,
+        endDate: endDate,
+        allPeriods: [absent, current],
+        now: DateTime.utc(2026, 3, 5),
+      ),
+      isNull,
+    );
+  });
 }

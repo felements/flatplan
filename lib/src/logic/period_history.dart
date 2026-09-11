@@ -31,6 +31,11 @@ class CategoryPeriodSlice {
 /// a period with no spending in this category is real data meaning the
 /// rate was zero, and skipping it would report the rate from two periods
 /// back under a "last period" label.
+///
+/// A period where the category does not exist at all is skipped either way.
+/// That is absence of data, not a zero — quoting "averaging 0/day" for a
+/// category the user had not created yet states something that never
+/// happened.
 List<CategoryPeriodSlice> priorCategoryHistory({
   required String categoryName,
   required Period currentPeriod,
@@ -48,12 +53,15 @@ List<CategoryPeriodSlice> priorCategoryHistory({
   for (var i = currentIndex - 1; i >= 0 && slices.length < limit; i--) {
     final period = sorted[i];
     final amounts = <double>[];
+    var categoryExisted = false;
     for (final category in period.categories) {
       if (category.name.trim().toLowerCase() != key) continue;
+      categoryExisted = true;
       for (final expense in category.factExpenses) {
         amounts.add(expense.amount);
       }
     }
+    if (!categoryExisted) continue;
     if (amounts.isEmpty && skipEmpty) continue;
 
     final end = effectiveEndDate(period, allPeriods);
