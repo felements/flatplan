@@ -171,8 +171,12 @@ BasketAdvice? basketAdviceFrom({
   final basketBudget = remaining - reserve;
   if (basketBudget <= 0) return null;
 
-  final tripsLeft = daysLeft / stats.tripSpacingDays;
-  if (tripsLeft <= 0) return null;
+  final rawTrips = daysLeft / stats.tripSpacingDays;
+  // Fewer than one expected shop left still means one shop can happen, and
+  // the whole remaining basket budget is what is safe to spend on it.
+  // Without this floor, dividing by a fraction would report a "safe"
+  // amount larger than the budget that is actually left.
+  final tripsLeft = rawTrips < 1 ? 1.0 : rawTrips;
 
   return BasketAdvice(
     snackReserve: reserve,
