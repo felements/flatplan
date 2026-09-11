@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../models/models.dart';
+import 'period_extensions.dart';
 import 'period_history.dart';
 
 part 'spending_trend.freezed.dart';
@@ -46,7 +47,7 @@ SpendingTrend? spendingTrendFor({
 }) {
   if (!category.isDailyAllowance) return null;
 
-  final daysLeft = endDate.difference(now).inDays;
+  final daysLeft = wholeDaysBetween(now, endDate);
   if (daysLeft < 1) return null;
 
   final history = priorCategoryHistory(

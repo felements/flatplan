@@ -73,7 +73,7 @@ CategoryStats categoryStatsFor({
 
   final remaining = limit - spent;
 
-  int daysLeft = endDate.difference(now).inDays;
+  int daysLeft = wholeDaysBetween(now, endDate);
   // Ensure at least 1 day to prevent division by zero.
   if (daysLeft < 1) daysLeft = 1;
 
