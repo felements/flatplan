@@ -22,8 +22,6 @@ CategoryStats _catStats({
   double spent = 0,
   bool isDailyAllowance = false,
   double? dailyAllowanceAmount,
-  int? expectedPurchaseFrequencyDays,
-  double? expectedPurchaseAmount,
   SpendingTrend? trend,
   BasketAdvice? basket,
 }) => CategoryStats(
@@ -38,8 +36,6 @@ CategoryStats _catStats({
   isOverBudget: spent > limit,
   isDailyAllowance: isDailyAllowance,
   dailyAllowanceAmount: dailyAllowanceAmount,
-  expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
-  expectedPurchaseAmount: expectedPurchaseAmount,
   trend: trend,
   basket: basket,
 );

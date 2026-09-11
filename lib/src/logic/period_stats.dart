@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'allowance_pace.dart';
 import 'basket_insight.dart';
 import 'period_extensions.dart';
 import 'spending_trend.dart';
@@ -26,8 +25,6 @@ sealed class CategoryStats with _$CategoryStats {
     @Default(false) bool plannedExceedsLimit,
     @Default([]) List<PlannedExpenseStatus> plannedExpenseStatuses,
     double? dailyAllowanceAmount,
-    int? expectedPurchaseFrequencyDays,
-    double? expectedPurchaseAmount,
     /// Where this period lands at the previous period's rate.
     SpendingTrend? trend,
     /// What is safe to spend on the next shop.
@@ -79,14 +76,6 @@ CategoryStats categoryStatsFor({
   int daysLeft = endDate.difference(now).inDays;
   // Ensure at least 1 day to prevent division by zero.
   if (daysLeft < 1) daysLeft = 1;
-
-  final pace = paceForCategory(
-    category: category,
-    period: period,
-    endDate: endDate,
-    allPeriods: allPeriods,
-    now: now,
-  );
 
   final trend = spendingTrendFor(
     category: category,
@@ -146,8 +135,6 @@ CategoryStats categoryStatsFor({
     dailyAllowanceAmount: category.isDailyAllowance
         ? (remaining > 0 ? remaining / daysLeft : 0.0)
         : null,
-    expectedPurchaseFrequencyDays: pace?.frequencyDays,
-    expectedPurchaseAmount: pace?.amount,
     trend: trend,
     basket: basket,
   );
