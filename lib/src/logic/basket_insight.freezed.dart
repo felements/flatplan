@@ -17,7 +17,8 @@ mixin _$BasketStats {
 /// Fraction of spending that went on small incidental items, 0..1.
 /// The highest seen in the window, so the reserve is never too small.
  double get snackShare;/// Days between baskets. The tightest seen in the window, so the number
-/// of remaining trips is never underestimated.
+/// of remaining trips is never underestimated. Never below 1: see
+/// [basketStatsFor] for why a sub-daily cadence is withheld instead.
  double get tripSpacingDays;/// A typical basket, shown as context so the advice can be judged.
  double get usualBasket;/// How many periods the figures were drawn from.
  int get periodsUsed;
@@ -216,7 +217,8 @@ class _BasketStats implements BasketStats {
 /// The highest seen in the window, so the reserve is never too small.
 @override final  double snackShare;
 /// Days between baskets. The tightest seen in the window, so the number
-/// of remaining trips is never underestimated.
+/// of remaining trips is never underestimated. Never below 1: see
+/// [basketStatsFor] for why a sub-daily cadence is withheld instead.
 @override final  double tripSpacingDays;
 /// A typical basket, shown as context so the advice can be judged.
 @override final  double usualBasket;
