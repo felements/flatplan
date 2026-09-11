@@ -5,7 +5,7 @@ import 'package:flatplan/src/models/models.dart';
 FactExpense _fact(double amount) => FactExpense(
   id: 'f$amount',
   amount: amount,
-  timestamp: DateTime(2026, 1, 1),
+  timestamp: DateTime.utc(2026, 1, 1),
 );
 
 Period _period({
@@ -38,21 +38,24 @@ void main() {
   // Previous period: 3,000 spent across 30 days -> 100 / day.
   final previous = _period(
     id: 'previous',
-    startDate: DateTime(2026, 2, 1),
+    startDate: DateTime.utc(2026, 2, 1),
     categories: [
       _groceries('c1', [1000, 1000, 1000]),
     ],
   );
-  // Current period runs 2026-03-03 .. 2026-03-31 (previous ends the day before).
+  // Current period runs 2026-03-03 .. 2026-03-25 (previous ends the day
+  // before it starts). UTC throughout: the fixture spans the US
+  // spring-forward on 2026-03-08, and local-time arithmetic over that
+  // window is an hour short in a US zone.
   final current = _period(
     id: 'current',
-    startDate: DateTime(2026, 3, 3),
+    startDate: DateTime.utc(2026, 3, 3),
     categories: [
       _groceries('c2', [200]),
     ],
   );
   final all = [previous, current];
-  final endDate = DateTime(2026, 3, 25);
+  final endDate = DateTime.utc(2026, 3, 25);
 
   test('projects the period total from the previous period rate', () {
     final trend = spendingTrendFor(
@@ -60,7 +63,7 @@ void main() {
       period: current,
       endDate: endDate,
       allPeriods: all,
-      now: DateTime(2026, 3, 5),
+      now: DateTime.utc(2026, 3, 5),
     );
 
     // previous: 3000 / 30 days = 100 / day
@@ -75,7 +78,7 @@ void main() {
   test('reports no overshoot when the projection lands inside the limit', () {
     final roomy = _period(
       id: 'current',
-      startDate: DateTime(2026, 3, 3),
+      startDate: DateTime.utc(2026, 3, 3),
       categories: [
         _groceries('c2', [200], limit: 5000),
       ],
@@ -86,7 +89,7 @@ void main() {
       period: roomy,
       endDate: endDate,
       allPeriods: [previous, roomy],
-      now: DateTime(2026, 3, 5),
+      now: DateTime.utc(2026, 3, 5),
     );
 
     expect(trend!.projectedTotal, 2200);
@@ -100,12 +103,12 @@ void main() {
     // it "last period" in the UI.
     final idle = _period(
       id: 'idle',
-      startDate: DateTime(2026, 3, 3),
+      startDate: DateTime.utc(2026, 3, 3),
       categories: [_groceries('c-idle', const [])],
     );
     final latest = _period(
       id: 'latest',
-      startDate: DateTime(2026, 4, 1),
+      startDate: DateTime.utc(2026, 4, 1),
       categories: [
         _groceries('c-latest', [200]),
       ],
@@ -114,9 +117,9 @@ void main() {
     final trend = spendingTrendFor(
       category: latest.categories.first,
       period: latest,
-      endDate: DateTime(2026, 4, 21),
+      endDate: DateTime.utc(2026, 4, 21),
       allPeriods: [previous, idle, latest],
-      now: DateTime(2026, 4, 1),
+      now: DateTime.utc(2026, 4, 1),
     );
 
     // Zero, not `previous`'s 100 / day from two periods back.
@@ -130,7 +133,7 @@ void main() {
   test('returns null for a category without a daily allowance', () {
     final plain = _period(
       id: 'current',
-      startDate: DateTime(2026, 3, 3),
+      startDate: DateTime.utc(2026, 3, 3),
       categories: [
         _groceries('c2', [200], isDailyAllowance: false),
       ],
@@ -142,7 +145,7 @@ void main() {
         period: plain,
         endDate: endDate,
         allPeriods: [previous, plain],
-        now: DateTime(2026, 3, 5),
+        now: DateTime.utc(2026, 3, 5),
       ),
       isNull,
     );
@@ -155,7 +158,7 @@ void main() {
         period: current,
         endDate: endDate,
         allPeriods: all,
-        now: DateTime(2026, 4, 15),
+        now: DateTime.utc(2026, 4, 15),
       ),
       isNull,
     );
@@ -166,9 +169,9 @@ void main() {
       spendingTrendFor(
         category: previous.categories.first,
         period: previous,
-        endDate: DateTime(2026, 3, 2),
+        endDate: DateTime.utc(2026, 3, 2),
         allPeriods: all,
-        now: DateTime(2026, 2, 10),
+        now: DateTime.utc(2026, 2, 10),
       ),
       isNull,
     );
