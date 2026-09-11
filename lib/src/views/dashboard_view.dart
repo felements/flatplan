@@ -456,6 +456,11 @@ class DashboardView extends ConsumerWidget {
     final totalFact = cats.fold<double>(0, (sum, cat) => sum + cat.totalSpent);
     final totalPlanned = cats.fold<double>(0, (sum, cat) => sum + cat.limit);
 
+    final money = NumberFormat.simpleCurrency(
+      name: formatter.currencyName,
+      decimalDigits: 0,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -495,18 +500,16 @@ class DashboardView extends ConsumerWidget {
             plannedExpenseStatuses: c.plannedExpenseStatuses,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
-                ? NumberFormat.simpleCurrency(
-                    name: formatter.currencyName,
-                    decimalDigits: 0,
-                  ).format(c.dailyAllowanceAmount)
+                ? money.format(c.dailyAllowanceAmount)
                 : null,
-            expectedPurchaseFrequencyDays: c.expectedPurchaseFrequencyDays,
-            expectedPurchaseAmount: c.expectedPurchaseAmount != null
-                ? NumberFormat.simpleCurrency(
-                    name: formatter.currencyName,
-                    decimalDigits: 0,
-                  ).format(c.expectedPurchaseAmount!)
+            safeBasketAmount: c.basket != null
+                ? money.format(c.basket!.safeBasket)
                 : null,
+            trendLine: c.trend != null
+                ? 'averaging ${money.format(c.trend!.recentDailyRate)}/day'
+                      '${c.trend!.isOverProjected ? ' — heading ${money.format(c.trend!.overshoot)} over' : ' — within budget'}'
+                : null,
+            isOverProjected: c.trend?.isOverProjected ?? false,
             onTap: () => context.go(
               '/period/$effectivePeriodId/category/${c.categoryId}',
             ),
