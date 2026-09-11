@@ -1,4 +1,6 @@
+import 'package:flatplan/src/logic/basket_insight.dart';
 import 'package:flatplan/src/logic/period_stats_markdown.dart';
+import 'package:flatplan/src/logic/spending_trend.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/period_stats_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,8 +22,8 @@ CategoryStats _catStats({
   double spent = 0,
   bool isDailyAllowance = false,
   double? dailyAllowanceAmount,
-  int? expectedPurchaseFrequencyDays,
-  double? expectedPurchaseAmount,
+  SpendingTrend? trend,
+  BasketAdvice? basket,
 }) => CategoryStats(
   categoryId: id,
   name: name,
@@ -34,8 +36,8 @@ CategoryStats _catStats({
   isOverBudget: spent > limit,
   isDailyAllowance: isDailyAllowance,
   dailyAllowanceAmount: dailyAllowanceAmount,
-  expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
-  expectedPurchaseAmount: expectedPurchaseAmount,
+  trend: trend,
+  basket: basket,
 );
 
 PeriodStats _stats(List<CategoryStats> categoryStats) => PeriodStats(
@@ -131,8 +133,6 @@ void main() {
           spent: 3200,
           isDailyAllowance: true,
           dailyAllowanceAmount: 600,
-          expectedPurchaseFrequencyDays: 3,
-          expectedPurchaseAmount: 1400,
         ),
       ]),
       endDate: endDate,
@@ -144,7 +144,7 @@ void main() {
     expect(
       md,
       contains(
-        '| Groceries | Optional | yes (600/day left, or 1,400 every 3 days) '
+        '| Groceries | Optional | yes (600/day left) '
         '| 5,000 | 3,200 | 1,800 | 64% | no |',
       ),
     );
@@ -258,5 +258,48 @@ void main() {
       now: DateTime(2026, 1, 20), // before the period started
     );
     expect(md, contains('(day 1 of 28, 27 days remaining)'));
+  });
+
+  test('renders the trend and basket insights for a daily allowance', () {
+    final markdown = formatCurrentPeriodStatsMarkdown(
+      period: _period(),
+      stats: _stats([
+        _catStats(
+          id: 'groceries',
+          name: 'Groceries',
+          isDailyAllowance: true,
+          dailyAllowanceAmount: 400,
+          trend: const SpendingTrend(
+            recentDailyRate: 520,
+            projectedTotal: 12400,
+            overshoot: 2400,
+          ),
+          basket: const BasketAdvice(
+            snackReserve: 2500,
+            basketBudget: 5500,
+            tripsLeft: 10,
+            safeBasket: 550,
+            stats: BasketStats(
+              snackShare: 0.3,
+              tripSpacingDays: 2,
+              usualBasket: 600,
+              periodsUsed: 3,
+            ),
+          ),
+        ),
+      ]),
+      endDate: DateTime(2026, 2, 28),
+      now: DateTime(2026, 2, 8),
+    );
+
+    expect(markdown, contains('### Groceries'));
+    expect(markdown, contains('Safe per shop: 550'));
+    // The breakdown has to reconcile by hand: 5,500 over 10.0 shops is
+    // the 550 above, which a rounded trip count would not give.
+    expect(markdown, contains('(10.0 shops left, one every 2 days)'));
+    expect(markdown, contains('Reserved for small purchases: 2,500'));
+    expect(markdown, contains('Recent rate: 520 / day'));
+    expect(markdown, contains('projected 12,400'));
+    expect(markdown, contains('over budget by 2,400'));
   });
 }

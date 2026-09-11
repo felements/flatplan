@@ -82,18 +82,10 @@ String formatCurrentPeriodStatsMarkdown({
     ..writeln('|---|---|---|---|---|---|---|---|');
 
   for (final c in stats.categoryStats) {
-    // Spending cadence from the 20% trimmed mean of past purchases,
-    // e.g. "or 1,400 every 3 days" — same figures the category header shows.
-    final cadence =
-        c.expectedPurchaseFrequencyDays != null &&
-            c.expectedPurchaseAmount != null
-        ? ', or ${money.format(c.expectedPurchaseAmount)} '
-              'every ${c.expectedPurchaseFrequencyDays} days'
-        : '';
     final dailyAllow = !c.isDailyAllowance
         ? 'no'
         : c.dailyAllowanceAmount != null
-        ? 'yes (${money.format(c.dailyAllowanceAmount)}/day left$cadence)'
+        ? 'yes (${money.format(c.dailyAllowanceAmount)}/day left)'
         : 'yes';
     buffer.writeln(
       '| ${c.name} | ${_typeLabel(c.type)} | $dailyAllow '
@@ -101,6 +93,69 @@ String formatCurrentPeriodStatsMarkdown({
       '| ${money.format(c.remaining)} | ${(c.heatPercentage * 100).round()}% '
       '| ${c.isOverBudget ? 'yes' : 'no'} |',
     );
+  }
+
+  final withInsights = stats.categoryStats
+      .where((c) => c.trend != null || c.basket != null || c.typical != null)
+      .toList();
+
+  if (withInsights.isNotEmpty) {
+    buffer
+      ..writeln()
+      ..writeln('## Daily allowance insights');
+
+    for (final c in withInsights) {
+      buffer
+        ..writeln()
+        ..writeln('### ${c.name}');
+
+      final basket = c.basket;
+      if (basket != null) {
+        final spacing = basket.stats.tripSpacingDays;
+        final cadence = spacing == 1
+            ? 'one every day'
+            : 'one every ${money.format(spacing)} days';
+        buffer
+          ..writeln(
+            // One decimal rather than a rounded count, so safe-per-shop
+            // reconciles against the budget left: the figure is that
+            // budget divided by the unrounded trips left.
+            '- Safe per shop: ${money.format(basket.safeBasket)} '
+            '(${basket.tripsLeft.toStringAsFixed(1)} shops left, $cadence)',
+          )
+          ..writeln(
+            '- Reserved for small purchases: '
+            '${money.format(basket.snackReserve)} '
+            '(${(basket.stats.snackShare * 100).round()}% of the budget '
+            'historically goes on them)',
+          )
+          ..writeln(
+            '- Left for shops: ${money.format(basket.basketBudget)}; '
+            'usual shop is ${money.format(basket.stats.usualBasket)} '
+            '(from ${basket.stats.periodsUsed} previous periods)',
+          );
+      }
+
+      final typical = c.typical;
+      if (typical != null) {
+        buffer.writeln(
+          '- Typical purchase: ${money.format(typical.amount)}; '
+          'the budget left affords one every '
+          '${typical.everyDays == 1 ? 'day' : '${typical.everyDays} days'} '
+          '(from ${typical.purchasesUsed} past purchases)',
+        );
+      }
+
+      final trend = c.trend;
+      if (trend != null) {
+        buffer.writeln(
+          '- Recent rate: ${money.format(trend.recentDailyRate)} / day '
+          'last period, projected ${money.format(trend.projectedTotal)} '
+          'this period'
+          '${trend.isOverProjected ? ' — over budget by ${money.format(trend.overshoot)}' : ' — within budget'}',
+        );
+      }
+    }
   }
 
   buffer

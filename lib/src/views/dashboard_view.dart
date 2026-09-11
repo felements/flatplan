@@ -8,6 +8,7 @@ import '../components/category_tile.dart';
 import '../components/period_load_warning.dart';
 import '../components/summary_card.dart';
 import '../logic/period_extensions.dart';
+import '../logic/period_stats.dart';
 import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
 import '../providers/period_stats_provider.dart';
@@ -68,7 +69,11 @@ class DashboardView extends ConsumerWidget {
         // for historical periods compute stats inline.
         final PeriodStats? stats;
         if (periodId != null) {
-          stats = _computeStats(period, endDate);
+          stats = periodStatsFor(
+            period: period,
+            allPeriods: allPeriods,
+            now: DateTime.now(),
+          );
         } else {
           stats = statsAsync.value;
         }
@@ -451,6 +456,11 @@ class DashboardView extends ConsumerWidget {
     final totalFact = cats.fold<double>(0, (sum, cat) => sum + cat.totalSpent);
     final totalPlanned = cats.fold<double>(0, (sum, cat) => sum + cat.limit);
 
+    final money = NumberFormat.simpleCurrency(
+      name: formatter.currencyName,
+      decimalDigits: 0,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -490,177 +500,27 @@ class DashboardView extends ConsumerWidget {
             plannedExpenseStatuses: c.plannedExpenseStatuses,
             dailyAllowanceAmount:
                 c.isDailyAllowance && c.dailyAllowanceAmount != null
-                ? NumberFormat.simpleCurrency(
-                    name: formatter.currencyName,
-                    decimalDigits: 0,
-                  ).format(c.dailyAllowanceAmount)
+                ? money.format(c.dailyAllowanceAmount)
                 : null,
-            expectedPurchaseFrequencyDays: c.expectedPurchaseFrequencyDays,
-            expectedPurchaseAmount: c.expectedPurchaseAmount != null
-                ? NumberFormat.simpleCurrency(
-                    name: formatter.currencyName,
-                    decimalDigits: 0,
-                  ).format(c.expectedPurchaseAmount!)
+            safeBasketAmount: c.basket != null
+                ? money.format(c.basket!.safeBasket)
                 : null,
+            typicalLine: c.typical != null
+                ? 'usually ${money.format(c.typical!.amount)}, '
+                      'about one every ${c.typical!.everyDays} '
+                      '${c.typical!.everyDays == 1 ? 'day' : 'days'}'
+                : null,
+            trendLine: c.trend != null
+                ? 'averaging ${money.format(c.trend!.recentDailyRate)}/day'
+                      '${c.trend!.isOverProjected ? ' — heading ${money.format(c.trend!.overshoot)} over' : ' — within budget'}'
+                : null,
+            isOverProjected: c.trend?.isOverProjected ?? false,
             onTap: () => context.go(
               '/period/$effectivePeriodId/category/${c.categoryId}',
             ),
           ),
         ),
       ],
-    );
-  }
-
-  /// Computes stats directly from a period (for historical periods).
-  PeriodStats _computeStats(Period period, DateTime endDate) {
-    double totalMandatoryBudget = 0;
-    double totalMandatorySpent = 0;
-    double totalOptionalBudget = 0;
-    double totalOptionalSpent = 0;
-    double totalIncome = 0;
-    double totalFactIncome = 0;
-    double effectiveTotalExpenseForFreeBalance = 0;
-    final categoryStatsList = <CategoryStats>[];
-
-    for (final category in period.categories) {
-      final spent = category.factExpenses.fold<double>(
-        0,
-        (prev, e) => prev + e.amount,
-      );
-      final planned = category.plannedTotal;
-      final limit = category.effectiveLimit;
-      final remaining = limit - spent;
-      final heat = limit > 0 ? (spent / limit) : 0.0;
-
-      final now = DateTime.now();
-      final isActivePeriod =
-          now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
-          now.isBefore(endDate.add(const Duration(days: 1)));
-
-      final plannedExpenseStatuses = <PlannedExpenseStatus>[];
-      for (final exp in category.plannedExpenses) {
-        if (exp.isCompleted) {
-          plannedExpenseStatuses.add(PlannedExpenseStatus.completed);
-        } else {
-          bool isOverdue = false;
-          if (isActivePeriod) {
-            final expDate = exp.dueDate.when(
-              exact: (d) => d,
-              dayOfMonth: (day) {
-                final d = DateTime(now.year, now.month, day);
-                if (d.isBefore(period.startDate)) {
-                  return DateTime(now.year, now.month + 1, day);
-                }
-                return d;
-              },
-            );
-            if (now.isAfter(expDate.add(const Duration(days: 1)))) {
-              isOverdue = true;
-            }
-          }
-          plannedExpenseStatuses.add(
-            isOverdue
-                ? PlannedExpenseStatus.overdue
-                : PlannedExpenseStatus.pending,
-          );
-        }
-      }
-
-      if (category.type == CategoryType.mandatoryExpense) {
-        totalMandatoryBudget += limit;
-        totalMandatorySpent += spent;
-        effectiveTotalExpenseForFreeBalance += spent > limit ? spent : limit;
-      } else if (category.type == CategoryType.optionalExpense) {
-        totalOptionalBudget += limit;
-        totalOptionalSpent += spent;
-        effectiveTotalExpenseForFreeBalance += spent > limit ? spent : limit;
-      } else if (category.type == CategoryType.income) {
-        totalIncome += limit;
-        totalFactIncome += spent;
-      }
-
-      // Daily allowance metrics (daily spend & 20% trimmed-mean frequency).
-      int daysLeft = endDate.difference(DateTime.now()).inDays;
-      if (daysLeft < 1) daysLeft = 1;
-
-      double? dailyAllowanceAmount;
-      int? expectedPurchaseFrequencyDays;
-      double? expectedPurchaseAmount;
-
-      if (category.isDailyAllowance) {
-        dailyAllowanceAmount = remaining > 0 ? remaining / daysLeft : 0.0;
-
-        if (category.factExpenses.length >= 2 && remaining > 0) {
-          // 20% Trimmed Mean — drop the lowest 20% of expenses.
-          final sortedExpenses =
-              category.factExpenses.map((e) => e.amount).toList()..sort();
-          final dropCount = (sortedExpenses.length * 0.2).floor();
-          final keptExpenses = sortedExpenses.sublist(dropCount);
-
-          if (keptExpenses.isNotEmpty) {
-            final keptSpent = keptExpenses.fold<double>(
-              0,
-              (prev, amount) => prev + amount,
-            );
-            final avgExpense = keptSpent / keptExpenses.length;
-
-            if (avgExpense > 0) {
-              final affordablePurchases = remaining / avgExpense;
-              if (affordablePurchases > 0) {
-                final frequencyDays = (daysLeft / affordablePurchases).round();
-                final periodLengthDays =
-                    endDate.difference(period.startDate).inDays + 1;
-                if (frequencyDays <= periodLengthDays / 2) {
-                  expectedPurchaseFrequencyDays = frequencyDays;
-                  expectedPurchaseAmount = avgExpense;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      categoryStatsList.add(
-        CategoryStats(
-          categoryId: category.id,
-          name: category.name,
-          type: category.type,
-          limit: limit,
-          totalSpent: spent,
-          totalPlanned: planned,
-          remaining: remaining,
-          heatPercentage: heat,
-          isOverBudget: spent > limit,
-          isDailyAllowance: category.isDailyAllowance,
-          plannedExceedsLimit: category.plannedExceedsLimit,
-          plannedExpenseStatuses: plannedExpenseStatuses,
-          dailyAllowanceAmount: dailyAllowanceAmount,
-          expectedPurchaseFrequencyDays: expectedPurchaseFrequencyDays,
-          expectedPurchaseAmount: expectedPurchaseAmount,
-        ),
-      );
-    }
-
-    categoryStatsList.sort(
-      (a, b) => b.heatPercentage.compareTo(a.heatPercentage),
-    );
-
-    final totalBudget = totalMandatoryBudget + totalOptionalBudget;
-    final totalSpent = totalMandatorySpent + totalOptionalSpent;
-
-    return PeriodStats(
-      totalMandatoryBudget: totalMandatoryBudget,
-      totalMandatorySpent: totalMandatorySpent,
-      totalOptionalBudget: totalOptionalBudget,
-      totalOptionalSpent: totalOptionalSpent,
-      totalBudget: totalBudget,
-      totalSpent: totalSpent,
-      overallRemaining: totalBudget - totalSpent,
-      remainingFreeBalance:
-          totalFactIncome - effectiveTotalExpenseForFreeBalance,
-      totalIncome: totalIncome,
-      totalFactIncome: totalFactIncome,
-      categoryStats: categoryStatsList,
     );
   }
 }

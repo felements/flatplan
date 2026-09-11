@@ -15,6 +15,11 @@ sealed class Category with _$Category {
     @Default(CategoryType.optionalExpense) CategoryType type,
     double? limit,
     @Default(false) bool isDailyAllowance,
+
+    /// Amounts at or above this count as baskets, below it as small
+    /// incidental spending. Non-null enables the basket insight; the value
+    /// is the user's own boundary, seeded from history but never inferred.
+    double? bigPurchaseThreshold,
     @Default([]) List<PlannedExpense> plannedExpenses,
     @Default([]) List<FactExpense> factExpenses,
   }) = _Category;

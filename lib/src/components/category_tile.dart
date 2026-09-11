@@ -14,8 +14,10 @@ class CategoryTile extends StatefulWidget {
   final bool plannedExceedsLimit;
   final VoidCallback onTap;
   final String? dailyAllowanceAmount;
-  final int? expectedPurchaseFrequencyDays;
-  final String? expectedPurchaseAmount;
+  final String? safeBasketAmount;
+  final String? typicalLine;
+  final String? trendLine;
+  final bool isOverProjected;
   final List<PlannedExpenseStatus> plannedExpenseStatuses;
 
   const CategoryTile({
@@ -29,8 +31,10 @@ class CategoryTile extends StatefulWidget {
     this.plannedExceedsLimit = false,
     required this.onTap,
     this.dailyAllowanceAmount,
-    this.expectedPurchaseFrequencyDays,
-    this.expectedPurchaseAmount,
+    this.safeBasketAmount,
+    this.typicalLine,
+    this.trendLine,
+    this.isOverProjected = false,
     this.plannedExpenseStatuses = const [],
   });
 
@@ -153,30 +157,46 @@ class _CategoryTileState extends State<CategoryTile> {
                             color: colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            widget.expectedPurchaseFrequencyDays != null
-                                ? '${widget.dailyAllowanceAmount} / day left or spend ${widget.expectedPurchaseAmount!} every ${widget.expectedPurchaseFrequencyDays} days'
-                                : '${widget.dailyAllowanceAmount} / day left',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          if (widget.expectedPurchaseFrequencyDays != null) ...[
-                            const SizedBox(width: 6),
-                            Tooltip(
-                              message:
-                                  'Calculated using a 20% Trimmed Mean (drops the 20% smallest expenses)\n'
-                                  'to account for typical spend size and ignore small outliers.',
-                              child: Icon(
-                                Icons.info_outline_rounded,
-                                size: 14,
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.7,
-                                ),
+                          Flexible(
+                            child: Text(
+                              widget.safeBasketAmount != null
+                                  ? '${widget.safeBasketAmount} safe per shop · ${widget.dailyAllowanceAmount} / day left'
+                                  : widget.typicalLine != null
+                                  ? '${widget.dailyAllowanceAmount} / day left · ${widget.typicalLine}'
+                                  : '${widget.dailyAllowanceAmount} / day left',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (widget.trendLine != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            widget.isOverProjected
+                                ? Icons.trending_up_rounded
+                                : Icons.check_circle_outline_rounded,
+                            size: 14,
+                            color: widget.isOverProjected
+                                ? colorScheme.error
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              widget.trendLine!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: widget.isOverProjected
+                                    ? colorScheme.error
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],

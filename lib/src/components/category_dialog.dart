@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/category.dart';
-import '../models/category_type.dart';
+import '../logic/basket_insight.dart';
+import '../models/models.dart';
+import '../providers/all_periods_provider.dart';
 import '../providers/period_notifier_provider.dart';
 
 /// Shows a dialog for adding or editing a category.
@@ -21,8 +22,39 @@ void showCategoryDialog(
   final limitCtrl = TextEditingController(
     text: existing?.limit?.toStringAsFixed(2) ?? '',
   );
+  final thresholdCtrl = TextEditingController(
+    text: existing?.bigPurchaseThreshold?.toStringAsFixed(0) ?? '',
+  );
   var type = existing?.type ?? CategoryType.optionalExpense;
   var isDailyAllowance = existing?.isDailyAllowance ?? false;
+
+  // The suggestion is shown, never written. Pre-filling the field would
+  // make an untouched Save persist an inferred threshold and silently
+  // switch on an opt-in insight; `Category.bigPurchaseThreshold` is
+  // seeded from history but never inferred, so this stays helper text
+  // until the user types it in themselves.
+  double? suggestedThreshold;
+  if (existing != null && existing.bigPurchaseThreshold == null) {
+    final periods = ref.read(allPeriodsProvider).value ?? const <Period>[];
+    final period = periods.where((p) => p.id == periodId).firstOrNull;
+    if (period != null) {
+      suggestedThreshold = suggestedBigPurchaseThreshold(
+        category: existing,
+        period: period,
+        allPeriods: periods,
+      );
+    }
+  }
+
+  const thresholdExplanation =
+      'Amounts at or above this count as a shop; below it as small '
+      'incidental spending. Leave empty to skip the per-shop advice.';
+  final thresholdHelper = suggestedThreshold == null
+      ? thresholdExplanation
+      : 'Suggested from your history: '
+            '${suggestedThreshold.toStringAsFixed(0)} — '
+            'amounts at or above this count as a shop; below it as small '
+            'incidental spending. Leave empty to skip the per-shop advice.';
 
   showDialog(
     context: context,
@@ -119,6 +151,16 @@ void showCategoryDialog(
                       onChanged: (v) => setState(() => isDailyAllowance = v),
                       contentPadding: EdgeInsets.zero,
                     ),
+                    if (isDailyAllowance)
+                      TextField(
+                        controller: thresholdCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Big-purchase threshold',
+                          helperText: thresholdHelper,
+                          helperMaxLines: 3,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                   ],
                 ),
               ),
@@ -146,6 +188,9 @@ void showCategoryDialog(
                         type: type,
                         limit: limit,
                         isDailyAllowance: isDailyAllowance,
+                        bigPurchaseThreshold: isDailyAllowance
+                            ? double.tryParse(thresholdCtrl.text.trim())
+                            : null,
                       ),
                     );
                   } else {
@@ -157,6 +202,9 @@ void showCategoryDialog(
                         type: type,
                         limit: limit,
                         isDailyAllowance: isDailyAllowance,
+                        bigPurchaseThreshold: isDailyAllowance
+                            ? double.tryParse(thresholdCtrl.text.trim())
+                            : null,
                       ),
                     );
                   }

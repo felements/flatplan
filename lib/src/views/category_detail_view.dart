@@ -8,9 +8,11 @@ import 'package:uuid/uuid.dart';
 
 import '../components/category_dialog.dart';
 import '../components/planned_expense_dialog.dart';
+import '../logic/period_extensions.dart';
+import '../logic/period_stats.dart';
 import '../models/models.dart';
+import '../providers/all_periods_provider.dart';
 import '../providers/period_notifier_provider.dart';
-import '../providers/period_stats_provider.dart';
 
 /// Detailed view for managing a single category's expenses.
 ///
@@ -33,6 +35,9 @@ class CategoryDetailView extends HookConsumerWidget {
 
     // Use the period-specific notifier instead of currentPeriodProvider.
     final periodAsync = ref.watch(periodProvider(periodId));
+    // Needed to date this period and to read spending history from the
+    // periods around it.
+    final allPeriods = ref.watch(allPeriodsProvider).value ?? const <Period>[];
 
     final amountController = useTextEditingController();
     final commentController = useTextEditingController();
@@ -72,8 +77,14 @@ class CategoryDetailView extends HookConsumerWidget {
               return const Center(child: Text('Category not found.'));
             }
 
-            // Compute inline stats for this specific period.
-            final catStats = _computeCategoryStats(category);
+            // Stats for this specific period, not whichever one is current.
+            final catStats = categoryStatsFor(
+              category: category,
+              period: period,
+              endDate: effectiveEndDate(period, allPeriods),
+              allPeriods: allPeriods,
+              now: DateTime.now(),
+            );
 
             final format = NumberFormat.simpleCurrency(
               name: period.baseCurrency,
@@ -129,33 +140,6 @@ class CategoryDetailView extends HookConsumerWidget {
           },
         ),
       ),
-    );
-  }
-
-  /// Computes stats for a single category without depending on another
-  /// provider, so it works correctly for any period.
-  CategoryStats _computeCategoryStats(Category category) {
-    final spent = category.factExpenses.fold<double>(
-      0,
-      (prev, e) => prev + e.amount,
-    );
-    final planned = category.plannedTotal;
-    final limit = category.effectiveLimit;
-    final remaining = limit - spent;
-    final heat = limit > 0 ? (spent / limit) : 0.0;
-
-    return CategoryStats(
-      categoryId: category.id,
-      name: category.name,
-      type: category.type,
-      limit: limit,
-      totalSpent: spent,
-      totalPlanned: planned,
-      remaining: remaining,
-      heatPercentage: heat,
-      isOverBudget: spent > limit,
-      isDailyAllowance: category.isDailyAllowance,
-      plannedExceedsLimit: category.plannedExceedsLimit,
     );
   }
 
@@ -343,35 +327,87 @@ class CategoryDetailView extends HookConsumerWidget {
       name: period.baseCurrency,
       decimalDigits: 0,
     );
+    final basket = catStats.basket;
+    final trend = catStats.trend;
+    final typical = catStats.typical;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.today_rounded,
-          size: 14,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          catStats.expectedPurchaseFrequencyDays != null
-              ? '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left or spend ${roundedFormat.format(catStats.expectedPurchaseAmount!)} every ${catStats.expectedPurchaseFrequencyDays} days'
-              : '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        if (catStats.expectedPurchaseFrequencyDays != null) ...[
-          const SizedBox(width: 6),
-          Tooltip(
-            message:
-                'Calculated using a 20% Trimmed Mean (drops the 20% smallest expenses)\n'
-                'to account for typical spend size and ignore small outliers.',
-            child: Icon(
-              Icons.info_outline_rounded,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.today_rounded,
               size: 14,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              basket != null
+                  ? '${roundedFormat.format(basket.safeBasket)} safe per shop · ${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left'
+                  : '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        if (basket != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Reserved for small purchases: '
+            '${roundedFormat.format(basket.snackReserve)} '
+            '(${(basket.stats.snackShare * 100).round()}% historically)',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            // One decimal, not a rounded count: this screen exists so the
+            // safe-per-shop figure can be checked by hand, and the headline
+            // divides by the unrounded trips left. Rounding here made the
+            // two disagree by as much as 40%. A decimal count takes the
+            // plural, so "1.0 shops" is correct; the stray singular only
+            // ever came from the rounding.
+            'Left for shops: ${roundedFormat.format(basket.basketBudget)} '
+            'across ${basket.tripsLeft.toStringAsFixed(1)} shops, '
+            '${_cadenceSentence(basket.stats.tripSpacingDays)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            'Usual shop ${roundedFormat.format(basket.stats.usualBasket)}, '
+            'from the last ${basket.stats.periodsUsed} periods',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (basket == null && typical != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'A typical purchase is ${roundedFormat.format(typical.amount)}; '
+            'the budget left affords one every '
+            '${typical.everyDays == 1 ? 'day' : '${typical.everyDays} days'} '
+            '(from ${typical.purchasesUsed} past purchases)',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (trend != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Averaging ${roundedFormat.format(trend.recentDailyRate)} / day '
+            'last period — projected ${roundedFormat.format(trend.projectedTotal)}'
+            '${trend.isOverProjected ? ', ${roundedFormat.format(trend.overshoot)} over budget' : ', within budget'}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: trend.isOverProjected
+                  ? colorScheme.error
+                  : colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -836,4 +872,15 @@ class CategoryDetailView extends HookConsumerWidget {
       });
     }
   }
+}
+
+/// "one every day", "one every 2 days", "one every 2.5 days" — a decimal
+/// only when the cadence is not a whole number of days, so a one-day
+/// cadence does not read as "one every 1.0 days".
+String _cadenceSentence(double days) {
+  if (days == 1) return 'one every day';
+  final text = days == days.roundToDouble()
+      ? days.toStringAsFixed(0)
+      : days.toStringAsFixed(1);
+  return 'one every $text days';
 }
