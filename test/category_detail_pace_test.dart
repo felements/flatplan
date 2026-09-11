@@ -142,5 +142,11 @@ void main() {
       find.textContaining('Reserved for small purchases'),
       findsOneWidget,
     );
+    // The trip count carries a decimal, so the safe-per-shop figure can be
+    // divided out by hand rather than disagreeing with a rounded count.
+    expect(
+      find.textContaining(RegExp(r'across \d+\.\d shops')),
+      findsOneWidget,
+    );
   });
 }

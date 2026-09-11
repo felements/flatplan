@@ -111,11 +111,17 @@ String formatCurrentPeriodStatsMarkdown({
 
       final basket = c.basket;
       if (basket != null) {
+        final spacing = basket.stats.tripSpacingDays;
+        final cadence = spacing == 1
+            ? 'one every day'
+            : 'one every ${money.format(spacing)} days';
         buffer
           ..writeln(
+            // One decimal rather than a rounded count, so safe-per-shop
+            // reconciles against the budget left: the figure is that
+            // budget divided by the unrounded trips left.
             '- Safe per shop: ${money.format(basket.safeBasket)} '
-            '(about ${basket.tripsLeft.round()} shops left, '
-            'one every ${money.format(basket.stats.tripSpacingDays)} days)',
+            '(${basket.tripsLeft.toStringAsFixed(1)} shops left, $cadence)',
           )
           ..writeln(
             '- Reserved for small purchases: '

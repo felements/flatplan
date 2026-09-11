@@ -364,9 +364,15 @@ class CategoryDetailView extends HookConsumerWidget {
             ),
           ),
           Text(
+            // One decimal, not a rounded count: this screen exists so the
+            // safe-per-shop figure can be checked by hand, and the headline
+            // divides by the unrounded trips left. Rounding here made the
+            // two disagree by as much as 40%. A decimal count takes the
+            // plural, so "1.0 shops" is correct; the stray singular only
+            // ever came from the rounding.
             'Left for shops: ${roundedFormat.format(basket.basketBudget)} '
-            'across about ${basket.tripsLeft.round()} shops, '
-            'one every ${basket.stats.tripSpacingDays.toStringAsFixed(1)} days',
+            'across ${basket.tripsLeft.toStringAsFixed(1)} shops, '
+            '${_cadenceSentence(basket.stats.tripSpacingDays)}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -853,4 +859,15 @@ class CategoryDetailView extends HookConsumerWidget {
       });
     }
   }
+}
+
+/// "one every day", "one every 2 days", "one every 2.5 days" — a decimal
+/// only when the cadence is not a whole number of days, so a one-day
+/// cadence does not read as "one every 1.0 days".
+String _cadenceSentence(double days) {
+  if (days == 1) return 'one every day';
+  final text = days == days.roundToDouble()
+      ? days.toStringAsFixed(0)
+      : days.toStringAsFixed(1);
+  return 'one every $text days';
 }

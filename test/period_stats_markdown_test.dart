@@ -294,7 +294,9 @@ void main() {
 
     expect(markdown, contains('### Groceries'));
     expect(markdown, contains('Safe per shop: 550'));
-    expect(markdown, contains('every 2 days'));
+    // The breakdown has to reconcile by hand: 5,500 over 10.0 shops is
+    // the 550 above, which a rounded trip count would not give.
+    expect(markdown, contains('(10.0 shops left, one every 2 days)'));
     expect(markdown, contains('Reserved for small purchases: 2,500'));
     expect(markdown, contains('Recent rate: 520 / day'));
     expect(markdown, contains('projected 12,400'));
