@@ -15,7 +15,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Category {
 
- String get id; String get name; String? get description; CategoryType get type; double? get limit; bool get isDailyAllowance; List<PlannedExpense> get plannedExpenses; List<FactExpense> get factExpenses;
+ String get id; String get name; String? get description; CategoryType get type; double? get limit; bool get isDailyAllowance;/// Amounts at or above this count as baskets, below it as small
+/// incidental spending. Non-null enables the basket insight; the value
+/// is the user's own boundary, seeded from history but never inferred.
+ double? get bigPurchaseThreshold; List<PlannedExpense> get plannedExpenses; List<FactExpense> get factExpenses;
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +31,16 @@ $CategoryCopyWith<Category> get copyWith => _$CategoryCopyWithImpl<Category>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&const DeepCollectionEquality().equals(other.plannedExpenses, plannedExpenses)&&const DeepCollectionEquality().equals(other.factExpenses, factExpenses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.bigPurchaseThreshold, bigPurchaseThreshold) || other.bigPurchaseThreshold == bigPurchaseThreshold)&&const DeepCollectionEquality().equals(other.plannedExpenses, plannedExpenses)&&const DeepCollectionEquality().equals(other.factExpenses, factExpenses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,type,limit,isDailyAllowance,const DeepCollectionEquality().hash(plannedExpenses),const DeepCollectionEquality().hash(factExpenses));
+int get hashCode => Object.hash(runtimeType,id,name,description,type,limit,isDailyAllowance,bigPurchaseThreshold,const DeepCollectionEquality().hash(plannedExpenses),const DeepCollectionEquality().hash(factExpenses));
 
 @override
 String toString() {
-  return 'Category(id: $id, name: $name, description: $description, type: $type, limit: $limit, isDailyAllowance: $isDailyAllowance, plannedExpenses: $plannedExpenses, factExpenses: $factExpenses)';
+  return 'Category(id: $id, name: $name, description: $description, type: $type, limit: $limit, isDailyAllowance: $isDailyAllowance, bigPurchaseThreshold: $bigPurchaseThreshold, plannedExpenses: $plannedExpenses, factExpenses: $factExpenses)';
 }
 
 
@@ -48,7 +51,7 @@ abstract mixin class $CategoryCopyWith<$Res>  {
   factory $CategoryCopyWith(Category value, $Res Function(Category) _then) = _$CategoryCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, CategoryType type, double? limit, bool isDailyAllowance, List<PlannedExpense> plannedExpenses, List<FactExpense> factExpenses
+ String id, String name, String? description, CategoryType type, double? limit, bool isDailyAllowance, double? bigPurchaseThreshold, List<PlannedExpense> plannedExpenses, List<FactExpense> factExpenses
 });
 
 
@@ -65,7 +68,7 @@ class _$CategoryCopyWithImpl<$Res>
 
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? type = null,Object? limit = freezed,Object? isDailyAllowance = null,Object? plannedExpenses = null,Object? factExpenses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? type = null,Object? limit = freezed,Object? isDailyAllowance = null,Object? bigPurchaseThreshold = freezed,Object? plannedExpenses = null,Object? factExpenses = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -73,7 +76,8 @@ as String,description: freezed == description ? _self.description : description 
 as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as CategoryType,limit: freezed == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
 as double?,isDailyAllowance: null == isDailyAllowance ? _self.isDailyAllowance : isDailyAllowance // ignore: cast_nullable_to_non_nullable
-as bool,plannedExpenses: null == plannedExpenses ? _self.plannedExpenses : plannedExpenses // ignore: cast_nullable_to_non_nullable
+as bool,bigPurchaseThreshold: freezed == bigPurchaseThreshold ? _self.bigPurchaseThreshold : bigPurchaseThreshold // ignore: cast_nullable_to_non_nullable
+as double?,plannedExpenses: null == plannedExpenses ? _self.plannedExpenses : plannedExpenses // ignore: cast_nullable_to_non_nullable
 as List<PlannedExpense>,factExpenses: null == factExpenses ? _self.factExpenses : factExpenses // ignore: cast_nullable_to_non_nullable
 as List<FactExpense>,
   ));
@@ -157,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  CategoryType type,  double? limit,  bool isDailyAllowance,  List<PlannedExpense> plannedExpenses,  List<FactExpense> factExpenses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  CategoryType type,  double? limit,  bool isDailyAllowance,  double? bigPurchaseThreshold,  List<PlannedExpense> plannedExpenses,  List<FactExpense> factExpenses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Category() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_that.isDailyAllowance,_that.plannedExpenses,_that.factExpenses);case _:
+return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_that.isDailyAllowance,_that.bigPurchaseThreshold,_that.plannedExpenses,_that.factExpenses);case _:
   return orElse();
 
 }
@@ -178,10 +182,10 @@ return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  CategoryType type,  double? limit,  bool isDailyAllowance,  List<PlannedExpense> plannedExpenses,  List<FactExpense> factExpenses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  CategoryType type,  double? limit,  bool isDailyAllowance,  double? bigPurchaseThreshold,  List<PlannedExpense> plannedExpenses,  List<FactExpense> factExpenses)  $default,) {final _that = this;
 switch (_that) {
 case _Category():
-return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_that.isDailyAllowance,_that.plannedExpenses,_that.factExpenses);}
+return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_that.isDailyAllowance,_that.bigPurchaseThreshold,_that.plannedExpenses,_that.factExpenses);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -195,10 +199,10 @@ return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  CategoryType type,  double? limit,  bool isDailyAllowance,  List<PlannedExpense> plannedExpenses,  List<FactExpense> factExpenses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  CategoryType type,  double? limit,  bool isDailyAllowance,  double? bigPurchaseThreshold,  List<PlannedExpense> plannedExpenses,  List<FactExpense> factExpenses)?  $default,) {final _that = this;
 switch (_that) {
 case _Category() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_that.isDailyAllowance,_that.plannedExpenses,_that.factExpenses);case _:
+return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_that.isDailyAllowance,_that.bigPurchaseThreshold,_that.plannedExpenses,_that.factExpenses);case _:
   return null;
 
 }
@@ -210,7 +214,7 @@ return $default(_that.id,_that.name,_that.description,_that.type,_that.limit,_th
 @JsonSerializable()
 
 class _Category implements Category {
-  const _Category({required this.id, required this.name, this.description, this.type = CategoryType.optionalExpense, this.limit, this.isDailyAllowance = false, final  List<PlannedExpense> plannedExpenses = const [], final  List<FactExpense> factExpenses = const []}): _plannedExpenses = plannedExpenses,_factExpenses = factExpenses;
+  const _Category({required this.id, required this.name, this.description, this.type = CategoryType.optionalExpense, this.limit, this.isDailyAllowance = false, this.bigPurchaseThreshold, final  List<PlannedExpense> plannedExpenses = const [], final  List<FactExpense> factExpenses = const []}): _plannedExpenses = plannedExpenses,_factExpenses = factExpenses;
   factory _Category.fromJson(Map<String, dynamic> json) => _$CategoryFromJson(json);
 
 @override final  String id;
@@ -219,6 +223,10 @@ class _Category implements Category {
 @override@JsonKey() final  CategoryType type;
 @override final  double? limit;
 @override@JsonKey() final  bool isDailyAllowance;
+/// Amounts at or above this count as baskets, below it as small
+/// incidental spending. Non-null enables the basket insight; the value
+/// is the user's own boundary, seeded from history but never inferred.
+@override final  double? bigPurchaseThreshold;
  final  List<PlannedExpense> _plannedExpenses;
 @override@JsonKey() List<PlannedExpense> get plannedExpenses {
   if (_plannedExpenses is EqualUnmodifiableListView) return _plannedExpenses;
@@ -247,16 +255,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&const DeepCollectionEquality().equals(other._plannedExpenses, _plannedExpenses)&&const DeepCollectionEquality().equals(other._factExpenses, _factExpenses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Category&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.bigPurchaseThreshold, bigPurchaseThreshold) || other.bigPurchaseThreshold == bigPurchaseThreshold)&&const DeepCollectionEquality().equals(other._plannedExpenses, _plannedExpenses)&&const DeepCollectionEquality().equals(other._factExpenses, _factExpenses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,type,limit,isDailyAllowance,const DeepCollectionEquality().hash(_plannedExpenses),const DeepCollectionEquality().hash(_factExpenses));
+int get hashCode => Object.hash(runtimeType,id,name,description,type,limit,isDailyAllowance,bigPurchaseThreshold,const DeepCollectionEquality().hash(_plannedExpenses),const DeepCollectionEquality().hash(_factExpenses));
 
 @override
 String toString() {
-  return 'Category(id: $id, name: $name, description: $description, type: $type, limit: $limit, isDailyAllowance: $isDailyAllowance, plannedExpenses: $plannedExpenses, factExpenses: $factExpenses)';
+  return 'Category(id: $id, name: $name, description: $description, type: $type, limit: $limit, isDailyAllowance: $isDailyAllowance, bigPurchaseThreshold: $bigPurchaseThreshold, plannedExpenses: $plannedExpenses, factExpenses: $factExpenses)';
 }
 
 
@@ -267,7 +275,7 @@ abstract mixin class _$CategoryCopyWith<$Res> implements $CategoryCopyWith<$Res>
   factory _$CategoryCopyWith(_Category value, $Res Function(_Category) _then) = __$CategoryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? description, CategoryType type, double? limit, bool isDailyAllowance, List<PlannedExpense> plannedExpenses, List<FactExpense> factExpenses
+ String id, String name, String? description, CategoryType type, double? limit, bool isDailyAllowance, double? bigPurchaseThreshold, List<PlannedExpense> plannedExpenses, List<FactExpense> factExpenses
 });
 
 
@@ -284,7 +292,7 @@ class __$CategoryCopyWithImpl<$Res>
 
 /// Create a copy of Category
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? type = null,Object? limit = freezed,Object? isDailyAllowance = null,Object? plannedExpenses = null,Object? factExpenses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? type = null,Object? limit = freezed,Object? isDailyAllowance = null,Object? bigPurchaseThreshold = freezed,Object? plannedExpenses = null,Object? factExpenses = null,}) {
   return _then(_Category(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -292,7 +300,8 @@ as String,description: freezed == description ? _self.description : description 
 as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as CategoryType,limit: freezed == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
 as double?,isDailyAllowance: null == isDailyAllowance ? _self.isDailyAllowance : isDailyAllowance // ignore: cast_nullable_to_non_nullable
-as bool,plannedExpenses: null == plannedExpenses ? _self._plannedExpenses : plannedExpenses // ignore: cast_nullable_to_non_nullable
+as bool,bigPurchaseThreshold: freezed == bigPurchaseThreshold ? _self.bigPurchaseThreshold : bigPurchaseThreshold // ignore: cast_nullable_to_non_nullable
+as double?,plannedExpenses: null == plannedExpenses ? _self._plannedExpenses : plannedExpenses // ignore: cast_nullable_to_non_nullable
 as List<PlannedExpense>,factExpenses: null == factExpenses ? _self._factExpenses : factExpenses // ignore: cast_nullable_to_non_nullable
 as List<FactExpense>,
   ));

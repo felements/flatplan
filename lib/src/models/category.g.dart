@@ -15,6 +15,7 @@ _Category _$CategoryFromJson(Map<String, dynamic> json) => _Category(
       CategoryType.optionalExpense,
   limit: (json['limit'] as num?)?.toDouble(),
   isDailyAllowance: json['is_daily_allowance'] as bool? ?? false,
+  bigPurchaseThreshold: (json['big_purchase_threshold'] as num?)?.toDouble(),
   plannedExpenses:
       (json['planned_expenses'] as List<dynamic>?)
           ?.map((e) => PlannedExpense.fromJson(e as Map<String, dynamic>))
@@ -34,6 +35,7 @@ Map<String, dynamic> _$CategoryToJson(_Category instance) => <String, dynamic>{
   'type': _$CategoryTypeEnumMap[instance.type]!,
   'limit': instance.limit,
   'is_daily_allowance': instance.isDailyAllowance,
+  'big_purchase_threshold': instance.bigPurchaseThreshold,
   'planned_expenses': instance.plannedExpenses.map((e) => e.toJson()).toList(),
   'fact_expenses': instance.factExpenses.map((e) => e.toJson()).toList(),
 };
