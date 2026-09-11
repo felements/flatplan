@@ -124,3 +124,100 @@ double? suggestedBigPurchaseThreshold({
   final mean = amounts.fold<double>(0, (sum, a) => sum + a) / amounts.length;
   return (mean / 50).round() * 50;
 }
+
+/// What is safe to spend on the next shop, and the reasoning behind it.
+@freezed
+sealed class BasketAdvice with _$BasketAdvice {
+  const factory BasketAdvice({
+    /// Budget held back for small incidental spending still to come.
+    required double snackReserve,
+
+    /// What is left for baskets once the reserve is held back.
+    required double basketBudget,
+
+    /// Baskets expected in the days remaining.
+    required double tripsLeft,
+
+    /// [basketBudget] divided across [tripsLeft].
+    required double safeBasket,
+
+    /// The history the advice was derived from.
+    required BasketStats stats,
+  }) = _BasketAdvice;
+}
+
+/// The advice given already-computed [stats] and this period's figures.
+///
+/// The reserve is anchored to [limit] rather than [remaining]: taking a
+/// share of a shrinking base would quietly hand budget back to baskets as
+/// small spending ate into it. Anchored to the limit and reduced by what
+/// small items have already consumed, the reserve floors at zero, after
+/// which every further small purchase tightens [safeBasket] directly
+/// because [remaining] has fallen.
+BasketAdvice? basketAdviceFrom({
+  required BasketStats stats,
+  required double limit,
+  required double remaining,
+  required double smallSpentThisPeriod,
+  required int daysLeft,
+}) {
+  if (daysLeft < 1) return null;
+  if (stats.tripSpacingDays <= 0) return null;
+
+  final expectedSnacks = stats.snackShare * limit;
+  final snackReserve = expectedSnacks - smallSpentThisPeriod;
+  final reserve = snackReserve > 0 ? snackReserve : 0.0;
+
+  final basketBudget = remaining - reserve;
+  if (basketBudget <= 0) return null;
+
+  final tripsLeft = daysLeft / stats.tripSpacingDays;
+  if (tripsLeft <= 0) return null;
+
+  return BasketAdvice(
+    snackReserve: reserve,
+    basketBudget: basketBudget,
+    tripsLeft: tripsLeft,
+    safeBasket: basketBudget / tripsLeft,
+    stats: stats,
+  );
+}
+
+/// The advice for [category] in [period], or null when the insight is off,
+/// the period has ended, history is too thin, or nothing is left for baskets.
+BasketAdvice? basketAdviceFor({
+  required Category category,
+  required Period period,
+  required DateTime endDate,
+  required List<Period> allPeriods,
+  required DateTime now,
+}) {
+  if (!category.isDailyAllowance) return null;
+
+  final threshold = category.bigPurchaseThreshold;
+  if (threshold == null) return null;
+
+  final daysLeft = endDate.difference(now).inDays;
+  if (daysLeft < 1) return null;
+
+  final stats = basketStatsFor(
+    category: category,
+    period: period,
+    allPeriods: allPeriods,
+  );
+  if (stats == null) return null;
+
+  final spent = category.factExpenses.fold<double>(0, (s, e) => s + e.amount);
+  final smallSpent = category.factExpenses
+      .where((e) => e.amount < threshold)
+      .fold<double>(0, (s, e) => s + e.amount);
+
+  final limit = category.effectiveLimit;
+  return basketAdviceFrom(
+    stats: stats,
+    limit: limit,
+    remaining: limit - spent,
+    smallSpentThisPeriod: smallSpent,
+    daysLeft: daysLeft,
+  );
+}
