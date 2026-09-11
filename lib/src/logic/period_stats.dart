@@ -1,7 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'allowance_pace.dart';
+import 'basket_insight.dart';
 import 'period_extensions.dart';
+import 'spending_trend.dart';
 import '../models/models.dart';
 
 part 'period_stats.freezed.dart';
@@ -26,6 +28,10 @@ sealed class CategoryStats with _$CategoryStats {
     double? dailyAllowanceAmount,
     int? expectedPurchaseFrequencyDays,
     double? expectedPurchaseAmount,
+    /// Where this period lands at the previous period's rate.
+    SpendingTrend? trend,
+    /// What is safe to spend on the next shop.
+    BasketAdvice? basket,
   }) = _CategoryStats;
 }
 
@@ -82,6 +88,22 @@ CategoryStats categoryStatsFor({
     now: now,
   );
 
+  final trend = spendingTrendFor(
+    category: category,
+    period: period,
+    endDate: endDate,
+    allPeriods: allPeriods,
+    now: now,
+  );
+
+  final basket = basketAdviceFor(
+    category: category,
+    period: period,
+    endDate: endDate,
+    allPeriods: allPeriods,
+    now: now,
+  );
+
   final isActivePeriod =
       now.isAfter(period.startDate.subtract(const Duration(days: 1))) &&
       now.isBefore(endDate.add(const Duration(days: 1)));
@@ -126,6 +148,8 @@ CategoryStats categoryStatsFor({
         : null,
     expectedPurchaseFrequencyDays: pace?.frequencyDays,
     expectedPurchaseAmount: pace?.amount,
+    trend: trend,
+    basket: basket,
   );
 }
 
