@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'basket_insight.dart';
 import 'period_extensions.dart';
 import 'spending_trend.dart';
+import 'typical_purchase.dart';
 import '../models/models.dart';
 
 part 'period_stats.freezed.dart';
@@ -29,6 +30,10 @@ sealed class CategoryStats with _$CategoryStats {
     SpendingTrend? trend,
     /// What is safe to spend on the next shop.
     BasketAdvice? basket,
+
+    /// A typical purchase and how often the budget affords one. The
+    /// counterpart to [basket], for categories with no threshold set.
+    TypicalPurchase? typical,
   }) = _CategoryStats;
 }
 
@@ -78,6 +83,14 @@ CategoryStats categoryStatsFor({
   if (daysLeft < 1) daysLeft = 1;
 
   final trend = spendingTrendFor(
+    category: category,
+    period: period,
+    endDate: endDate,
+    allPeriods: allPeriods,
+    now: now,
+  );
+
+  final typical = typicalPurchaseFor(
     category: category,
     period: period,
     endDate: endDate,
@@ -137,6 +150,7 @@ CategoryStats categoryStatsFor({
         : null,
     trend: trend,
     basket: basket,
+    typical: typical,
   );
 }
 

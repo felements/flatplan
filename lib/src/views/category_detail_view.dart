@@ -329,6 +329,7 @@ class CategoryDetailView extends HookConsumerWidget {
     );
     final basket = catStats.basket;
     final trend = catStats.trend;
+    final typical = catStats.typical;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,6 +381,18 @@ class CategoryDetailView extends HookConsumerWidget {
           Text(
             'Usual shop ${roundedFormat.format(basket.stats.usualBasket)}, '
             'from the last ${basket.stats.periodsUsed} periods',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (basket == null && typical != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'A typical purchase is ${roundedFormat.format(typical.amount)}; '
+            'the budget left affords one every '
+            '${typical.everyDays == 1 ? 'day' : '${typical.everyDays} days'} '
+            '(from ${typical.purchasesUsed} past purchases)',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),

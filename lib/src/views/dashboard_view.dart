@@ -505,6 +505,11 @@ class DashboardView extends ConsumerWidget {
             safeBasketAmount: c.basket != null
                 ? money.format(c.basket!.safeBasket)
                 : null,
+            typicalLine: c.typical != null
+                ? 'usually ${money.format(c.typical!.amount)}, '
+                      'about one every ${c.typical!.everyDays} '
+                      '${c.typical!.everyDays == 1 ? 'day' : 'days'}'
+                : null,
             trendLine: c.trend != null
                 ? 'averaging ${money.format(c.trend!.recentDailyRate)}/day'
                       '${c.trend!.isOverProjected ? ' — heading ${money.format(c.trend!.overshoot)} over' : ' — within budget'}'

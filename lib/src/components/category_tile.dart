@@ -15,6 +15,7 @@ class CategoryTile extends StatefulWidget {
   final VoidCallback onTap;
   final String? dailyAllowanceAmount;
   final String? safeBasketAmount;
+  final String? typicalLine;
   final String? trendLine;
   final bool isOverProjected;
   final List<PlannedExpenseStatus> plannedExpenseStatuses;
@@ -31,6 +32,7 @@ class CategoryTile extends StatefulWidget {
     required this.onTap,
     this.dailyAllowanceAmount,
     this.safeBasketAmount,
+    this.typicalLine,
     this.trendLine,
     this.isOverProjected = false,
     this.plannedExpenseStatuses = const [],
@@ -159,6 +161,8 @@ class _CategoryTileState extends State<CategoryTile> {
                             child: Text(
                               widget.safeBasketAmount != null
                                   ? '${widget.safeBasketAmount} safe per shop · ${widget.dailyAllowanceAmount} / day left'
+                                  : widget.typicalLine != null
+                                  ? '${widget.dailyAllowanceAmount} / day left · ${widget.typicalLine}'
                                   : '${widget.dailyAllowanceAmount} / day left',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,

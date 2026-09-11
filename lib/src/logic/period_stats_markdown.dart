@@ -96,7 +96,7 @@ String formatCurrentPeriodStatsMarkdown({
   }
 
   final withInsights = stats.categoryStats
-      .where((c) => c.trend != null || c.basket != null)
+      .where((c) => c.trend != null || c.basket != null || c.typical != null)
       .toList();
 
   if (withInsights.isNotEmpty) {
@@ -134,6 +134,16 @@ String formatCurrentPeriodStatsMarkdown({
             'usual shop is ${money.format(basket.stats.usualBasket)} '
             '(from ${basket.stats.periodsUsed} previous periods)',
           );
+      }
+
+      final typical = c.typical;
+      if (typical != null) {
+        buffer.writeln(
+          '- Typical purchase: ${money.format(typical.amount)}; '
+          'the budget left affords one every '
+          '${typical.everyDays == 1 ? 'day' : '${typical.everyDays} days'} '
+          '(from ${typical.purchasesUsed} past purchases)',
+        );
       }
 
       final trend = c.trend;

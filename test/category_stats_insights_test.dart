@@ -58,4 +58,33 @@ void main() {
     expect(stats.basket, isNotNull);
     expect(stats.basket!.stats.periodsUsed, 2);
   });
+  test('a category without a threshold gets typical, not basket', () {
+    final noThreshold = current.categories.first.copyWith(
+      bigPurchaseThreshold: null,
+    );
+
+    final stats = categoryStatsFor(
+      category: noThreshold,
+      period: current,
+      endDate: DateTime(2026, 2, 22),
+      allPeriods: all,
+      now: DateTime(2026, 1, 25),
+    );
+
+    expect(stats.typical, isNotNull);
+    expect(stats.basket, isNull);
+  });
+
+  test('a category with a threshold gets basket, not typical', () {
+    final stats = categoryStatsFor(
+      category: current.categories.first,
+      period: current,
+      endDate: DateTime(2026, 2, 22),
+      allPeriods: all,
+      now: DateTime(2026, 1, 25),
+    );
+
+    expect(stats.basket, isNotNull);
+    expect(stats.typical, isNull);
+  });
 }
