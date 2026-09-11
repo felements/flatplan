@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flatplan/src/logic/spending_trend.dart';
 import 'package:flatplan/src/models/models.dart';
 
-FactExpense _fact(double amount) =>
-    FactExpense(id: 'f$amount', amount: amount, timestamp: DateTime(2026, 1, 1));
+FactExpense _fact(double amount) => FactExpense(
+  id: 'f$amount',
+  amount: amount,
+  timestamp: DateTime(2026, 1, 1),
+);
 
 Period _period({
   required String id,
@@ -36,13 +39,17 @@ void main() {
   final previous = _period(
     id: 'previous',
     startDate: DateTime(2026, 2, 1),
-    categories: [_groceries('c1', [1000, 1000, 1000])],
+    categories: [
+      _groceries('c1', [1000, 1000, 1000]),
+    ],
   );
   // Current period runs 2026-03-03 .. 2026-03-31 (previous ends the day before).
   final current = _period(
     id: 'current',
     startDate: DateTime(2026, 3, 3),
-    categories: [_groceries('c2', [200])],
+    categories: [
+      _groceries('c2', [200]),
+    ],
   );
   final all = [previous, current];
   final endDate = DateTime(2026, 3, 25);
@@ -69,7 +76,9 @@ void main() {
     final roomy = _period(
       id: 'current',
       startDate: DateTime(2026, 3, 3),
-      categories: [_groceries('c2', [200], limit: 5000)],
+      categories: [
+        _groceries('c2', [200], limit: 5000),
+      ],
     );
 
     final trend = spendingTrendFor(
@@ -85,11 +94,46 @@ void main() {
     expect(trend.isOverProjected, isFalse);
   });
 
+  test('reads the immediately preceding period even when it is empty', () {
+    // Groceries went untouched last period. That is a rate of zero, which
+    // is real data — not a reason to reach back a further period and label
+    // it "last period" in the UI.
+    final idle = _period(
+      id: 'idle',
+      startDate: DateTime(2026, 3, 3),
+      categories: [_groceries('c-idle', const [])],
+    );
+    final latest = _period(
+      id: 'latest',
+      startDate: DateTime(2026, 4, 1),
+      categories: [
+        _groceries('c-latest', [200]),
+      ],
+    );
+
+    final trend = spendingTrendFor(
+      category: latest.categories.first,
+      period: latest,
+      endDate: DateTime(2026, 4, 21),
+      allPeriods: [previous, idle, latest],
+      now: DateTime(2026, 4, 1),
+    );
+
+    // Zero, not `previous`'s 100 / day from two periods back.
+    expect(trend!.recentDailyRate, 0);
+    // 200 already spent plus 20 days at nothing a day.
+    expect(trend.projectedTotal, 200);
+    expect(trend.overshoot, 0);
+    expect(trend.isOverProjected, isFalse);
+  });
+
   test('returns null for a category without a daily allowance', () {
     final plain = _period(
       id: 'current',
       startDate: DateTime(2026, 3, 3),
-      categories: [_groceries('c2', [200], isDailyAllowance: false)],
+      categories: [
+        _groceries('c2', [200], isDailyAllowance: false),
+      ],
     );
 
     expect(

@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flatplan/src/logic/basket_insight.dart';
 import 'package:flatplan/src/models/models.dart';
 
-FactExpense _fact(double amount) =>
-    FactExpense(id: 'f$amount', amount: amount, timestamp: DateTime(2026, 1, 1));
+FactExpense _fact(double amount) => FactExpense(
+  id: 'f$amount',
+  amount: amount,
+  timestamp: DateTime(2026, 1, 1),
+);
 
 Period _period({
   required String id,
@@ -78,11 +81,7 @@ void main() {
     );
 
     expect(
-      basketStatsFor(
-        category: noThreshold,
-        period: current,
-        allPeriods: all,
-      ),
+      basketStatsFor(category: noThreshold, period: current, allPeriods: all),
       isNull,
     );
   });
@@ -174,6 +173,43 @@ void main() {
 
     expect(basketHistoryPeriods, 3);
     expect(stats!.periodsUsed, 3);
+  });
+
+  test('still passes over a period with nothing spent on the category', () {
+    // Nothing was booked to Groceries in the period just gone. It carries
+    // no share and no cadence, so the window reaches past it rather than
+    // counting a period the user never lived as history.
+    final idle = _period(
+      id: 'idle',
+      startDate: DateTime(2026, 1, 23),
+      amounts: const [],
+    );
+    final later = Period(
+      id: 'later',
+      name: 'later',
+      startDate: DateTime(2026, 2, 1),
+      baseCurrency: 'EUR',
+      lastModified: DateTime(2026, 2, 1),
+      categories: [
+        const Category(
+          id: 'cat-later',
+          name: 'Groceries',
+          limit: 10000,
+          isDailyAllowance: true,
+          bigPurchaseThreshold: 500,
+        ),
+      ],
+    );
+
+    final stats = basketStatsFor(
+      category: later.categories.first,
+      period: later,
+      allPeriods: [sliceA, sliceB, idle, later],
+    );
+
+    expect(stats!.periodsUsed, 2);
+    expect(stats.snackShare, closeTo(600 / 2600, 0.0001));
+    expect(stats.tripSpacingDays, 5);
   });
 
   test('treats an amount exactly at the threshold as a basket', () {

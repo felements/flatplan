@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flatplan/src/logic/period_history.dart';
 import 'package:flatplan/src/models/models.dart';
 
-FactExpense _fact(double amount) =>
-    FactExpense(id: 'f$amount', amount: amount, timestamp: DateTime(2026, 1, 1));
+FactExpense _fact(double amount) => FactExpense(
+  id: 'f$amount',
+  amount: amount,
+  timestamp: DateTime(2026, 1, 1),
+);
 
 Period _period({
   required String id,
@@ -18,28 +21,33 @@ Period _period({
   categories: categories,
 );
 
-Category _groceries(String id, List<double> amounts, {String name = 'Groceries'}) =>
-    Category(
-      id: id,
-      name: name,
-      factExpenses: amounts.map(_fact).toList(),
-    );
+Category _groceries(
+  String id,
+  List<double> amounts, {
+  String name = 'Groceries',
+}) => Category(id: id, name: name, factExpenses: amounts.map(_fact).toList());
 
 void main() {
   final older = _period(
     id: 'older',
     startDate: DateTime(2026, 1, 1),
-    categories: [_groceries('c1', [100, 200])],
+    categories: [
+      _groceries('c1', [100, 200]),
+    ],
   );
   final previous = _period(
     id: 'previous',
     startDate: DateTime(2026, 2, 1),
-    categories: [_groceries('c2', [300, 400])],
+    categories: [
+      _groceries('c2', [300, 400]),
+    ],
   );
   final current = _period(
     id: 'current',
     startDate: DateTime(2026, 3, 1),
-    categories: [_groceries('c3', [999])],
+    categories: [
+      _groceries('c3', [999]),
+    ],
   );
   final all = [current, previous, older];
 
@@ -79,7 +87,9 @@ void main() {
     final unrelated = _period(
       id: 'unrelated',
       startDate: DateTime(2026, 2, 20),
-      categories: [_groceries('c5', [50], name: 'Transport')],
+      categories: [
+        _groceries('c5', [50], name: 'Transport'),
+      ],
     );
 
     final slices = priorCategoryHistory(
@@ -93,6 +103,28 @@ void main() {
       [300, 400],
       [100, 200],
     ]);
+  });
+
+  test('keeps empty periods in place when skipEmpty is off', () {
+    final empty = _period(
+      id: 'empty',
+      startDate: DateTime(2026, 2, 15),
+      categories: [_groceries('c4', const [])],
+    );
+
+    final slices = priorCategoryHistory(
+      categoryName: 'Groceries',
+      currentPeriod: current,
+      allPeriods: [...all, empty],
+      limit: 1,
+      skipEmpty: false,
+    );
+
+    // The immediately preceding period is the empty one, and it is what
+    // comes back — a rate needs the period itself, not the last one with
+    // any spending in it.
+    expect(slices.single.amounts, isEmpty);
+    expect(slices.single.total, 0);
   });
 
   test('matches the category name ignoring case and whitespace', () {

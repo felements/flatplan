@@ -14,19 +14,29 @@ class CategoryPeriodSlice {
   double get total => amounts.fold<double>(0, (sum, a) => sum + a);
 }
 
-/// History for [categoryName] from the complete periods preceding
-/// [currentPeriod], newest first, capped at [limit] slices.
+/// History for [categoryName] from the periods preceding [currentPeriod],
+/// newest first, capped at [limit] slices.
 ///
 /// Matching is by name because [createNextPeriod] regenerates category ids
 /// on every rollover, so ids cannot link a category across periods.
-/// Periods where the category is absent or has no spending are skipped
-/// rather than counted as an empty slice — an empty slice would drag a
-/// share or cadence statistic toward a value the user never lived.
+///
+/// With the default [skipEmpty], periods where the category is absent or
+/// has no spending are passed over rather than counted as an empty slice —
+/// an empty slice would drag a share or cadence statistic toward a value
+/// the user never lived, and a period with no basket in it has no cadence
+/// to contribute.
+///
+/// Pass `skipEmpty: false` when the position of a slice is what matters
+/// rather than its content. A rate wants the genuinely preceding period:
+/// a period with no spending in this category is real data meaning the
+/// rate was zero, and skipping it would report the rate from two periods
+/// back under a "last period" label.
 List<CategoryPeriodSlice> priorCategoryHistory({
   required String categoryName,
   required Period currentPeriod,
   required List<Period> allPeriods,
   required int limit,
+  bool skipEmpty = true,
 }) {
   final key = categoryName.trim().toLowerCase();
   final sorted = [...allPeriods]
@@ -44,7 +54,7 @@ List<CategoryPeriodSlice> priorCategoryHistory({
         amounts.add(expense.amount);
       }
     }
-    if (amounts.isEmpty) continue;
+    if (amounts.isEmpty && skipEmpty) continue;
 
     final end = effectiveEndDate(period, allPeriods);
     slices.add(

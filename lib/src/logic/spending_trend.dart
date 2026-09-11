@@ -25,12 +25,18 @@ sealed class SpendingTrend with _$SpendingTrend {
 }
 
 /// The trend for [category] in [period], or null when the category has no
-/// daily allowance, the period has ended, or there is no complete prior
-/// period to compare against.
+/// daily allowance, the period has ended, or there is no preceding period
+/// to compare against.
 ///
 /// The single most recent prior period is the basis rather than an average:
 /// spending rates were observed to trend steadily rather than oscillate, so
 /// an average lags the current trajectory.
+///
+/// The history is requested with `skipEmpty: false` so "last period" means
+/// the period immediately before this one, whatever it holds. A preceding
+/// period with no spending in this category is a rate of zero — real data,
+/// and a legitimate trend. Skipping it would quietly report the rate from
+/// two periods ago while the UI labels it "last period".
 SpendingTrend? spendingTrendFor({
   required Category category,
   required Period period,
@@ -48,6 +54,7 @@ SpendingTrend? spendingTrendFor({
     currentPeriod: period,
     allPeriods: allPeriods,
     limit: 1,
+    skipEmpty: false,
   );
   if (history.isEmpty) return null;
 
