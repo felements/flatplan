@@ -216,11 +216,14 @@ Tests use synthetic fixtures. No real budget data enters the repository.
 
 ## Out of scope
 
-**A real spend date on `FactExpense`.** The timestamp problem is worked around here by
-using period membership, which is sufficient for both insights. Adding a user-editable
-spend date would fix it properly and would make trip grouping possible, but it touches
-the model, the YAML schema, every existing period file, and the entry UI. It deserves
-its own spec.
+**A real spend date on `FactExpense` — rejected, not deferred.** The timestamp problem is
+worked around here by using period membership, which is sufficient for both insights. A
+user-editable spend date would fix it at the source and would make shopping-trip grouping
+possible, but it is ruled out on product grounds: entries are routinely filled in days
+late, so defaulting to today is wrong, and a manual date field adds a decision to every
+single entry. That contradicts the app's core principle of keeping accounting frictionless
+— the reason to reach for it is that recording a purchase takes seconds. Do not re-propose
+it; any feature needing real spend dates must find another route or be dropped.
 
 **Splitting the category in two.** Modelling snacks and groceries as separate categories
 was tried and rejected by the user: the split is not predictable in advance, since
