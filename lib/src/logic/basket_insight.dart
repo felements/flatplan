@@ -24,7 +24,8 @@ sealed class BasketStats with _$BasketStats {
     required double snackShare,
 
     /// Days between baskets. The tightest seen in the window, so the number
-    /// of remaining trips is never underestimated.
+    /// of remaining trips is never underestimated. Never below 1: see
+    /// [basketStatsFor] for why a sub-daily cadence is withheld instead.
     required double tripSpacingDays,
 
     /// A typical basket, shown as context so the advice can be judged.
@@ -43,8 +44,18 @@ double _median(List<double> values) {
 }
 
 /// Basket statistics for [category], or null when it has no threshold set,
-/// there is too little history, or a period in the window contains no
-/// basket-sized purchase at all.
+/// there is too little history, a period in the window contains no
+/// basket-sized purchase at all, or the measured cadence comes out below
+/// one shop per day.
+///
+/// The sub-daily guard matters because the count behind the cadence is
+/// fact-expense *rows*, not trips: one shop is typically entered as several
+/// receipt lines. A threshold set low enough that most rows clear it makes
+/// [BasketStats.tripSpacingDays] fall under 1, and the advice degenerates
+/// into a "per shop" figure smaller than a single day's allowance — the
+/// exact failure this insight was designed to replace. Below one day the
+/// number no longer describes shopping trips, so it is withheld rather than
+/// shown; raising the threshold is the fix, and the user owns it.
 BasketStats? basketStatsFor({
   required Category category,
   required Period period,
@@ -88,7 +99,7 @@ BasketStats? basketStatsFor({
     medians.add(_median(baskets));
   }
 
-  if (tightestSpacing == null || tightestSpacing <= 0) return null;
+  if (tightestSpacing == null || tightestSpacing < 1) return null;
 
   return BasketStats(
     snackShare: worstShare!,

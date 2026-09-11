@@ -115,6 +115,67 @@ void main() {
     );
   });
 
+  test('returns null when the measured cadence falls below a day', () {
+    // 13 rows at or above the threshold inside a 12-day period
+    // (2026-01-11 .. 2026-01-22): 12 / 13 = 0.92 days between "trips".
+    // The count is receipt lines, not shopping trips, so a sub-daily
+    // spacing means the threshold is too low to separate the two — the
+    // advice would degenerate into a per-shop figure below a day's
+    // allowance, which is what the insight exists to avoid.
+    final dense = _period(
+      id: 'c',
+      startDate: DateTime(2026, 1, 11),
+      amounts: [100, ...List<double>.filled(13, 600)],
+    );
+
+    expect(
+      basketStatsFor(
+        category: current.categories.first,
+        period: current,
+        allPeriods: [sliceA, dense, current],
+      ),
+      isNull,
+    );
+  });
+
+  test('draws on no more than basketHistoryPeriods complete periods', () {
+    // Four complete prior periods, each 10 days with two baskets. Only the
+    // most recent three may feed the statistics.
+    final older = [
+      for (var i = 0; i < 4; i++)
+        _period(
+          id: 'w$i',
+          startDate: DateTime(2026, 1, 1).add(Duration(days: i * 10)),
+          amounts: const [100, 1000, 1000],
+        ),
+    ];
+    final latest = Period(
+      id: 'window-current',
+      name: 'window-current',
+      startDate: DateTime(2026, 2, 10),
+      baseCurrency: 'EUR',
+      lastModified: DateTime(2026, 2, 10),
+      categories: [
+        const Category(
+          id: 'cat-window-current',
+          name: 'Groceries',
+          limit: 10000,
+          isDailyAllowance: true,
+          bigPurchaseThreshold: 500,
+        ),
+      ],
+    );
+
+    final stats = basketStatsFor(
+      category: latest.categories.first,
+      period: latest,
+      allPeriods: [...older, latest],
+    );
+
+    expect(basketHistoryPeriods, 3);
+    expect(stats!.periodsUsed, 3);
+  });
+
   test('treats an amount exactly at the threshold as a basket', () {
     final atThreshold = _period(
       id: 'c',
