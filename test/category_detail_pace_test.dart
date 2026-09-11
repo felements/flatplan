@@ -22,12 +22,14 @@ FactExpense _fact(String id, double amount, int daysAgo) => FactExpense(
 Category _groceries({
   required String id,
   List<FactExpense> facts = const [],
+  double? bigPurchaseThreshold,
 }) => Category(
   id: id,
   name: 'Groceries',
   type: CategoryType.optionalExpense,
   limit: 14000,
   isDailyAllowance: true,
+  bigPurchaseThreshold: bigPurchaseThreshold,
   factExpenses: facts,
 );
 
@@ -41,6 +43,31 @@ void main() {
     tempDir = Directory.systemTemp.createTempSync('flatplan_detail_pace_');
     repo = PeriodRepository(directoryPath: tempDir.path);
 
+    // Two complete prior periods, each mixing small (<500) and basket-sized
+    // (>=500) purchases — basketStatsFor needs a basket in every period in
+    // its window, or it returns null. Mirrors the fixture shape in
+    // test/basket_stats_test.dart.
+    await repo.savePeriod(
+      Period(
+        id: 'older',
+        name: 'Older',
+        startDate: _midnightDaysAgo(62),
+        baseCurrency: 'EUR',
+        lastModified: _midnightDaysAgo(62),
+        categories: [
+          _groceries(
+            id: 'older-groceries',
+            facts: [
+              _fact('a1', 100, 60),
+              _fact('a2', 100, 55),
+              _fact('a3', 1000, 50),
+              _fact('a4', 1000, 45),
+            ],
+          ),
+        ],
+      ),
+    );
+
     await repo.savePeriod(
       Period(
         id: 'previous',
@@ -52,10 +79,11 @@ void main() {
           _groceries(
             id: 'old-groceries',
             facts: [
-              _fact('o1', 1000, 20),
-              _fact('o2', 1000, 15),
-              _fact('o3', 1000, 10),
-              _fact('o4', 1000, 5),
+              _fact('o1', 100, 28),
+              _fact('o2', 200, 22),
+              _fact('o3', 300, 16),
+              _fact('o4', 600, 10),
+              _fact('o5', 1400, 5),
             ],
           ),
         ],
@@ -69,7 +97,9 @@ void main() {
         startDate: _midnightDaysAgo(2),
         baseCurrency: 'EUR',
         lastModified: _midnightDaysAgo(2),
-        categories: [_groceries(id: 'new-groceries')],
+        categories: [
+          _groceries(id: 'new-groceries', bigPurchaseThreshold: 500),
+        ],
       ),
     );
   });
@@ -107,6 +137,10 @@ void main() {
       await tester.pump();
     });
 
-    expect(find.textContaining('every 2 days'), findsOneWidget);
+    expect(find.textContaining('safe per shop'), findsOneWidget);
+    expect(
+      find.textContaining('Reserved for small purchases'),
+      findsOneWidget,
+    );
   });
 }

@@ -327,35 +327,68 @@ class CategoryDetailView extends HookConsumerWidget {
       name: period.baseCurrency,
       decimalDigits: 0,
     );
+    final basket = catStats.basket;
+    final trend = catStats.trend;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.today_rounded,
-          size: 14,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          catStats.expectedPurchaseFrequencyDays != null
-              ? '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left or spend ${roundedFormat.format(catStats.expectedPurchaseAmount!)} every ${catStats.expectedPurchaseFrequencyDays} days'
-              : '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        if (catStats.expectedPurchaseFrequencyDays != null) ...[
-          const SizedBox(width: 6),
-          Tooltip(
-            message:
-                'Calculated using a 20% Trimmed Mean (drops the 20% smallest expenses)\n'
-                'to account for typical spend size and ignore small outliers.',
-            child: Icon(
-              Icons.info_outline_rounded,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.today_rounded,
               size: 14,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              basket != null
+                  ? '${roundedFormat.format(basket.safeBasket)} safe per shop · ${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left'
+                  : '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        if (basket != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Reserved for small purchases: '
+            '${roundedFormat.format(basket.snackReserve)} '
+            '(${(basket.stats.snackShare * 100).round()}% historically)',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            'Left for shops: ${roundedFormat.format(basket.basketBudget)} '
+            'across about ${basket.tripsLeft.round()} shops, '
+            'one every ${basket.stats.tripSpacingDays.toStringAsFixed(1)} days',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            'Usual shop ${roundedFormat.format(basket.stats.usualBasket)}, '
+            'from the last ${basket.stats.periodsUsed} periods',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (trend != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Averaging ${roundedFormat.format(trend.recentDailyRate)} / day '
+            'last period — projected ${roundedFormat.format(trend.projectedTotal)}'
+            '${trend.isOverProjected ? ', ${roundedFormat.format(trend.overshoot)} over budget' : ', within budget'}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: trend.isOverProjected
+                  ? colorScheme.error
+                  : colorScheme.onSurfaceVariant,
             ),
           ),
         ],
