@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/category.dart';
-import '../models/category_type.dart';
+import '../logic/basket_insight.dart';
+import '../models/models.dart';
+import '../providers/all_periods_provider.dart';
 import '../providers/period_notifier_provider.dart';
 
 /// Shows a dialog for adding or editing a category.
@@ -21,8 +22,26 @@ void showCategoryDialog(
   final limitCtrl = TextEditingController(
     text: existing?.limit?.toStringAsFixed(2) ?? '',
   );
+  final thresholdCtrl = TextEditingController(
+    text: existing?.bigPurchaseThreshold?.toStringAsFixed(0) ?? '',
+  );
   var type = existing?.type ?? CategoryType.optionalExpense;
   var isDailyAllowance = existing?.isDailyAllowance ?? false;
+
+  if (existing != null && existing.bigPurchaseThreshold == null) {
+    final periods = ref.read(allPeriodsProvider).value ?? const <Period>[];
+    final period = periods.where((p) => p.id == periodId).firstOrNull;
+    if (period != null) {
+      final suggestion = suggestedBigPurchaseThreshold(
+        category: existing,
+        period: period,
+        allPeriods: periods,
+      );
+      if (suggestion != null) {
+        thresholdCtrl.text = suggestion.toStringAsFixed(0);
+      }
+    }
+  }
 
   showDialog(
     context: context,
@@ -119,6 +138,18 @@ void showCategoryDialog(
                       onChanged: (v) => setState(() => isDailyAllowance = v),
                       contentPadding: EdgeInsets.zero,
                     ),
+                    if (isDailyAllowance)
+                      TextField(
+                        controller: thresholdCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Big-purchase threshold',
+                          helperText:
+                              'Amounts at or above this count as a shop; '
+                              'below it as small incidental spending. '
+                              'Leave empty to skip the per-shop advice.',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                   ],
                 ),
               ),
@@ -146,6 +177,9 @@ void showCategoryDialog(
                         type: type,
                         limit: limit,
                         isDailyAllowance: isDailyAllowance,
+                        bigPurchaseThreshold: isDailyAllowance
+                            ? double.tryParse(thresholdCtrl.text.trim())
+                            : null,
                       ),
                     );
                   } else {
@@ -157,6 +191,9 @@ void showCategoryDialog(
                         type: type,
                         limit: limit,
                         isDailyAllowance: isDailyAllowance,
+                        bigPurchaseThreshold: isDailyAllowance
+                            ? double.tryParse(thresholdCtrl.text.trim())
+                            : null,
                       ),
                     );
                   }
