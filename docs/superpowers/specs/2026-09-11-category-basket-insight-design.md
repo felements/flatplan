@@ -127,9 +127,10 @@ rediscovered by a different route. Any automatic selection optimising for stabil
 walks into it.
 
 The user, by contrast, knows what the boundary means in their own life. So the category
-editor seeds the field with a suggestion computed from history and lets the user correct
-it. Sensitivity around a reasonable value is mild and monotone, so an imprecise
-threshold degrades gracefully rather than cliff-edging.
+editor leaves the field empty when no threshold is set, offering a suggestion computed
+from history as helper text; nothing is written unless the user types a value. Sensitivity
+around a reasonable value is mild and monotone, so an imprecise threshold degrades
+gracefully rather than cliff-edging.
 
 #### Why 3 periods
 
@@ -194,8 +195,8 @@ usual basket for comparison, and which periods the statistics were drawn from, s
 number can be audited rather than trusted blindly.
 
 **Category editor** — a big-purchase threshold field beside the daily-allowance toggle,
-pre-filled with a suggestion derived from the category's history, with the suggestion
-shown as helper text so the user can see what it was before editing.
+left empty when no threshold is set, with a suggestion derived from the category's history
+shown as helper text; nothing is saved unless the user types a value.
 
 All three follow `doc/08_design_guidelines.md`.
 
