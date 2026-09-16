@@ -108,7 +108,10 @@ Local vaults do not use this area, except that a local vault created on
 mobile, or on desktop without picking a folder, has its `path` set to
 `<application support>/vaults/<vaultId>/files/`.
 
-Removing a vault deletes this directory and nothing else.
+Removing a remote vault deletes this directory and nothing else, after
+its pending changes were pushed. Removing a local vault deletes nothing
+on disk, even when its folder lives inside this area: the files are the
+user's.
 
 ### Migration on first launch after upgrade
 
@@ -431,7 +434,8 @@ the new files.
 
 Errors surface. Nothing falls back silently.
 
-- Registry unreadable or corrupt: rename it to `vaults.json.broken`, start
+- Registry unreadable or corrupt: rename it to
+  `vaults.json.broken-<yyyyMMdd-HHmmss>` so an earlier copy survives, start
   with a fresh registry holding the default local vault, show a one-time
   banner on the dashboard naming the broken file. User files are untouched.
 - Vault cannot be resolved: see section 4.
@@ -521,7 +525,7 @@ Decided while planning, see `docs/superpowers/plans/2026-09-16-vaults-and-storag
 - `Vaults.update` is named `updateVault`: Riverpod 3's notifier base already declares `update`.
 - `periodRepositoryProvider` disables Riverpod's default retry, otherwise a `VaultUnavailable` error would never surface.
 - `SyncScheduler.syncNow()` pulls when nothing is dirty and pushes (pulling first) otherwise; a queued re-run follows the same rule; `noteChange` keeps the current status; `flushBeforeSwitch` waits for an in-flight run before its own push, all under the 5 s timeout. A vault is opened with `syncNow()`, so changes left pending by an interrupted session are pushed on the next open.
-- `Vaults.remove` flushes and disposes the open vault's scheduler before saving the registry and only then deletes secrets and the private area, so forgetting a vault can never push remote deletions.
+- `Vaults.remove` flushes and disposes the open vault's scheduler before saving the registry and only then deletes secrets and the private area, so forgetting a vault can never push remote deletions. That cleanup is for remote vaults only; a local vault loses nothing on disk.
 - `SyncJournal.save` serialises concurrent writers over the single `sync.json.tmp`.
 - A corrupt `sync.json`, including one that parses but has a malformed entry, loads as an empty journal with `needsFullRescan` set.
 
@@ -532,3 +536,9 @@ Decided while planning, see `docs/superpowers/plans/2026-09-16-vaults-and-storag
 - Android platform target and responsive shell.
 - Per-file "keep mine / take theirs" chooser on top of the conflict policy.
 - Android user-picked folders through the Storage Access Framework.
+- Before the first remote provider: a shared lock between
+  `DirectoryWorkspace` writes and `SyncEngine` per-name resolution.
+  Today a local save that lands between the engine reading a dirty file
+  and resolving its conflict can be dropped from `dirty` and overwritten
+  by the next pull. Local vaults have no engine, so this cannot happen
+  yet.
