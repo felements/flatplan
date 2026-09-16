@@ -95,6 +95,18 @@ void main() {
 
       expect(calls, ['a.yaml', 'a.yaml']);
     });
+
+    test('two instances over one map see each other\'s files', () async {
+      final shared = <String, String>{};
+      final a = MemoryWorkspace(files: shared);
+      final b = MemoryWorkspace(files: shared);
+
+      await a.writeString('x.yaml', 'from a');
+
+      expect(await b.readString('x.yaml'), 'from a');
+      await b.delete('x.yaml');
+      expect(await a.exists('x.yaml'), isFalse);
+    });
   });
 }
 
