@@ -135,6 +135,17 @@ void main() {
     );
   });
 
+  test('removing an unknown vault is a no-op, even with one vault left',
+      () async {
+    await container.read(vaultsProvider.future);
+
+    await container.read(vaultsProvider.notifier).remove('unknown');
+
+    final registry = await container.read(vaultsProvider.future);
+    expect(registry.vaults.map((v) => v.id), ['id-1']);
+    expect(registry.selected!.id, 'id-1');
+  });
+
   test('dismissBrokenRegistryNotice clears the notice', () async {
     File(paths.registryFile).writeAsStringSync('{ nope');
     final registry = await container.read(vaultsProvider.future);

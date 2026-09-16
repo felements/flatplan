@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flatplan/src/models/models.dart';
@@ -6,6 +7,7 @@ import 'package:flatplan/src/providers/open_vault_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
 import 'package:flatplan/src/storage/app_paths.dart';
+import 'package:flatplan/src/storage/vault_registry_service.dart';
 import 'package:flatplan/src/storage/vault_resolver.dart';
 import 'package:flatplan/src/storage/vault_secrets.dart';
 import 'package:flatplan/src/sync/remote_store.dart';
@@ -21,6 +23,7 @@ void main() {
   late AppPaths paths;
   late RemoteStoreRegistry stores;
   late InMemoryRemoteStore remote;
+  late MemoryVaultSecrets secrets;
   late FakeVaults fakeVaults;
   late ProviderContainer container;
   final created = DateTime.utc(2026, 1, 1);
@@ -60,10 +63,42 @@ void main() {
     );
   }
 
+  /// Like [makeContainer] but with the real [Vaults] notifier over a seeded
+  /// `vaults.json`, so `remove` runs its real cleanup.
+  ProviderContainer makeContainerWithRealVaults(VaultRegistry registry) {
+    File(paths.registryFile).parent.createSync(recursive: true);
+    File(paths.registryFile).writeAsStringSync(jsonEncode(registry.toJson()));
+    return ProviderContainer(
+      overrides: [
+        appPathsProvider.overrideWith((ref) async => paths),
+        remoteStoreRegistryProvider.overrideWith((ref) => stores),
+        vaultSecretsProvider.overrideWith((ref) => secrets),
+        vaultRegistryServiceProvider.overrideWith(
+          (ref) async => VaultRegistryService(
+            paths: paths,
+            readLegacy: () async => null,
+            clearLegacy: () async {},
+          ),
+        ),
+        vaultResolverProvider.overrideWith(
+          (ref) async => VaultResolver(
+            paths: paths,
+            remoteStores: stores,
+            secrets: secrets,
+            useBookmarks: false,
+            idleDelay: const Duration(milliseconds: 20),
+            switchTimeout: const Duration(milliseconds: 200),
+          ),
+        ),
+      ],
+    );
+  }
+
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('flatplan_open_');
     paths = AppPaths(appSupportDir: p.join(tempDir.path, 'support'));
     stores = RemoteStoreRegistry();
+    secrets = MemoryVaultSecrets();
     remote = InMemoryRemoteStore();
     stores.register('memory', (location, secrets) async => remote);
     Directory(p.join(tempDir.path, 'a')).createSync();
@@ -146,5 +181,42 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
     expect((await remote.listTree()).keys, contains('new.yaml'));
+  });
+
+  test('switching to a local vault clears the sync status', () async {
+    container = makeContainer(
+      VaultRegistry(
+        lastSelectedVaultId: 'r',
+        vaults: [remoteVault(), localVault('a')],
+      ),
+    );
+    container.listen(openVaultProvider, (_, _) {});
+    await container.read(openVaultProvider.future);
+    expect(container.read(currentSyncStatusProvider), isNotNull);
+
+    await container.read(vaultsProvider.notifier).select('a');
+    await container.read(openVaultProvider.future);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    expect(container.read(currentSyncStatusProvider), isNull);
+  });
+
+  test('removing the open remote vault pushes its pending change first',
+      () async {
+    container = makeContainerWithRealVaults(
+      VaultRegistry(
+        lastSelectedVaultId: 'r',
+        vaults: [remoteVault(), localVault('a')],
+      ),
+    );
+    container.listen(openVaultProvider, (_, _) {});
+    final open = await container.read(openVaultProvider.future);
+    await open.workspace!.writeString('new.yaml', 'n');
+
+    await container.read(vaultsProvider.notifier).remove('r');
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    expect((await remote.listTree()).keys, contains('new.yaml'));
+    expect(Directory(paths.privateAreaFor('r')).existsSync(), isFalse);
   });
 }

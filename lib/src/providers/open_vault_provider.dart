@@ -37,11 +37,6 @@ class CurrentSyncStatus extends _$CurrentSyncStatus {
 /// the outgoing remote vault gets a best-effort push first.
 @Riverpod(keepAlive: true)
 Future<OpenVault> openVault(Ref ref) async {
-  final registry = await ref.watch(vaultsProvider.future);
-  final vault = registry.selected;
-  if (vault == null) throw StateError('No vault is configured.');
-
-  final resolver = await ref.watch(vaultResolverProvider.future);
   // Held directly rather than re-read on every tick: the status callback also
   // fires from the outgoing scheduler's flush, which runs inside onDispose
   // where touching `ref` is forbidden.
@@ -49,22 +44,36 @@ Future<OpenVault> openVault(Ref ref) async {
   // Cleared on dispose so the outgoing vault's farewell push cannot overwrite
   // the incoming vault's status.
   var live = true;
+  // Registered before the first await: `ref.onDispose` throws once this build
+  // is superseded, which would leave a scheduler running and publishing.
+  OpenVault? opened;
+  ref.onDispose(() {
+    live = false;
+    final scheduler = opened?.scheduler;
+    if (scheduler != null) {
+      unawaited(scheduler.flushBeforeSwitch().whenComplete(scheduler.dispose));
+    }
+  });
 
+  final registry = await ref.watch(vaultsProvider.future);
+  final vault = registry.selected;
+  if (vault == null) throw StateError('No vault is configured.');
+
+  final resolver = await ref.watch(vaultResolverProvider.future);
   final open = await resolver.open(
     vault,
     onStatus: (value) {
       if (live) status.set(value);
     },
   );
+  if (!ref.mounted) {
+    // A newer selection won while this vault was opening. Nothing has been
+    // written through this workspace yet, so there is nothing to flush.
+    open.scheduler?.dispose();
+    throw StateError('Vault open superseded by a newer selection.');
+  }
+  opened = open;
   status.set(open.scheduler?.status);
-
-  ref.onDispose(() {
-    live = false;
-    final scheduler = open.scheduler;
-    if (scheduler != null) {
-      unawaited(scheduler.flushBeforeSwitch().whenComplete(scheduler.dispose));
-    }
-  });
 
   // Pulls when nothing is dirty; pushes (pulling first) when an interrupted
   // session left changes pending.

@@ -202,4 +202,4 @@ final class OpenVaultProvider
   }
 }
 
-String _$openVaultHash() => r'f920a29d54fb79950027fb658153ef394da7c3bc';
+String _$openVaultHash() => r'b94d648ea4ea889264cc62d5068b572fd43e0289';
