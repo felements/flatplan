@@ -1,0 +1,191 @@
+import 'dart:io';
+
+import 'package:flatplan/src/providers/gitlab_connect_controller.dart';
+import 'package:flatplan/src/sync/gitlab/gitlab_api.dart';
+import 'package:flatplan/src/sync/gitlab/gitlab_settings.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+import 'sync/gitlab/fake_gitlab.dart';
+
+void main() {
+  late FakeGitLab gitlab;
+  late GitLabConnectController controller;
+
+  GitLabConnectController make({http.Client? client, CertificateRejected? offer, GitLabSettings? existing}) {
+    var offered = false;
+    return GitLabConnectController(
+      existing: existing,
+      apiFactory: ({required settings, required token}) => GitLabApi(
+        client: client ?? gitlab.client,
+        baseUrl: settings.baseUrl,
+        token: token,
+        takeRejectedCertificate: () {
+          if (offer == null || offered) return null;
+          offered = true;
+          return offer;
+        },
+      ),
+    );
+  }
+
+  setUp(() {
+    gitlab = FakeGitLab();
+    controller = make();
+    controller.setSelfHosted(true);
+    controller.setBaseUrl(FakeGitLab.baseUrl);
+  });
+
+  test('starts at the token step on gitlab.com', () {
+    final fresh = make();
+    expect(fresh.selfHosted, isFalse);
+    expect(fresh.baseUrl, GitLabSettings.gitLabCom);
+    expect(fresh.step, ConnectStep.token);
+    expect(fresh.folder, 'budget');
+  });
+
+  test('connect with a legacy api token reaches the project step', () async {
+    await controller.connect(gitlab.validToken);
+    expect(controller.connectError, isNull);
+    expect(controller.step, ConnectStep.project);
+    expect(controller.projects.single.pathWithNamespace, 'group/repo');
+    expect(gitlab.calls.first, startsWith('GET /api/v4/projects?'));
+    expect(gitlab.calls[1], 'GET /api/v4/personal_access_tokens/self');
+  });
+
+  test('a rejected token stops with a message', () async {
+    await controller.connect('wrong');
+    expect(controller.step, ConnectStep.token);
+    expect(controller.connectError, contains('rejected'));
+  });
+
+  test('a legacy read_api token is refused before any project is chosen', () async {
+    gitlab.tokenScopes = ['read_api'];
+    await controller.connect(gitlab.validToken);
+    expect(controller.step, ConnectStep.token);
+    expect(controller.connectError, contains('api'));
+  });
+
+  test('a fine-grained token proceeds even when it cannot inspect itself', () async {
+    gitlab.fineGrained = true;
+    gitlab.tokenInfoStatus = 403;
+    await controller.connect(gitlab.validToken);
+    expect(controller.step, ConnectStep.project);
+  });
+
+  test('a fine-grained 403 on search surfaces GitLab message', () async {
+    gitlab.failWith['/projects'] = 403;
+    await controller.connect(gitlab.validToken);
+    expect(controller.connectError, 'forced 403');
+  });
+
+  test('an unreachable host names the url', () async {
+    gitlab.throwOnRequest = socketDropped();
+    await controller.connect(gitlab.validToken);
+    expect(controller.connectError, contains('gitlab.test'));
+  });
+
+  test('an untrusted certificate is offered, then trusted, then connects', () async {
+    final offer = CertificateRejected(host: 'gitlab.test', subject: 'CN=gitlab.test', fingerprint: 'AA:BB');
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      if (calls == 1) throw const HandshakeException('untrusted');
+      // `request` is already finalized by this MockClient; forward a fresh
+      // copy since http.Request can only be finalized once.
+      final forwarded = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = request.bodyBytes;
+      return gitlab.client.send(forwarded).then(http.Response.fromStream);
+    });
+    controller = make(client: client, offer: offer)
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+
+    await controller.connect(gitlab.validToken);
+    expect(controller.pendingCertificate, same(offer));
+    expect(controller.step, ConnectStep.token);
+
+    await controller.trustCertificate();
+    expect(controller.pendingCertificate, isNull);
+    expect(controller.certFingerprint, 'AA:BB');
+    expect(controller.step, ConnectStep.project);
+  });
+
+  test('search falls back to a typed path when the list is empty', () async {
+    gitlab.searchResults = [];
+    await controller.connect(gitlab.validToken);
+    await controller.search('group/repo');
+    expect(controller.projects.single.id, 42);
+    expect(gitlab.calls.last, 'GET /api/v4/projects/group%2Frepo');
+  });
+
+  test('selecting a project loads branches, preselects the default and checks the folder', () async {
+    gitlab.branches.addAll(['develop']);
+    gitlab.files['budget/2026-09-september.yaml'] = 'id: p\n';
+    gitlab.files['budget/2026-09-september.conflict-2026-09-01-1200.yaml'] = 'x';
+    gitlab.files['budget/notes.md'] = 'x';
+    await controller.connect(gitlab.validToken);
+
+    await controller.selectProject(controller.projects.single);
+
+    expect(controller.step, ConnectStep.target);
+    expect(controller.branches, ['main', 'develop']);
+    expect(controller.branch, 'main');
+    expect(controller.suggestedName, 'repo');
+    expect(controller.folderCheck!.kind, FolderCheckKind.periodFiles);
+    expect(controller.folderCheck!.count, 1);
+    expect(controller.folderCheck!.describe(), '1 period file found');
+  });
+
+  test('folder check reports empty, new repository and errors', () async {
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+    expect(controller.folderCheck!.describe(), 'Empty, files will be created on first sync');
+
+    gitlab.emptyRepo = true;
+    await controller.setFolder('/budget/');
+    expect(controller.folder, 'budget');
+    expect(controller.folderCheck!.kind, FolderCheckKind.newRepository);
+
+    gitlab.emptyRepo = false;
+    gitlab.failWith['/projects/42/repository/tree'] = 403;
+    await controller.setFolder('other');
+    expect(controller.folderCheck!.kind, FolderCheckKind.error);
+    expect(controller.folderCheck!.message, 'forced 403');
+  });
+
+  test('canSave and toSettings after the full flow', () async {
+    await controller.connect(gitlab.validToken);
+    expect(controller.canSave, isFalse);
+    await controller.selectProject(controller.projects.single);
+    controller.selectBranch('main');
+
+    expect(controller.canSave, isTrue);
+    expect(controller.token, gitlab.validToken);
+    expect(controller.toSettings().toSettings(), {
+      'base_url': FakeGitLab.baseUrl,
+      'project_id': 42,
+      'project_path': 'group/repo',
+      'branch': 'main',
+      'folder': 'budget',
+    });
+  });
+
+  test('verifyReplacementToken checks the stored project', () async {
+    final existing = GitLabSettings(baseUrl: FakeGitLab.baseUrl, projectId: 42, projectPath: 'group/repo', branch: 'main', folder: 'budget');
+    controller = make(existing: existing);
+    expect(controller.step, ConnectStep.target);
+    expect(controller.selfHosted, isTrue);
+
+    await controller.verifyReplacementToken('wrong');
+    expect(controller.connectError, contains('rejected'));
+    expect(controller.token, isNull);
+
+    await controller.verifyReplacementToken(gitlab.validToken);
+    expect(controller.connectError, isNull);
+    expect(controller.token, gitlab.validToken);
+    expect(gitlab.calls.last, 'GET /api/v4/projects/42');
+  });
+}
