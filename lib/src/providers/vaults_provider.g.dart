@@ -128,7 +128,7 @@ final class VaultsProvider
   Vaults create() => Vaults();
 }
 
-String _$vaultsHash() => r'814cd4d895f1760933a68c402db90723e43ab361';
+String _$vaultsHash() => r'23246ade4cc3b73b7ffc181cc97cd01ed3fc4feb';
 
 /// The vault registry: every known vault and which one is selected.
 

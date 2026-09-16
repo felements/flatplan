@@ -115,6 +115,26 @@ void main() {
     expect(userFolder.existsSync(), isTrue);
   });
 
+  test('removing a local vault never deletes its files, even inside the '
+      'private area', () async {
+    await container.read(vaultsProvider.future);
+    final mirrorPath = paths.mirrorFor('local-in-area');
+    Directory(mirrorPath).createSync(recursive: true);
+    final periodFile = File(p.join(mirrorPath, '2026-01.yaml'))
+      ..writeAsStringSync('start_date: 2026-01-01');
+    await container.read(vaultsProvider.notifier).add(
+      vault('local-in-area', location: VaultLocation.local(path: mirrorPath)),
+    );
+
+    await container.read(vaultsProvider.notifier).remove('local-in-area');
+
+    final registry = await container.read(vaultsProvider.future);
+    expect(registry.vaults.map((v) => v.id), ['id-1']);
+    expect(periodFile.existsSync(), isTrue);
+    expect(periodFile.readAsStringSync(), 'start_date: 2026-01-01');
+    expect(Directory(paths.privateAreaFor('local-in-area')).existsSync(), isTrue);
+  });
+
   test('removing the selected vault selects the first remaining one',
       () async {
     await container.read(vaultsProvider.future);

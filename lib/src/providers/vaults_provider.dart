@@ -61,8 +61,10 @@ class Vaults extends _$Vaults {
     );
   }
 
-  /// Forgets [id]: deletes its secrets and its app-private area, never the
-  /// user's own files. Unknown ids are ignored; throws [StateError] for the
+  /// Forgets [id]. A remote vault also loses its secrets and its app-private
+  /// area, which only mirrors the remote. A local vault loses nothing on
+  /// disk, even when its folder lives inside that area: those files are the
+  /// user's only copy. Unknown ids are ignored; throws [StateError] for the
   /// last vault.
   Future<void> remove(String id) async {
     final registry = await future;
@@ -97,12 +99,16 @@ class Vaults extends _$Vaults {
       registry.copyWith(vaults: remaining, lastSelectedVaultId: selectedId),
     );
 
+    // Only a remote vault's private area may be deleted: it is a mirror of
+    // the remote, which is the source of truth. A local vault created
+    // without picking a folder keeps its *only* copy of the period files
+    // inside that same area, so removing it must touch nothing on disk.
     if (vault.location case RemoteVaultLocation(:final secretNames)) {
       await ref.read(vaultSecretsProvider).deleteAll(id, secretNames);
+      final paths = await ref.read(appPathsProvider.future);
+      final area = Directory(paths.privateAreaFor(id));
+      if (await area.exists()) await area.delete(recursive: true);
     }
-    final paths = await ref.read(appPathsProvider.future);
-    final area = Directory(paths.privateAreaFor(id));
-    if (await area.exists()) await area.delete(recursive: true);
   }
 
   void dismissBrokenRegistryNotice() {
