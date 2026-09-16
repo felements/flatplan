@@ -146,7 +146,17 @@ class VaultResolver {
       secretValues[name] = value;
     }
 
-    final store = await factory(location, secretValues);
+    final RemoteStore store;
+    try {
+      store = await factory(location, secretValues);
+    } catch (e) {
+      // A provider that cannot build its store (bad settings, rejected
+      // credentials) is an access error, not a crash in the app.
+      return OpenVault(
+        vault: vault,
+        accessError: 'This vault could not be opened: $e',
+      );
+    }
     final journal = await SyncJournal.load(paths.journalFor(vault.id));
     final mirrorPath = paths.mirrorFor(vault.id);
     final engine = SyncEngine(

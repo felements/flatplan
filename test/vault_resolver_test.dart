@@ -145,6 +145,19 @@ void main() {
       expect(open.accessError, VaultResolver.missingSecretError);
     });
 
+    test('a factory that throws becomes an access error', () async {
+      stores.register(
+        'memory',
+        (location, s) async => throw StateError('bad endpoint'),
+      );
+
+      final open = await resolver().open(remote());
+
+      expect(open.workspace, isNull);
+      expect(open.accessError, contains('could not be opened'));
+      expect(open.accessError, contains('bad endpoint'));
+    });
+
     test('opens a mirror with a journal and a scheduler', () async {
       late RemoteVaultLocation seenLocation;
       late Map<String, String> seenSecrets;

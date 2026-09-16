@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' show log;
 import 'dart:io';
 
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -62,9 +63,10 @@ class VaultRegistryService {
   File get _file => File(paths.registryFile);
 
   /// Loads the registry, or creates it from the legacy settings (or the
-  /// default folder) when absent. A corrupt file is moved to
-  /// `vaults.json.broken` and reported through
-  /// [VaultRegistry.brokenRegistryFile].
+  /// default folder) when absent. A corrupt file is moved aside to
+  /// `vaults.json.broken-<yyyyMMdd-HHmmss>` and reported through
+  /// [VaultRegistry.brokenRegistryFile]. The stamp keeps a second corruption
+  /// from overwriting the evidence of the first.
   Future<VaultRegistry> loadOrCreate() async {
     String? brokenFile;
     if (await _file.exists()) {
@@ -75,7 +77,8 @@ class VaultRegistryService {
         }
         return VaultRegistry.fromJson(decoded);
       } catch (e) {
-        brokenFile = '${paths.registryFile}.broken';
+        final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
+        brokenFile = '${paths.registryFile}.broken-$stamp';
         log('Corrupt vault registry ($e), moving to $brokenFile',
             name: 'flatplan.storage');
         await _file.rename(brokenFile);

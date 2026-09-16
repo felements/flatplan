@@ -91,8 +91,15 @@ void main() {
       final registry = await service().loadOrCreate();
 
       expect(registry.vaults.single.name, 'My budget');
-      expect(registry.brokenRegistryFile, '${paths.registryFile}.broken');
-      expect(File('${paths.registryFile}.broken').readAsStringSync(), '{ not json');
+      // Stamped, so a second corruption never overwrites the first copy.
+      expect(
+        registry.brokenRegistryFile,
+        startsWith('${paths.registryFile}.broken-'),
+      );
+      expect(
+        File(registry.brokenRegistryFile!).readAsStringSync(),
+        '{ not json',
+      );
       expect(jsonDecode(File(paths.registryFile).readAsStringSync())['version'], 1);
     });
 
