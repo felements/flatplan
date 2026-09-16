@@ -159,10 +159,20 @@ void main() {
     expect(updated.location, home.location);
   });
 
-  testWidgets('VaultFormView opens the local form directly for a new vault', (
+  testWidgets('a new vault starts with the kind chooser', (tester) async {
+    await tester.pumpWidget(app(const VaultFormView()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Local folder'), findsOneWidget);
+    expect(find.text('GitLab'), findsOneWidget);
+  });
+
+  testWidgets('choosing local folder from the chooser opens the local form', (
     tester,
   ) async {
     await tester.pumpWidget(app(const VaultFormView()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Local folder'));
     await tester.pumpAndSettle();
 
     expect(find.text('New vault'), findsOneWidget);

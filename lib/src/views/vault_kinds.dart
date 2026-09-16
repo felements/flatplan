@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
+import '../sync/gitlab/gitlab_settings.dart';
+import 'gitlab_vault_form.dart';
 import 'vault_form_view.dart';
 
 /// How the UI presents one kind of vault. A provider spec adds one of
@@ -46,6 +48,23 @@ const localVaultKind = VaultKindDescriptor(
 Widget _localForm(BuildContext context, Vault? existing) =>
     LocalVaultForm(key: ValueKey(existing?.id), existing: existing);
 
+String _gitLabLocation(Vault vault) => switch (vault.location) {
+  RemoteVaultLocation(:final settings) =>
+    GitLabSettings.fromSettings(settings).locationLine,
+  LocalVaultLocation() => '',
+};
+
+Widget _gitLabForm(BuildContext context, Vault? existing) =>
+    GitLabVaultForm(key: ValueKey(existing?.id), existing: existing);
+
+const gitLabVaultKind = VaultKindDescriptor(
+  kind: GitLabSettings.kind,
+  label: 'GitLab',
+  icon: Icons.cloud_rounded,
+  locationLine: _gitLabLocation,
+  buildForm: _gitLabForm,
+);
+
 /// A remote kind this build does not know.
 VaultKindDescriptor unsupportedVaultKind(String kind) => VaultKindDescriptor(
   kind: kind,
@@ -56,7 +75,7 @@ VaultKindDescriptor unsupportedVaultKind(String kind) => VaultKindDescriptor(
 );
 
 /// Kinds a user can create. Providers append to this list.
-List<VaultKindDescriptor> get vaultKinds => const [localVaultKind];
+List<VaultKindDescriptor> get vaultKinds => const [localVaultKind, gitLabVaultKind];
 
 VaultKindDescriptor vaultKindFor(Vault vault) => switch (vault.location) {
   LocalVaultLocation() => localVaultKind,

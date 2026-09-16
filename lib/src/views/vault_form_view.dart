@@ -91,19 +91,25 @@ class _KindChooserState extends State<_KindChooser> {
   Widget build(BuildContext context) {
     final chosen = _chosen;
     if (chosen != null) return chosen.buildForm(context, null);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final kind in widget.kinds)
-          ListTile(
-            leading: Icon(kind.icon),
-            title: Text(kind.label),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    // A Material ancestor of its own: without it, the ListTiles' ink
+    // splashes paint on (and this assertion flags) the decorated
+    // container VaultFormView wraps the chooser in.
+    return Material(
+      type: MaterialType.transparency,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final kind in widget.kinds)
+            ListTile(
+              leading: Icon(kind.icon),
+              title: Text(kind.label),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onTap: () => setState(() => _chosen = kind),
             ),
-            onTap: () => setState(() => _chosen = kind),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
