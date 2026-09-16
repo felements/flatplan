@@ -7,7 +7,7 @@ This document provides context for future AI assistants continuing the developme
 - The project is initialized as a Flutter application with Desktop support (Windows, macOS, Linux).
 - The full routing (GoRouter) and responsive `AppShell` with a 220 px dark sidebar is live.
 - The Dashboard, Category Details, and Settings pages are live, tracking dynamic expenditures mapping via Riverpod.
-- The business logic to generate brand new tracking periods based on previous YAML configs is functional and saves to the user Documents dir.
+- The business logic to generate brand new tracking periods based on previous YAML configs is functional and saves into the selected vault.
 
 ## Important Technical Decisions & Deviations
 
@@ -17,7 +17,7 @@ This document provides context for future AI assistants continuing the developme
    - We are using `sealed class` (e.g., `sealed class Period with _$Period`) to satisfy Dart 3+ and Freezed 3+ requirements for abstract mixins. 
    - Global `snake_case` JSON serialization is enforced in `build.yaml`.
 3. **Storage & YAML formatting (`lib/src/storage/period_repository.dart`)**:
-   - The app reads and writes YAML files to the local documents directory via `path_provider`.
+   - The app reads and writes YAML files through `VaultWorkspace`; the selected vault is a local folder (default: `<app support>/periods`) or, later, an app-private mirror of a remote vault synced by `lib/src/sync/`.
    - To satisfy the Git-friendly sorting requirement, we use a recursive key-sorting function utilizing `SplayTreeMap`.
    - We use the `json2yaml` package to output cleanly formatted YAML when saving models.
 
