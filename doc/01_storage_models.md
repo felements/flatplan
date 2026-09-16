@@ -1,11 +1,18 @@
 # Stage 1: Storage Structure & Models
 
 ## Overview
-The app relies on local file storage using **YAML files**. To prevent merge conflicts and line drift in Git, all YAML keys must be sorted alphabetically when saved. The exception is the list of fact expenses which must preserve chronological order (implemented via an incrementing order number or timestamp for each expense record). Every tracking period (e.g., a month) is represented by a single YAML file.
+The app stores everything as **YAML files** inside a **vault**: a named folder of period files. A vault is a local folder (the default one lives in the application support directory; the user can also pick any folder) or, on the roadmap, a remote location such as a GitLab repository, a WebDAV server or an S3 bucket, which the app mirrors locally and syncs. To prevent merge conflicts and line drift in Git, all YAML keys must be sorted alphabetically when saved. The exception is the list of fact expenses which must preserve chronological order (implemented via an incrementing order number or timestamp for each expense record). Every tracking period (e.g., a month) is represented by a single YAML file.
 
 ## File Types
-1. **Period Data File**: Contains all data (categories, planned, and factual expenses) for a specific period.
-2. **Template File**: A base structure without factual expenses, used to quickly instantiate a new period.
+1. **Period Data File** (`YYYY-MM-<slug>.yaml`, e.g. `2026-09-september.yaml`): Contains all data (categories, planned, and factual expenses) for a specific period. The slug is derived from the period name; a file that fails to load keeps its name reserved so it is never overwritten.
+2. **Template File** (`<slug>.yaml` with `template` in the name): A base structure without factual expenses, used to quickly instantiate a new period.
+3. **Stats Snapshot** (`current_stats.md`): A derived Markdown summary of the current period for AI insights, regenerated on every change and never read back.
+4. **Conflict Side File** (`<name>.conflict-<yyyy-MM-dd-HHmm>.yaml`): Written by the sync engine when a remote vault and the local mirror both changed the same file; holds the losing copy. Files whose name contains `.conflict-` are never loaded as periods.
+
+## Vault Files Outside the Vault
+- `<app support>/vaults.json`: the vault registry (every known vault and the last selected one). Written atomically; a corrupt copy is moved to `vaults.json.broken-<stamp>` and a fresh registry is created.
+- `<app support>/vaults/<vaultId>/`: a remote vault's private area holding `files/` (the mirror) and `sync.json` (the sync journal: remote versions per file, dirty names, timestamps). Local vaults created without picking a folder also live under `files/` here.
+- Secrets (tokens, keys) never enter any of these files; they belong in the platform keychain (`VaultSecrets`).
 
 ## Data Models
 
@@ -48,8 +55,9 @@ An actual tracking entry of spent money.
 - `timestamp` (DateTime): Keeps the exact order of the tracked expenses.
 
 ## Storage Operations
-- **Load Period**: Parse a sorted YAML into the `Period` Dart model.
-- **Save Period**: Serialize the `Period` Dart model into YAML, sort the keys, and write to disk.
+All reads and writes go through `VaultWorkspace` (`lib/src/storage/vault_workspace.dart`), a flat list/read/write/delete interface over the selected vault. Domain code never touches paths.
+- **Load Period**: List the workspace, parse each sorted YAML into the `Period` Dart model, and report unreadable files instead of dropping them.
+- **Save Period**: Serialize the `Period` Dart model into YAML, sort the keys, and write through the workspace. For a remote vault the write also marks the file dirty in `sync.json` before the bytes land.
 - **Create Next Period**: Use the current period or a template. 
   - Keep `categories`.
   - Keep `plannedExpenses` (reset `isCompleted` flag).
