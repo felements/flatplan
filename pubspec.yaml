@@ -51,6 +51,7 @@ dependencies:
   package_info_plus: ^9.0.0
   path: ^1.9.1
   macos_secure_bookmarks: ^0.2.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

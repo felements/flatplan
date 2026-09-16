@@ -9,8 +9,8 @@ part 'all_periods_provider.g.dart';
 /// Reads every period file once, keeping both the periods that loaded and
 /// the files that could not be read.
 @riverpod
-Future<PeriodLoadResult> periodLoadResult(Ref ref) {
-  final repo = ref.watch(periodRepositoryProvider);
+Future<PeriodLoadResult> periodLoadResult(Ref ref) async {
+  final repo = await ref.watch(periodRepositoryProvider.future);
   return repo.loadAll();
 }
 

@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flatplan/src/views/category_detail_view.dart';
 
 DateTime _midnightDaysAgo(int days) {
@@ -36,12 +35,10 @@ Category _groceries({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late Directory tempDir;
   late PeriodRepository repo;
 
   setUp(() async {
-    tempDir = Directory.systemTemp.createTempSync('flatplan_detail_pace_');
-    repo = PeriodRepository(directoryPath: tempDir.path);
+    repo = PeriodRepository(workspace: MemoryWorkspace());
 
     // Two complete prior periods, each mixing small (<500) and basket-sized
     // (>=500) purchases — basketStatsFor needs a basket in every period in
@@ -102,12 +99,6 @@ void main() {
         ],
       ),
     );
-  });
-
-  tearDown(() {
-    if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
-    }
   });
 
   testWidgets('detail view shows the pace suggestion for a daily allowance', (

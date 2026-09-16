@@ -7,11 +7,15 @@ import '../app_theme.dart';
 import '../components/category_tile.dart';
 import '../components/period_load_warning.dart';
 import '../components/summary_card.dart';
+import '../components/vault_banners.dart';
 import '../logic/period_extensions.dart';
 import '../logic/period_stats.dart';
 import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
+import '../providers/open_vault_provider.dart';
 import '../providers/period_stats_provider.dart';
+import '../providers/repository_provider.dart';
+import '../providers/vaults_provider.dart';
 import '../models/models.dart';
 import '../storage/period_repository.dart';
 
@@ -53,9 +57,14 @@ class DashboardView extends ConsumerWidget {
         ref.watch(periodLoadFailuresProvider).value ??
         const <PeriodLoadFailure>[];
 
+    final openVault = ref.watch(openVaultProvider).value;
+    final brokenRegistryFile = ref.watch(vaultsProvider).value?.brokenRegistryFile;
+
     final body = periodAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => err is VaultUnavailable
+          ? _buildVaultUnavailable(context, err.message, openVault?.vault.id)
+          : Center(child: Text('Error: $err')),
       data: (period) {
         if (period == null) {
           return _buildEmptyState(context);
@@ -373,6 +382,16 @@ class DashboardView extends ConsumerWidget {
     return Scaffold(
       body: Column(
         children: [
+          if (brokenRegistryFile != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: BrokenRegistryBanner(
+                brokenFile: brokenRegistryFile,
+                onDismiss: () => ref
+                    .read(vaultsProvider.notifier)
+                    .dismissBrokenRegistryNotice(),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: PeriodLoadBanner(
@@ -429,6 +448,57 @@ class DashboardView extends ConsumerWidget {
             label: const Text('Go to Settings to Generate Period'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// The selected vault cannot be opened. Explains why and points at the
+  /// vault's settings; other vaults stay reachable from the sidebar.
+  Widget _buildVaultUnavailable(
+    BuildContext context,
+    String message,
+    String? vaultId,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: colorScheme.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.folder_off_outlined,
+                size: 40,
+                color: colorScheme.error.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Vault unavailable',
+              style: theme.textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            VaultAccessBanner(message: message),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => GoRouter.of(context).go(
+                vaultId == null ? '/settings/vaults' : '/settings/vaults/$vaultId/edit',
+              ),
+              icon: const Icon(Icons.settings_rounded),
+              label: const Text('Open vault settings'),
+            ),
+          ],
+        ),
       ),
     );
   }

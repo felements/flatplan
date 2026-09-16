@@ -20,7 +20,7 @@ class PeriodNotifier extends _$PeriodNotifier {
 
   @override
   FutureOr<Period?> build(String periodId) async {
-    final repo = ref.watch(periodRepositoryProvider);
+    final repo = await ref.watch(periodRepositoryProvider.future);
     final periods = await repo.loadAllPeriods();
     return periods.where((p) => p.id == periodId).firstOrNull;
   }
@@ -232,9 +232,13 @@ class PeriodNotifier extends _$PeriodNotifier {
 
   void _debouncedSave(Period period) {
     _debounceTimer?.cancel();
+    // Resolve the repository now, not when the timer fires: an edit belongs
+    // to the vault that was open when it was made, and a vault switch within
+    // the debounce window would otherwise write it into the new vault.
+    final repoFuture = ref.read(periodRepositoryProvider.future);
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final repo = ref.read(periodRepositoryProvider);
+        final repo = await repoFuture;
         await repo.savePeriod(period);
         // Invalidate global providers so the rest of the app stays in sync.
         // This must target periodLoadResultProvider, the single disk read:

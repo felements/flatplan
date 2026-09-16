@@ -4,7 +4,7 @@
 [![CI](https://github.com/felements/flatplan/actions/workflows/ci.yml/badge.svg)](https://github.com/felements/flatplan/actions/workflows/ci.yml)
 [![Latest Release](https://img.shields.io/github/v/release/felements/flatplan)](https://github.com/felements/flatplan/releases)
 
-> Your financial planning in "flat" files. Simple, local, and fully under your control.
+> Your financial planning in "flat" files. Simple, private, and fully under your control.
 
 <img src="doc/dashboard.png" alt="Main Screen" width="800"/>
 
@@ -18,13 +18,13 @@ Unlike most financial apps, Flatplan **does not use cloud services or proprietar
 
 It implements the time-tested **"Plan vs. Fact"** (or "envelope") budgeting method without the bloat of double-entry accounting. It's the perfect solution for developers, tech-savvy users, and anyone who prefers to manage their data like they manage their configs: transparently, and optionally, with Git, Syncthing, or any other tool.
 
-## 🏛️ The "Local-First" Philosophy
+## 🏛️ Your Data, Your Storage
 
 Flatplan is built on a few key principles:
 
-1.  **💻 You Own Your Data:** Your financial data lives only on your device in a simple folder. No third-party servers, ever.
+1.  **💻 You Own Your Data.** Your budget lives in plain files in a place you choose: a folder on your device, or your own private storage such as a Git repository, a WebDAV server, or an S3 bucket. FlatPlan runs no server of its own and never sees your data.
 2.  **✨ Total Transparency:** By using YAML, you can view (and even edit) your data in a plain text editor at any time.
-3.  **🔄 Sync Freedom:** You decide how to sync your budget folder. Use **Git**, **Syncthing**, **Dropbox**, **Google Drive**, or just copy it to a USB stick. The app doesn't lock you into its own service.
+3.  **🔄 Sync Freedom.** Keep it local and sync with **Git**, **Syncthing** or **Dropbox** as you do today, or point FlatPlan straight at your private storage. Remote vaults are on the roadmap; local folders work now.
 4.  **🔒 Private by Default:** The app requires no registration, does not connect to your bank accounts, and sends no "anonymous" telemetry.
 
 ## ✨ Key Features
@@ -58,7 +58,7 @@ Flatplan is **not** for you if you are looking for:
 
 ## ⚙️ How It Works (Storage Concept)
 
-Flatplan doesn't use a database. Your entire setup lives in a folder you choose:
+Flatplan doesn't use a database. Your entire setup lives in a **vault**: a named folder of period files. Keep several vaults (home, a side project, a shared household) and switch between them from the sidebar.
 
 * `period-2025-10.yaml`: The data file for October 2025. Holds your **planned** amounts for the month and a column for your **actual** spending.
 * `period-2025-11.yaml`: The data file for November 2025, rolled over from October's plan.

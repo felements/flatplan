@@ -17,7 +17,7 @@ class CurrentPeriod extends _$CurrentPeriod {
 
   @override
   FutureOr<Period?> build() async {
-    final repo = ref.watch(periodRepositoryProvider);
+    final repo = await ref.watch(periodRepositoryProvider.future);
     final periods = await repo.loadAllPeriods();
 
     if (periods.isEmpty) {
@@ -51,7 +51,7 @@ class CurrentPeriod extends _$CurrentPeriod {
   /// persists it immediately without debouncing.
   Future<void> setPeriod(Period newPeriod) async {
     state = AsyncData(newPeriod);
-    final repo = ref.read(periodRepositoryProvider);
+    final repo = await ref.read(periodRepositoryProvider.future);
     await repo.savePeriod(newPeriod);
     // Invalidate the underlying disk read, not the derived allPeriodsProvider
     // — see the note in PeriodNotifier._debouncedSave.
@@ -268,9 +268,13 @@ class CurrentPeriod extends _$CurrentPeriod {
 
   void _debouncedSave(Period period) {
     _debounceTimer?.cancel();
+    // Resolve the repository now, not when the timer fires: an edit belongs
+    // to the vault that was open when it was made, and a vault switch within
+    // the debounce window would otherwise write it into the new vault.
+    final repoFuture = ref.read(periodRepositoryProvider.future);
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final repo = ref.read(periodRepositoryProvider);
+        final repo = await repoFuture;
         await repo.savePeriod(period);
       } catch (e) {
         log('Failed to auto-save period: $e', name: 'flatplan.storage');

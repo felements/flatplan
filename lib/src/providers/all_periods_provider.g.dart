@@ -53,7 +53,7 @@ final class PeriodLoadResultProvider
   }
 }
 
-String _$periodLoadResultHash() => r'93fb3a4602762e1b42c8e7729ed7a91f37388d91';
+String _$periodLoadResultHash() => r'af0e1dd74e29b8ee28950e1274fd7317c609c434';
 
 /// Provides all stored periods sorted descending by start date.
 

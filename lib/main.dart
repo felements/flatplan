@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'src/app_theme.dart';
+import 'src/components/sync_lifecycle_bridge.dart';
 import 'src/routing/app_router.dart';
 
 void main() {
@@ -22,6 +23,7 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
       routerConfig: router,
+      builder: (context, child) => SyncLifecycleBridge(child: child!),
     );
   }
 }

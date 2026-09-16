@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flatplan/src/views/dashboard_view.dart';
 
 DateTime _midnightDaysAgo(int days) {
@@ -35,12 +34,10 @@ Category _groceries({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late Directory tempDir;
   late PeriodRepository repo;
 
   setUp(() async {
-    tempDir = Directory.systemTemp.createTempSync('flatplan_dash_pace_');
-    repo = PeriodRepository(directoryPath: tempDir.path);
+    repo = PeriodRepository(workspace: MemoryWorkspace());
 
     // One period older still, so the finished period below has history of
     // its own to price a trend from. Without it, the closed-period rule
@@ -107,12 +104,6 @@ void main() {
         ],
       ),
     );
-  });
-
-  tearDown(() {
-    if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
-    }
   });
 
   testWidgets('a finished period suggests no spending cadence', (tester) async {

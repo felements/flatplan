@@ -8,33 +8,33 @@ part of 'repository_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provides a [PeriodRepository] wired to the user-selected data directory.
-///
-/// Re-creates automatically whenever [storageSettingsProvider] changes.
+/// A [PeriodRepository] over the open vault. Rebuilds when the vault
+/// changes; errors with [VaultUnavailable] when the vault cannot be opened,
+/// so nothing ever runs against a placeholder folder.
 
 @ProviderFor(periodRepository)
 final periodRepositoryProvider = PeriodRepositoryProvider._();
 
-/// Provides a [PeriodRepository] wired to the user-selected data directory.
-///
-/// Re-creates automatically whenever [storageSettingsProvider] changes.
+/// A [PeriodRepository] over the open vault. Rebuilds when the vault
+/// changes; errors with [VaultUnavailable] when the vault cannot be opened,
+/// so nothing ever runs against a placeholder folder.
 
 final class PeriodRepositoryProvider
     extends
         $FunctionalProvider<
+          AsyncValue<PeriodRepository>,
           PeriodRepository,
-          PeriodRepository,
-          PeriodRepository
+          FutureOr<PeriodRepository>
         >
-    with $Provider<PeriodRepository> {
-  /// Provides a [PeriodRepository] wired to the user-selected data directory.
-  ///
-  /// Re-creates automatically whenever [storageSettingsProvider] changes.
+    with $FutureModifier<PeriodRepository>, $FutureProvider<PeriodRepository> {
+  /// A [PeriodRepository] over the open vault. Rebuilds when the vault
+  /// changes; errors with [VaultUnavailable] when the vault cannot be opened,
+  /// so nothing ever runs against a placeholder folder.
   PeriodRepositoryProvider._()
     : super(
         from: null,
         argument: null,
-        retry: null,
+        retry: _neverRetry,
         name: r'periodRepositoryProvider',
         isAutoDispose: true,
         dependencies: null,
@@ -46,21 +46,14 @@ final class PeriodRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<PeriodRepository> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $FutureProviderElement<PeriodRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
-  PeriodRepository create(Ref ref) {
+  FutureOr<PeriodRepository> create(Ref ref) {
     return periodRepository(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(PeriodRepository value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<PeriodRepository>(value),
-    );
   }
 }
 
-String _$periodRepositoryHash() => r'af5f932bfdeb0d39820af65f715d2ea2c6df4f86';
+String _$periodRepositoryHash() => r'2dc5211b07b001fcd8af9a526e8cb50dc369570b';

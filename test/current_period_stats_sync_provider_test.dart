@@ -8,6 +8,7 @@ import 'package:flatplan/src/providers/current_period_stats_sync_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
 import 'package:flatplan/src/storage/period_stats_writer.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,7 +46,7 @@ void main() {
   }
 
   Future<ProviderContainer> makeContainer() async {
-    final repo = PeriodRepository(directoryPath: tempDir.path);
+    final repo = PeriodRepository(workspace: DirectoryWorkspace(tempDir.path));
     final c = ProviderContainer(
       overrides: [periodRepositoryProvider.overrideWith((ref) => repo)],
     );
@@ -69,7 +70,7 @@ void main() {
 
   test('writes current_stats.md when enabled and a current period exists',
       () async {
-    await PeriodRepository(directoryPath: tempDir.path)
+    await PeriodRepository(workspace: DirectoryWorkspace(tempDir.path))
         .savePeriod(activePeriod());
     container = await makeContainer();
 
@@ -82,7 +83,7 @@ void main() {
   });
 
   test('stats file references the source period yaml filename', () async {
-    await PeriodRepository(directoryPath: tempDir.path)
+    await PeriodRepository(workspace: DirectoryWorkspace(tempDir.path))
         .savePeriod(activePeriod());
     container = await makeContainer();
 
@@ -97,7 +98,7 @@ void main() {
   });
 
   test('deletes the file when the toggle is switched off', () async {
-    await PeriodRepository(directoryPath: tempDir.path)
+    await PeriodRepository(workspace: DirectoryWorkspace(tempDir.path))
         .savePeriod(activePeriod());
     container = await makeContainer();
     await container.read(currentPeriodStatsSyncProvider.future);
@@ -111,7 +112,7 @@ void main() {
 
   test('does not write when disabled from the start', () async {
     SharedPreferences.setMockInitialValues({'ai_stats_enabled': false});
-    await PeriodRepository(directoryPath: tempDir.path)
+    await PeriodRepository(workspace: DirectoryWorkspace(tempDir.path))
         .savePeriod(activePeriod());
     container = await makeContainer();
 
@@ -129,7 +130,7 @@ void main() {
   });
 
   test('regenerates the file content when period data changes', () async {
-    final repo = PeriodRepository(directoryPath: tempDir.path);
+    final repo = PeriodRepository(workspace: DirectoryWorkspace(tempDir.path));
     final period = activePeriod();
     await repo.savePeriod(period);
     container = await makeContainer();

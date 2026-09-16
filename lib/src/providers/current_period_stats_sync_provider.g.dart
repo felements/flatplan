@@ -72,4 +72,4 @@ final class CurrentPeriodStatsSyncProvider
 }
 
 String _$currentPeriodStatsSyncHash() =>
-    r'5d690c735ec2b23a6a7ed661f3c3c41a76337232';
+    r'a46573a73a0c84d674342d889c0c4cfa3e89ee03';

@@ -1,17 +1,18 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../components/period_load_warning.dart';
+import '../components/vault_banners.dart';
 import '../logic/period_logic.dart';
 import '../models/models.dart';
 import '../providers/ai_stats_settings_provider.dart';
 import '../providers/all_periods_provider.dart';
 import '../providers/current_period_provider.dart';
-import '../providers/storage_settings_provider.dart';
+import '../providers/open_vault_provider.dart';
 import '../storage/period_repository.dart';
 
 /// Settings page for period management and app configuration.
@@ -23,13 +24,13 @@ class SettingsView extends HookConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final currentPeriodAsync = ref.watch(currentPeriodProvider);
-    final storageDirAsync = ref.watch(storageSettingsProvider);
+    final openVaultAsync = ref.watch(openVaultProvider);
     final aiStatsEnabled = ref.watch(aiStatsSettingsProvider).value ?? true;
     final loadFailures =
         ref.watch(periodLoadFailuresProvider).value ??
         const <PeriodLoadFailure>[];
 
-    // Storage controls must stay reachable even when period loading fails, so
+    // The vault card must stay reachable even when period loading fails, so
     // the page is never gated on currentPeriodProvider. Period-dependent
     // sections handle their own empty/loading state inline below.
     final period = currentPeriodAsync.value;
@@ -50,8 +51,8 @@ class SettingsView extends HookConsumerWidget {
             ),
           ),
 
-          // ─── Data Storage ──────────────────────────────────
-          _SectionHeader(icon: Icons.folder_rounded, title: 'Data Storage'),
+          // ─── Vault ─────────────────────────────────────────
+          _SectionHeader(icon: Icons.folder_rounded, title: 'Vault'),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(20),
@@ -66,125 +67,70 @@ class SettingsView extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Period files location',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                storageDirAsync.when(
+                openVaultAsync.when(
                   loading: () => const LinearProgressIndicator(),
                   error: (e, _) => Text(
-                    'Error loading path: $e',
+                    'Error opening vault: $e',
                     style: TextStyle(color: colorScheme.error),
                   ),
-                  data: (storageDir) {
-                    final displayPath =
-                        storageDir.configuredPath ?? storageDir.path;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (storageDir.accessError != null) ...[
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.warning_amber_rounded,
-                                  size: 18,
-                                  color: colorScheme.onErrorContainer,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    storageDir.accessError!,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onErrorContainer,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        if (loadFailures.isNotEmpty) ...[
-                          PeriodLoadFailureList(failures: loadFailures),
-                          const SizedBox(height: 12),
-                        ],
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  displayPath,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontFamily: 'monospace',
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                final picked = await FilePicker.platform
-                                    .getDirectoryPath(
-                                      dialogTitle: 'Select periods folder',
-                                    );
-                                if (picked != null) {
-                                  await ref
-                                      .read(storageSettingsProvider.notifier)
-                                      .updateDirectory(picked);
-                                }
-                              },
-                              icon: const Icon(Icons.folder_open_rounded),
-                              label: const Text('Change Folder'),
-                            ),
-                          ],
+                  data: (open) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        open.vault.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
                         ),
-                        if (storageDir.configuredPath != null) ...[
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () => ref
-                                  .read(storageSettingsProvider.notifier)
-                                  .resetToDefault(),
-                              icon: const Icon(
-                                Icons.restart_alt_rounded,
-                                size: 18,
-                              ),
-                              label: const Text('Reset to default folder'),
-                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          switch (open.vault.location) {
+                            LocalVaultLocation(:final path) => path,
+                            RemoteVaultLocation(:final kind) => '$kind vault',
+                          },
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontFamily: 'monospace',
                           ),
-                        ],
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (open.accessError != null) ...[
+                        const SizedBox(height: 12),
+                        VaultAccessBanner(message: open.accessError!),
                       ],
-                    );
-                  },
+                    ],
+                  ),
                 ),
+                if (loadFailures.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  PeriodLoadFailureList(failures: loadFailures),
+                ],
                 const SizedBox(height: 10),
                 Text(
-                  'Defaults to the system application data directory. '
-                  'Changing the folder takes effect immediately.',
+                  'A vault is a folder of period files. Switch or manage '
+                  'vaults from the bottom of the sidebar.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/settings/vaults'),
+                    icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                    label: const Text('Manage vaults'),
                   ),
                 ),
               ],

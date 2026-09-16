@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/all_periods_provider.dart';
 import 'package:flatplan/src/providers/current_period_provider.dart';
 import 'package:flatplan/src/providers/period_notifier_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -30,13 +29,11 @@ Period _period({List<FactExpense> facts = const []}) => Period(
 );
 
 void main() {
-  late Directory tempDir;
   late PeriodRepository repo;
   late ProviderContainer container;
 
   setUp(() {
-    tempDir = Directory.systemTemp.createTempSync('flatplan_refresh_test_');
-    repo = PeriodRepository(directoryPath: tempDir.path);
+    repo = PeriodRepository(workspace: MemoryWorkspace());
     container = ProviderContainer(
       overrides: [periodRepositoryProvider.overrideWith((ref) => repo)],
     );
@@ -44,9 +41,6 @@ void main() {
 
   tearDown(() {
     container.dispose();
-    if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
-    }
   });
 
   /// Mirrors what the dashboard watches. The failures listener matters: it

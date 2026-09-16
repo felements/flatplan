@@ -5,3 +5,5 @@ export 'planned_expense.dart';
 export 'fact_expense.dart';
 export 'due_date.dart';
 export 'category_type.dart';
+export 'vault.dart';
+export 'vault_registry.dart';
