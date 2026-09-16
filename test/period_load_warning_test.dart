@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 PeriodLoadFailure _failure(String fileName, String message) =>
     PeriodLoadFailure(
       fileName: fileName,
-      path: '/periods/$fileName',
+      location: '/periods/$fileName',
       message: message,
     );
 

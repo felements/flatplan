@@ -1,22 +1,23 @@
 import 'dart:collection';
 import 'dart:developer' show log;
-import 'dart:io';
 
 import 'package:json2yaml/json2yaml.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:yaml/yaml.dart';
 
 import '../models/models.dart';
+import 'vault_workspace.dart';
 
 /// A period file that could not be read back into a [Period].
 ///
-/// The file is left untouched on disk so the user can repair it.
+/// The file is left untouched so the user can repair it.
 class PeriodLoadFailure {
-  /// The file's name within the storage directory, e.g. `2026-03-march.yaml`.
+  /// The file's name within the vault, e.g. `2026-03-march.yaml`.
   final String fileName;
 
-  /// The file's absolute path.
-  final String path;
+  /// Where the file lives, as the user should see it:
+  /// the vault's display path plus the file name.
+  final String location;
 
   /// A human-readable reason the file could not be read, including the
   /// line and column when the YAML parser reported one.
@@ -24,7 +25,7 @@ class PeriodLoadFailure {
 
   const PeriodLoadFailure({
     required this.fileName,
-    required this.path,
+    required this.location,
     required this.message,
   });
 
@@ -32,14 +33,14 @@ class PeriodLoadFailure {
   bool operator ==(Object other) =>
       other is PeriodLoadFailure &&
       other.fileName == fileName &&
-      other.path == path &&
+      other.location == location &&
       other.message == message;
 
   @override
-  int get hashCode => Object.hash(fileName, path, message);
+  int get hashCode => Object.hash(fileName, location, message);
 }
 
-/// The outcome of reading every period file in the storage directory:
+/// The outcome of reading every period file in the vault:
 /// the periods that loaded, plus the files that did not.
 class PeriodLoadResult {
   final List<Period> periods;
@@ -50,10 +51,10 @@ class PeriodLoadResult {
   bool get hasFailures => failures.isNotEmpty;
 }
 
-/// Repository for handling local YAML storage of tracking periods.
+/// Repository for YAML storage of tracking periods inside one vault.
 class PeriodRepository {
-  /// The absolute path to the directory where period YAML files are stored.
-  final String directoryPath;
+  /// The vault's files. The repository never touches the filesystem directly.
+  final VaultWorkspace workspace;
 
   /// Cache of period ID to its physical filename to preserve filenames on save.
   final Map<String, String> _idToFilename = {};
@@ -62,63 +63,57 @@ class PeriodRepository {
   /// a file the user may still be able to repair.
   final Set<String> _failedFilenames = {};
 
-  PeriodRepository({required this.directoryPath});
+  PeriodRepository({required this.workspace});
 
   /// The physical YAML filename for [periodId], or null if the period has
   /// not been loaded or saved by this repository instance yet.
   String? filenameForPeriod(String periodId) => _idToFilename[periodId];
 
-  Future<Directory> _getStorageDirectory() async {
-    final dir = Directory(directoryPath);
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    return dir;
-  }
-
-  /// Loads all periods from the local YAML files, discarding any files that
-  /// could not be read. Use [loadAll] to also learn which files failed.
+  /// Loads all periods, discarding any files that could not be read.
+  /// Use [loadAll] to also learn which files failed.
   Future<List<Period>> loadAllPeriods() async => (await loadAll()).periods;
 
-  /// Loads all periods from the local YAML files, reporting unreadable files
-  /// as [PeriodLoadFailure]s rather than silently dropping them.
+  /// True for a conflict side file written by the sync engine. Such a file
+  /// holds a copy of a period and must not load as a duplicate id.
+  static bool isConflictFile(String name) => name.contains('.conflict-');
+
+  /// Loads all periods, reporting unreadable files as [PeriodLoadFailure]s
+  /// rather than silently dropping them.
   Future<PeriodLoadResult> loadAll() async {
-    final dir = await _getStorageDirectory();
     final periods = <Period>[];
     final failures = <PeriodLoadFailure>[];
     _idToFilename.clear();
     _failedFilenames.clear();
 
-    await for (final entity in dir.list()) {
-      if (entity is File && entity.path.endsWith('.yaml')) {
-        final fileName = entity.uri.pathSegments.last;
-        try {
-          final content = await entity.readAsString();
-          if (content.trim().isEmpty) continue;
+    for (final fileName in await workspace.listFiles()) {
+      if (!fileName.endsWith('.yaml') || isConflictFile(fileName)) continue;
+      try {
+        final content = await workspace.readString(fileName);
+        if (content.trim().isEmpty) continue;
 
-          final yamlDoc = loadYaml(content);
-          if (yamlDoc is! YamlMap) {
-            throw const FormatException('top level is not a mapping');
-          }
-          final map = _cloneYamlNode(yamlDoc) as Map<String, dynamic>;
-          final period = Period.fromJson(map);
-          _idToFilename[period.id] = fileName;
-          periods.add(period);
-        } catch (e) {
-          final message = _describeLoadError(e);
-          _failedFilenames.add(fileName);
-          failures.add(
-            PeriodLoadFailure(
-              fileName: fileName,
-              path: entity.path,
-              message: message,
-            ),
-          );
-          log(
-            'Failed to load period from ${entity.path}: $message',
-            name: 'flatplan.storage',
-          );
+        final yamlDoc = loadYaml(content);
+        if (yamlDoc is! YamlMap) {
+          throw const FormatException('top level is not a mapping');
         }
+        final map = _cloneYamlNode(yamlDoc) as Map<String, dynamic>;
+        final period = Period.fromJson(map);
+        _idToFilename[period.id] = fileName;
+        periods.add(period);
+      } catch (e) {
+        final message = _describeLoadError(e);
+        final location = '${workspace.displayPath}/$fileName';
+        _failedFilenames.add(fileName);
+        failures.add(
+          PeriodLoadFailure(
+            fileName: fileName,
+            location: location,
+            message: message,
+          ),
+        );
+        log(
+          'Failed to load period from $location: $message',
+          name: 'flatplan.storage',
+        );
       }
     }
 
@@ -149,20 +144,16 @@ class PeriodRepository {
     return error.toString();
   }
 
-  /// Saves a period to a local YAML file.
+  /// Saves a period to its YAML file.
   Future<void> savePeriod(Period period) async {
-    final dir = await _getStorageDirectory();
-
     // Keep existing filename if loaded, otherwise generate a new one
     final filename = _idToFilename[period.id] ?? _generateFilename(period);
     _idToFilename[period.id] = filename;
 
-    final file = File('${dir.path}/$filename');
-
     // Remove legacy file if it exists to avoid duplicates
-    final legacyFile = File('${dir.path}/${period.id}.yaml');
-    if (await legacyFile.exists() && legacyFile.path != file.path) {
-      await legacyFile.delete();
+    final legacyName = '${period.id}.yaml';
+    if (legacyName != filename && await workspace.exists(legacyName)) {
+      await workspace.delete(legacyName);
     }
 
     final jsonMap = period.toJson();
@@ -170,7 +161,7 @@ class PeriodRepository {
 
     // json2yaml formatting generates clean YAML output.
     final yamlString = json2yaml(sortedMap, yamlStyle: YamlStyle.generic);
-    await file.writeAsString(yamlString);
+    await workspace.writeString(filename, yamlString);
   }
 
   String _generateFilename(Period period) {

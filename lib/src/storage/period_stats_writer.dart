@@ -1,27 +1,20 @@
-import 'dart:io';
+import 'vault_workspace.dart';
 
 /// Writes/removes the single current-period stats snapshot next to the
-/// period YAML files, so it rides along with the user's git workflow.
+/// period YAML files, so it rides along with the vault.
 class PeriodStatsWriter {
   static const fileName = 'current_stats.md';
 
-  final String directoryPath;
+  final VaultWorkspace workspace;
 
-  PeriodStatsWriter({required this.directoryPath});
+  PeriodStatsWriter({required this.workspace});
 
-  File get _file => File('$directoryPath/$fileName');
-
-  Future<void> writeStatsFile(String markdown) async {
-    final dir = Directory(directoryPath);
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    await _file.writeAsString(markdown);
-  }
+  Future<void> writeStatsFile(String markdown) =>
+      workspace.writeString(fileName, markdown);
 
   Future<void> deleteStatsFile() async {
-    if (await _file.exists()) {
-      await _file.delete();
+    if (await workspace.exists(fileName)) {
+      await workspace.delete(fileName);
     }
   }
 }

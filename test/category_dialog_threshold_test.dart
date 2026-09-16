@@ -7,15 +7,13 @@ import 'package:flatplan/src/providers/all_periods_provider.dart';
 import 'package:flatplan/src/providers/period_notifier_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
-import 'dart:io';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 
 void main() {
   testWidgets('offers a big-purchase threshold once daily allowance is on', (
     tester,
   ) async {
-    final tempDir = Directory.systemTemp.createTempSync('flatplan_dialog_');
-    addTearDown(() => tempDir.deleteSync(recursive: true));
-    final repo = PeriodRepository(directoryPath: tempDir.path);
+    final repo = PeriodRepository(workspace: MemoryWorkspace());
 
     await tester.pumpWidget(
       ProviderScope(
@@ -53,9 +51,7 @@ void main() {
   testWidgets(
     'does not offer a big-purchase threshold when daily allowance is off',
     (tester) async {
-      final tempDir = Directory.systemTemp.createTempSync('flatplan_dialog_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final repo = PeriodRepository(directoryPath: tempDir.path);
+      final repo = PeriodRepository(workspace: MemoryWorkspace());
 
       await tester.pumpWidget(
         ProviderScope(
@@ -100,9 +96,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      final tempDir = Directory.systemTemp.createTempSync('flatplan_dialog_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final repo = PeriodRepository(directoryPath: tempDir.path);
+      final repo = PeriodRepository(workspace: MemoryWorkspace());
 
       final period = Period(
         id: 'p1',
@@ -200,9 +194,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      final tempDir = Directory.systemTemp.createTempSync('flatplan_dialog_');
-      addTearDown(() => tempDir.deleteSync(recursive: true));
-      final repo = PeriodRepository(directoryPath: tempDir.path);
+      final repo = PeriodRepository(workspace: MemoryWorkspace());
 
       // A prior period rich enough for a suggestion to exist: the mean of
       // [100, 100, 1000, 1000] is 550, rounded to the nearest 50. The field

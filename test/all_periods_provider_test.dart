@@ -4,6 +4,7 @@ import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/all_periods_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -13,7 +14,7 @@ void main() {
 
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('flatplan_periods_test_');
-    final repo = PeriodRepository(directoryPath: tempDir.path);
+    final repo = PeriodRepository(workspace: DirectoryWorkspace(tempDir.path));
     container = ProviderContainer(
       overrides: [periodRepositoryProvider.overrideWith((ref) => repo)],
     );
@@ -36,7 +37,7 @@ void main() {
 
   test('allPeriodsProvider still returns valid periods next to a broken file',
       () async {
-    await PeriodRepository(directoryPath: tempDir.path).savePeriod(
+    await PeriodRepository(workspace: DirectoryWorkspace(tempDir.path)).savePeriod(
       Period(
         id: 'good-uuid',
         name: 'March 2026',

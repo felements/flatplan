@@ -1,11 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/period_stats_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 
 PlannedExpense _planned(String id, double amount) => PlannedExpense(
   id: id,
@@ -24,12 +23,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('periodStats with max(planned, limit) rule', () {
-    late Directory tempDir;
     late ProviderContainer container;
 
     setUp(() async {
-      tempDir = Directory.systemTemp.createTempSync('flatplan_stats_test_');
-      final repo = PeriodRepository(directoryPath: tempDir.path);
+      final repo = PeriodRepository(workspace: MemoryWorkspace());
 
       // Period starts 5 days ago so currentPeriodProvider picks it
       // (effective end = start + 30 days, which spans today).
@@ -89,9 +86,6 @@ void main() {
 
     tearDown(() {
       container.dispose();
-      if (tempDir.existsSync()) {
-        tempDir.deleteSync(recursive: true);
-      }
     });
 
     test('per-category effective limits and flags', () async {
