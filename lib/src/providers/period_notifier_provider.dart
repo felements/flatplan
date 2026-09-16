@@ -20,7 +20,7 @@ class PeriodNotifier extends _$PeriodNotifier {
 
   @override
   FutureOr<Period?> build(String periodId) async {
-    final repo = ref.watch(periodRepositoryProvider);
+    final repo = await ref.watch(periodRepositoryProvider.future);
     final periods = await repo.loadAllPeriods();
     return periods.where((p) => p.id == periodId).firstOrNull;
   }
@@ -234,7 +234,7 @@ class PeriodNotifier extends _$PeriodNotifier {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final repo = ref.read(periodRepositoryProvider);
+        final repo = await ref.read(periodRepositoryProvider.future);
         await repo.savePeriod(period);
         // Invalidate global providers so the rest of the app stays in sync.
         // This must target periodLoadResultProvider, the single disk read:

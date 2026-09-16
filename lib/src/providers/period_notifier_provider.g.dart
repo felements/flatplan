@@ -62,7 +62,7 @@ final class PeriodNotifierProvider
   }
 }
 
-String _$periodNotifierHash() => r'e25fea1aad546e7e65bb7f18c588254a3ca9e88a';
+String _$periodNotifierHash() => r'078223a9661eec64ccc0065bd7edfbbbd9ab98e0';
 
 /// A family provider that loads and mutates any period by its [periodId].
 ///

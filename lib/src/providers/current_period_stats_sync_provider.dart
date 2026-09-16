@@ -23,7 +23,7 @@ part 'current_period_stats_sync_provider.g.dart';
 /// interrupt normal period editing.
 @riverpod
 Future<void> currentPeriodStatsSync(Ref ref) async {
-  final repo = ref.watch(periodRepositoryProvider);
+  final repo = await ref.watch(periodRepositoryProvider.future);
   final writer = PeriodStatsWriter(workspace: repo.workspace);
 
   final enabled = await ref.watch(aiStatsSettingsProvider.future);

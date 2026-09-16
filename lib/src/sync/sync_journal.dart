@@ -98,7 +98,18 @@ class SyncJournal implements WorkspaceChangeListener {
     onDirty?.call(name);
   }
 
-  Future<void> save() async {
+  /// Serialises [save]: a local edit and an in-flight sync both save, and
+  /// two overlapping saves would fight over the same temp file.
+  Future<void> _saveTail = Future.value();
+
+  Future<void> save() {
+    final next = _saveTail.then((_) => _writeFile());
+    // The tail must never carry an error forward, or every later save fails.
+    _saveTail = next.then((_) {}, onError: (_) {});
+    return next;
+  }
+
+  Future<void> _writeFile() async {
     final path = filePath;
     if (path == null) return;
     final file = File(path);

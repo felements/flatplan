@@ -1,0 +1,73 @@
+import 'dart:async';
+
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../storage/vault_resolver.dart';
+import '../sync/remote_store.dart';
+import '../sync/sync_status.dart';
+import 'app_paths_provider.dart';
+import 'vaults_provider.dart';
+
+part 'open_vault_provider.g.dart';
+
+/// Remote kinds this build can open. Empty until a provider registers.
+@Riverpod(keepAlive: true)
+RemoteStoreRegistry remoteStoreRegistry(Ref ref) => RemoteStoreRegistry();
+
+@Riverpod(keepAlive: true)
+Future<VaultResolver> vaultResolver(Ref ref) async {
+  final paths = await ref.watch(appPathsProvider.future);
+  return VaultResolver(
+    paths: paths,
+    remoteStores: ref.watch(remoteStoreRegistryProvider),
+    secrets: ref.watch(vaultSecretsProvider),
+  );
+}
+
+/// Sync status of the open vault. Null for local vaults.
+@Riverpod(keepAlive: true)
+class CurrentSyncStatus extends _$CurrentSyncStatus {
+  @override
+  SyncStatus? build() => null;
+
+  void set(SyncStatus? status) => state = status;
+}
+
+/// The selected vault, resolved. Re-resolves when the selection changes;
+/// the outgoing remote vault gets a best-effort push first.
+@Riverpod(keepAlive: true)
+Future<OpenVault> openVault(Ref ref) async {
+  final registry = await ref.watch(vaultsProvider.future);
+  final vault = registry.selected;
+  if (vault == null) throw StateError('No vault is configured.');
+
+  final resolver = await ref.watch(vaultResolverProvider.future);
+  // Held directly rather than re-read on every tick: the status callback also
+  // fires from the outgoing scheduler's flush, which runs inside onDispose
+  // where touching `ref` is forbidden.
+  final status = ref.read(currentSyncStatusProvider.notifier);
+  // Cleared on dispose so the outgoing vault's farewell push cannot overwrite
+  // the incoming vault's status.
+  var live = true;
+
+  final open = await resolver.open(
+    vault,
+    onStatus: (value) {
+      if (live) status.set(value);
+    },
+  );
+  status.set(open.scheduler?.status);
+
+  ref.onDispose(() {
+    live = false;
+    final scheduler = open.scheduler;
+    if (scheduler != null) {
+      unawaited(scheduler.flushBeforeSwitch().whenComplete(scheduler.dispose));
+    }
+  });
+
+  // Pulls when nothing is dirty; pushes (pulling first) when an interrupted
+  // session left changes pending.
+  unawaited(open.scheduler?.syncNow());
+  return open;
+}
