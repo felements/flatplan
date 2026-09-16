@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../components/vault_switcher.dart';
 import '../logic/period_extensions.dart';
 import '../models/models.dart';
 import '../providers/all_periods_provider.dart';
@@ -146,7 +147,9 @@ class AppShell extends ConsumerWidget {
 
                 const Spacer(),
 
-                // ─── Settings (anchored to bottom) ─────────────────
+                // ─── Vault switcher + Settings (anchored to bottom) ───
+                VaultSwitcher(onManage: () => context.go('/settings/vaults')),
+                const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: _SidebarItem(
