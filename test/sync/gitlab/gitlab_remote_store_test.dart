@@ -168,14 +168,24 @@ void main() {
       );
     });
 
-    test('the commit message names the number of files', () async {
+    test('the commit message names the number of files actually sent, not the batch size', () async {
+      gitlab.files['budget/same.yaml'] = 'same';
+
       await store.writeBatch([
         const RemotePut(name: 'a.yaml', content: 'a', expectedVersion: null),
         const RemotePut(name: 'b.yaml', content: 'b', expectedVersion: null),
+        RemotePut(name: 'same.yaml', content: 'same', expectedVersion: gitBlobSha('same')),
       ]);
-      // The fake does not keep messages; assert on the store's constant instead.
-      expect(GitLabRemoteStore.commitMessage(2), 'FlatPlan sync: 2 files');
-      expect(GitLabRemoteStore.commitMessage(1), 'FlatPlan sync: 1 file');
+
+      expect(gitlab.commitMessages, ['FlatPlan sync: 2 files']);
+    });
+
+    test('the commit message uses the singular for one file', () async {
+      await store.writeBatch([
+        const RemotePut(name: 'a.yaml', content: 'a', expectedVersion: null),
+      ]);
+
+      expect(gitlab.commitMessages, ['FlatPlan sync: 1 file']);
     });
   });
 }

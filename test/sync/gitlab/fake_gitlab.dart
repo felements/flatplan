@@ -37,6 +37,9 @@ class FakeGitLab {
   /// Message returned with a forced 400 on commit.
   String commitErrorMessage = 'You are not allowed to push into this branch';
 
+  /// The `commit_message` of every commit actually sent, in order.
+  final List<String> commitMessages = [];
+
   /// Every request, as `METHOD path?query`.
   final List<String> calls = [];
   int treePageSize = 100;
@@ -162,6 +165,7 @@ class FakeGitLab {
     if (failWith.containsKey('/commit-refused')) {
       return _json(400, {'message': commitErrorMessage});
     }
+    commitMessages.add(body['commit_message'] as String);
     final actions = (body['actions'] as List).cast<Map<String, dynamic>>();
     for (final a in actions) {
       final path = a['file_path'] as String;
