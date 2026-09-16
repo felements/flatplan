@@ -4,13 +4,10 @@ part 'vault.freezed.dart';
 part 'vault.g.dart';
 
 /// Converts a Map (which may have dynamic keys) to `Map<String, dynamic>`.
+/// Throws if [json] is not null and not a Map.
 Map<String, dynamic> _settingsFromJson(Object? json) {
   if (json == null) return const {};
-  if (json is Map<String, dynamic>) return json;
-  if (json is Map) {
-    return Map<String, dynamic>.from(json);
-  }
-  return const {};
+  return Map<String, dynamic>.from(json as Map);
 }
 
 /// A named place that holds one set of period files.

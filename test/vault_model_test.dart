@@ -58,6 +58,17 @@ void main() {
     expect(jsonDecode(jsonEncode(vault.toJson()))['location']['kind'], 'teleport');
   });
 
+  test('invalid settings type throws on deserialization', () {
+    final json = {
+      'id': 'v4',
+      'name': 'Bad settings',
+      'created_at': created.toIso8601String(),
+      'location': {'type': 'remote', 'kind': 'gitlab', 'settings': 'oops'},
+    };
+
+    expect(() => Vault.fromJson(json), throwsA(anything));
+  });
+
   group('VaultRegistry', () {
     final a = Vault(
       id: 'a',
