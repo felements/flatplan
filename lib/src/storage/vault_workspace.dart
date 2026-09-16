@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../sync/lock.dart';
+
 /// Told about every write and delete in a workspace, before it happens.
 ///
 /// The sync journal implements this to mark a file dirty, so a crash a
@@ -55,7 +57,14 @@ class DirectoryWorkspace implements VaultWorkspace {
   final String path;
   final WorkspaceChangeListener? changeListener;
 
-  DirectoryWorkspace(this.path, {this.changeListener});
+  /// Shared with the sync engine of a remote vault so a local write can
+  /// never land while the engine is comparing or resolving that file.
+  final Lock? lock;
+
+  DirectoryWorkspace(this.path, {this.changeListener, this.lock});
+
+  Future<T> _guarded<T>(Future<T> Function() action) =>
+      lock?.synchronized(action) ?? action();
 
   @override
   String get displayPath => path;
@@ -87,21 +96,25 @@ class DirectoryWorkspace implements VaultWorkspace {
   }
 
   @override
-  Future<void> writeString(String name, String content) async {
+  Future<void> writeString(String name, String content) {
     assertSafeName(name);
-    await changeListener?.onChanged(name);
-    final dir = Directory(path);
-    if (!await dir.exists()) await dir.create(recursive: true);
-    await _file(name).writeAsString(content, flush: true);
+    return _guarded(() async {
+      await changeListener?.onChanged(name);
+      final dir = Directory(path);
+      if (!await dir.exists()) await dir.create(recursive: true);
+      await _file(name).writeAsString(content, flush: true);
+    });
   }
 
   @override
-  Future<void> delete(String name) async {
+  Future<void> delete(String name) {
     assertSafeName(name);
-    final file = _file(name);
-    if (!await file.exists()) return;
-    await changeListener?.onChanged(name);
-    await file.delete();
+    return _guarded(() async {
+      final file = _file(name);
+      if (!await file.exists()) return;
+      await changeListener?.onChanged(name);
+      await file.delete();
+    });
   }
 }
 
@@ -112,8 +125,15 @@ class MemoryWorkspace implements VaultWorkspace {
   final Map<String, String> files;
   final WorkspaceChangeListener? changeListener;
 
-  MemoryWorkspace({Map<String, String>? files, this.changeListener})
+  /// Shared with the sync engine of a remote vault so a local write can
+  /// never land while the engine is comparing or resolving that file.
+  final Lock? lock;
+
+  MemoryWorkspace({Map<String, String>? files, this.changeListener, this.lock})
     : files = files ?? {};
+
+  Future<T> _guarded<T>(Future<T> Function() action) =>
+      lock?.synchronized(action) ?? action();
 
   @override
   String get displayPath => 'in-memory';
@@ -138,17 +158,21 @@ class MemoryWorkspace implements VaultWorkspace {
   }
 
   @override
-  Future<void> writeString(String name, String content) async {
+  Future<void> writeString(String name, String content) {
     assertSafeName(name);
-    await changeListener?.onChanged(name);
-    files[name] = content;
+    return _guarded(() async {
+      await changeListener?.onChanged(name);
+      files[name] = content;
+    });
   }
 
   @override
-  Future<void> delete(String name) async {
+  Future<void> delete(String name) {
     assertSafeName(name);
-    if (!files.containsKey(name)) return;
-    await changeListener?.onChanged(name);
-    files.remove(name);
+    return _guarded(() async {
+      if (!files.containsKey(name)) return;
+      await changeListener?.onChanged(name);
+      files.remove(name);
+    });
   }
 }
