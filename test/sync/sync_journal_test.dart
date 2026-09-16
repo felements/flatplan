@@ -80,6 +80,20 @@ void main() {
     expect(journal.dirty, isEmpty);
   });
 
+  test('a parseable journal with a malformed entry also starts empty', () async {
+    File(journalPath).createSync(recursive: true);
+    File(journalPath).writeAsStringSync(
+      '{"version":1,"baseline":{"a.yaml":{"version":"v1","content_hash":"h1"},'
+      '"b.yaml":{"content_hash":"h2"}},"dirty":["c.yaml"]}',
+    );
+
+    final journal = await SyncJournal.load(journalPath);
+
+    expect(journal.needsFullRescan, isTrue);
+    expect(journal.baseline, isEmpty);
+    expect(journal.dirty, isEmpty);
+  });
+
   test('an in-memory journal saves nothing', () async {
     final journal = SyncJournal();
     await journal.onChanged('a.yaml');

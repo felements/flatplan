@@ -80,6 +80,11 @@ class SyncJournal implements WorkspaceChangeListener {
       } catch (e) {
         log('Unreadable sync journal $filePath ($e); rescanning',
             name: 'flatplan.sync');
+        journal.baseline.clear();
+        journal.dirty.clear();
+        journal.lastPullAt = null;
+        journal.lastPushAt = null;
+        journal.lastError = null;
         journal.needsFullRescan = true;
       }
     }
