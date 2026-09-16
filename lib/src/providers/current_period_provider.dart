@@ -268,9 +268,13 @@ class CurrentPeriod extends _$CurrentPeriod {
 
   void _debouncedSave(Period period) {
     _debounceTimer?.cancel();
+    // Resolve the repository now, not when the timer fires: an edit belongs
+    // to the vault that was open when it was made, and a vault switch within
+    // the debounce window would otherwise write it into the new vault.
+    final repoFuture = ref.read(periodRepositoryProvider.future);
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final repo = await ref.read(periodRepositoryProvider.future);
+        final repo = await repoFuture;
         await repo.savePeriod(period);
       } catch (e) {
         log('Failed to auto-save period: $e', name: 'flatplan.storage');

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/app_paths_provider.dart';
 import 'package:flatplan/src/providers/open_vault_provider.dart';
+import 'package:flatplan/src/providers/period_notifier_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
 import 'package:flatplan/src/storage/app_paths.dart';
@@ -199,6 +200,62 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
     expect(container.read(currentSyncStatusProvider), isNull);
+  });
+
+  test('a debounced save lands in the vault that was open when it was made',
+      () async {
+    container = makeContainer(
+      VaultRegistry(
+        lastSelectedVaultId: 'a',
+        vaults: [localVault('a'), localVault('b')],
+      ),
+    );
+    container.listen(periodRepositoryProvider, (_, _) {});
+    final repo = await container.read(periodRepositoryProvider.future);
+    await repo.savePeriod(
+      Period(
+        id: 'p1',
+        name: 'September 2026',
+        startDate: DateTime(2026, 9, 1),
+        baseCurrency: 'EUR',
+        lastModified: DateTime(2026, 9, 1),
+        categories: [
+          Category(
+            id: 'c1',
+            name: 'Groceries',
+            type: CategoryType.optionalExpense,
+            limit: 500,
+          ),
+        ],
+      ),
+    );
+
+    // The notifier must stay alive across the switch, like the open screen.
+    container.listen(periodProvider('p1'), (_, _) {});
+    await container.read(periodProvider('p1').future);
+
+    container.read(periodProvider('p1').notifier).addFactExpense(
+      'c1',
+      FactExpense(id: 'f1', amount: 42, timestamp: DateTime(2026, 9, 10)),
+    );
+    // Switch vaults inside the 500 ms debounce window.
+    await container.read(vaultsProvider.notifier).select('b');
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+
+    final inA = Directory(p.join(tempDir.path, 'a'))
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.yaml'))
+        .toList();
+    final inB = Directory(p.join(tempDir.path, 'b'))
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.yaml'))
+        .toList();
+
+    expect(inA, hasLength(1));
+    expect(inA.single.readAsStringSync(), contains('f1'));
+    expect(inB, isEmpty, reason: 'the edit belongs to the vault it was made in');
   });
 
   test('removing the open remote vault pushes its pending change first',
