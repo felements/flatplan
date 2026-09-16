@@ -131,8 +131,10 @@ class GitLabApi {
     this.takeRejectedCertificate,
   });
 
-  Future<List<ProjectSummary>> searchProjects(String query) async {
-    final body = await _getJson('/projects', {
+  Future<List<ProjectSummary>> searchProjects(String query) async => _getJson(
+    '/projects',
+    (json) => [for (final p in json as List) ProjectSummary.fromJson(p as Map<String, dynamic>)],
+    {
       'membership': 'true',
       'min_access_level': '30',
       'simple': 'true',
@@ -140,24 +142,26 @@ class GitLabApi {
       'order_by': 'last_activity_at',
       'per_page': '50',
       'search': query,
-    });
-    return [for (final p in body as List) ProjectSummary.fromJson(p as Map<String, dynamic>)];
-  }
+    },
+  );
 
-  Future<ProjectSummary> projectByPath(String path) async =>
-      ProjectSummary.fromJson(await _getJson('/projects/${Uri.encodeComponent(path)}') as Map<String, dynamic>);
+  Future<ProjectSummary> projectByPath(String path) async => _getJson(
+    '/projects/${Uri.encodeComponent(path)}',
+    (json) => ProjectSummary.fromJson(json as Map<String, dynamic>),
+  );
 
   Future<ProjectSummary> project(int id) async =>
-      ProjectSummary.fromJson(await _getJson('/projects/$id') as Map<String, dynamic>);
+      _getJson('/projects/$id', (json) => ProjectSummary.fromJson(json as Map<String, dynamic>));
 
-  Future<List<String>> branches(int id) async {
-    final body = await _getJson('/projects/$id/repository/branches', {'per_page': '100'});
-    return [for (final b in body as List) (b as Map<String, dynamic>)['name'] as String];
-  }
+  Future<List<String>> branches(int id) async => _getJson(
+    '/projects/$id/repository/branches',
+    (json) => [for (final b in json as List) (b as Map<String, dynamic>)['name'] as String],
+    {'per_page': '100'},
+  );
 
   Future<bool> branchExists(int id, String name) async {
     try {
-      await _getJson('/projects/$id/repository/branches/${Uri.encodeComponent(name)}');
+      await _send('GET', '/projects/$id/repository/branches/${Uri.encodeComponent(name)}');
       return true;
     } on GitLabApiException catch (e) {
       if (e.status == 404) return false;
@@ -175,9 +179,12 @@ class GitLabApi {
         'per_page': '100',
         'page': '$page',
       });
-      entries.addAll([
-        for (final e in jsonDecode(response.body) as List) TreeEntry.fromJson(e as Map<String, dynamic>),
-      ]);
+      entries.addAll(
+        _parseJson(
+          response,
+          (json) => [for (final e in json as List) TreeEntry.fromJson(e as Map<String, dynamic>)],
+        ),
+      );
       final next = response.headers['x-next-page'];
       if (next == null || next.isEmpty) return entries;
       page = int.parse(next);
@@ -197,28 +204,42 @@ class GitLabApi {
     return RawFile(content: utf8.decode(response.bodyBytes), blobId: blobId);
   }
 
-  Future<String> commit(int id, String branch, String message, List<CommitAction> actions) async {
-    final body = await _postJson('/projects/$id/repository/commits', {
+  Future<String> commit(int id, String branch, String message, List<CommitAction> actions) async => _postJson(
+    '/projects/$id/repository/commits',
+    {
       'branch': branch,
       'commit_message': message,
       'actions': [for (final a in actions) a.toJson()],
-    });
-    return (body as Map<String, dynamic>)['id'] as String;
-  }
+    },
+    (json) => (json as Map<String, dynamic>)['id'] as String,
+  );
 
-  Future<TokenInfo> tokenInfo() async {
-    final body = await _getJson('/personal_access_tokens/self') as Map<String, dynamic>;
+  Future<TokenInfo> tokenInfo() async => _getJson('/personal_access_tokens/self', (json) {
+    final body = json as Map<String, dynamic>;
     return TokenInfo(
-      scopes: ((body['scopes'] as List?) ?? const []).cast<String>(),
+      scopes: ((body['scopes'] as List?) ?? const []).cast<String>().toList(),
       isFineGrained: body['granular_scopes'] != null,
     );
+  });
+
+  Future<T> _getJson<T>(String path, T Function(Object? json) parse, [Map<String, String>? query]) async =>
+      _parseJson(await _send('GET', path, query: query), parse);
+
+  Future<T> _postJson<T>(String path, Map<String, dynamic> body, T Function(Object? json) parse) async =>
+      _parseJson(await _send('POST', path, jsonBody: body), parse);
+
+  /// Decodes and parses a 2xx response's body, mapping a malformed body
+  /// (not JSON, or JSON of the wrong shape) to [GitLabApiException] instead
+  /// of letting [FormatException]/[TypeError] escape [GitLabApi].
+  static T _parseJson<T>(http.Response response, T Function(Object? json) parse) {
+    try {
+      return parse(jsonDecode(response.body));
+    } on FormatException catch (e) {
+      throw GitLabApiException(response.statusCode, 'Unexpected answer from GitLab: ${e.message}');
+    } on TypeError catch (e) {
+      throw GitLabApiException(response.statusCode, 'Unexpected answer from GitLab: $e');
+    }
   }
-
-  Future<Object?> _getJson(String path, [Map<String, String>? query]) async =>
-      jsonDecode((await _send('GET', path, query: query)).body);
-
-  Future<Object?> _postJson(String path, Map<String, dynamic> body) async =>
-      jsonDecode((await _send('POST', path, jsonBody: body)).body);
 
   Uri _uri(String path, Map<String, String>? query) =>
       Uri.parse('$baseUrl/api/v4$path').replace(queryParameters: query);

@@ -73,6 +73,24 @@ void main() {
     expect((await api.tokenInfo()).isFineGrained, isTrue);
   });
 
+  test('branches returns the fake branch names in order', () async {
+    gitlab.branches.addAll(['dev', 'staging']);
+    expect(await api.branches(42), ['main', 'dev', 'staging']);
+  });
+
+  test('branchExists returns true for an existing branch and false on 404', () async {
+    expect(await api.branchExists(42, 'main'), isTrue);
+    expect(await api.branchExists(42, 'missing'), isFalse);
+  });
+
+  test('branchExists rethrows other errors as GitLabApiException', () async {
+    gitlab.failWith['/projects/42/repository/branches/'] = 403;
+    await expectLater(
+      api.branchExists(42, 'main'),
+      throwsA(isA<GitLabApiException>().having((e) => e.status, 'status', 403)),
+    );
+  });
+
   test('401 becomes RemoteAuthRejected', () async {
     api = GitLabApi(client: gitlab.client, baseUrl: FakeGitLab.baseUrl, token: 'wrong');
     await expectLater(api.project(42), throwsA(isA<RemoteAuthRejected>()));
@@ -83,6 +101,26 @@ void main() {
     await expectLater(
       api.tree(42, 'main', ''),
       throwsA(isA<GitLabApiException>().having((e) => e.status, 'status', 403).having((e) => e.message, 'message', 'forced 403')),
+    );
+  });
+
+  test('a 2xx non-JSON body becomes GitLabApiException', () async {
+    final client = MockClient((_) async => http.Response('<html>Log in to GitLab</html>', 200));
+    api = GitLabApi(client: client, baseUrl: FakeGitLab.baseUrl, token: 't');
+    await expectLater(
+      api.project(42),
+      throwsA(isA<GitLabApiException>().having((e) => e.status, 'status', 200)),
+    );
+  });
+
+  test('a 2xx JSON body of the wrong shape becomes GitLabApiException', () async {
+    final client = MockClient(
+      (_) async => http.Response('{}', 200, headers: {'content-type': 'application/json'}),
+    );
+    api = GitLabApi(client: client, baseUrl: FakeGitLab.baseUrl, token: 't');
+    await expectLater(
+      api.branches(42),
+      throwsA(isA<GitLabApiException>().having((e) => e.status, 'status', 200)),
     );
   });
 
