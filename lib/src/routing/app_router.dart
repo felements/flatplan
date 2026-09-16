@@ -7,6 +7,7 @@ import '../views/category_detail_view.dart';
 import '../views/category_editor_view.dart';
 import '../views/dashboard_view.dart';
 import '../views/settings_view.dart';
+import '../views/vault_form_view.dart';
 import '../views/vault_list_view.dart';
 
 part 'app_router.g.dart';
@@ -83,6 +84,17 @@ GoRouter appRouter(Ref ref) {
                   GoRoute(
                     path: 'vaults',
                     builder: (context, state) => const VaultListView(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const VaultFormView(),
+                      ),
+                      GoRoute(
+                        path: ':id/edit',
+                        builder: (context, state) =>
+                            VaultFormView(vaultId: state.pathParameters['id']),
+                      ),
+                    ],
                   ),
                 ],
               ),
