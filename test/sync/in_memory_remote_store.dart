@@ -19,6 +19,10 @@ class InMemoryRemoteStore implements RemoteStore {
   /// simulate a local edit landing while a push is in flight.
   Future<void> Function()? onWriteBatch;
 
+  /// Runs inside [listTree] before it returns, so a test can simulate a
+  /// pull that is still in flight.
+  Future<void> Function()? onListTree;
+
   /// Every call, for asserting how many round trips the engine made.
   final List<String> calls = [];
 
@@ -40,6 +44,7 @@ class InMemoryRemoteStore implements RemoteStore {
   @override
   Future<Map<String, String>> listTree() async {
     _checkFailure();
+    await onListTree?.call();
     calls.add('listTree');
     return {for (final e in files.entries) e.key: e.value.version};
   }

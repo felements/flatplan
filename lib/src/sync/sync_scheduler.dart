@@ -31,12 +31,14 @@ class SyncScheduler {
     if (_disposed) return;
     _idleTimer?.cancel();
     _idleTimer = Timer(idleDelay, () => _run(push: true));
-    _emit(_status.state == SyncState.syncing ? SyncState.syncing : SyncState.idle);
+    _emit(_status.state);
   }
 
   Future<void> pullNow() => _run(push: false);
 
-  Future<void> syncNow() => _run(push: true);
+  /// Pushes pending changes (pulling first), or just pulls when nothing
+  /// is pending.
+  Future<void> syncNow() => _run(push: engine.journal.dirty.isNotEmpty);
 
   Future<void> onAppPaused() {
     _idleTimer?.cancel();
@@ -47,10 +49,16 @@ class SyncScheduler {
   Future<void> flushBeforeSwitch() async {
     _idleTimer?.cancel();
     try {
-      await _run(push: true).timeout(switchTimeout);
+      await _flush().timeout(switchTimeout);
     } on TimeoutException {
       // The engine keeps running in the background; the journal has it all.
     }
+  }
+
+  Future<void> _flush() async {
+    final running = _running;
+    if (running != null) await running;
+    await _run(push: true);
   }
 
   void dispose() {
@@ -68,7 +76,7 @@ class SyncScheduler {
       _running = null;
       if (_rerunQueued && !_disposed) {
         _rerunQueued = false;
-        unawaited(_run(push: true));
+        unawaited(_run(push: engine.journal.dirty.isNotEmpty));
       }
     });
     _running = future;

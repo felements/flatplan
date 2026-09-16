@@ -116,6 +116,44 @@ void main() {
     expect(statuses.where((s) => s.state == SyncState.syncing).length, 2);
   });
 
+  test('syncNow on a clean vault pulls', () async {
+    remote.seed('a.yaml', 'x');
+
+    await scheduler.syncNow();
+
+    expect(files['a.yaml'], 'x');
+    expect(remote.calls, ['listTree', 'read a.yaml']);
+  });
+
+  test('a pullNow queued behind a running push still pulls afterwards', () async {
+    await app.writeString('a.yaml', 'a');
+    final gate = Completer<void>();
+    remote.onWriteBatch = () => gate.future;
+
+    final push = scheduler.syncNow();
+    await Future<void>.delayed(Duration.zero);
+    final pull = scheduler.pullNow();
+    remote.onWriteBatch = null;
+    gate.complete();
+    await Future.wait([push, pull]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(remote.calls.where((c) => c == 'listTree').length, 2);
+    expect(remote.calls.where((c) => c.startsWith('writeBatch')), hasLength(1));
+  });
+
+  test('noteChange keeps an offline status', () async {
+    await app.writeString('a.yaml', 'a');
+    remote.failure = const SocketException('down');
+    await scheduler.syncNow();
+    expect(scheduler.status.state, SyncState.offline);
+
+    await app.writeString('b.yaml', 'b');
+
+    expect(scheduler.status.state, SyncState.offline);
+    expect(scheduler.status.dirtyCount, 2);
+  });
+
   test('flushBeforeSwitch returns after the timeout even if the push hangs',
       () async {
     await app.writeString('a.yaml', 'a');
@@ -125,6 +163,21 @@ void main() {
     await scheduler.flushBeforeSwitch();
 
     expect(stopwatch.elapsedMilliseconds, lessThan(500));
+  });
+
+  test('flushBeforeSwitch waits for a running pull and then pushes', () async {
+    final gate = Completer<void>();
+    remote.onListTree = () => gate.future;
+    final pull = scheduler.pullNow();
+    await Future<void>.delayed(Duration.zero);
+    await app.writeString('a.yaml', 'a');
+    remote.onListTree = null;
+    Future<void>.delayed(const Duration(milliseconds: 10), gate.complete);
+
+    await scheduler.flushBeforeSwitch();
+    await pull;
+
+    expect((await remote.listTree()).keys, contains('a.yaml'));
   });
 
   test('dispose cancels a pending idle push', () async {
