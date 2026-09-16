@@ -152,6 +152,23 @@ void main() {
     expect(journal.baseline['a.yaml']!.contentHash, contentHash('v1'));
   });
 
+  test('a put the store returned no version for stays dirty', () async {
+    await app.writeString('a.yaml', 'v1');
+    remote.omitVersions = true;
+
+    final failure = await engine.push();
+
+    expect(failure, isNull);
+    expect((await remote.read('a.yaml')).content, 'v1');
+    expect(
+      journal.dirty,
+      contains('a.yaml'),
+      reason: 'without a baseline the next pull cannot tell this push apart '
+          'from a remote edit, so it must be pushed again',
+    );
+    expect(journal.baseline, isNot(contains('a.yaml')));
+  });
+
   test('offline: dirty set untouched, error recorded', () async {
     await app.writeString('a.yaml', 'a');
     remote.failure = const SocketException('offline');

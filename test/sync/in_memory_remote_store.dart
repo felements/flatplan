@@ -15,6 +15,10 @@ class InMemoryRemoteStore implements RemoteStore {
   /// When set, every call throws it, like being offline.
   Object? failure;
 
+  /// When true, [writeBatch] applies the changes but returns no versions,
+  /// like a store whose write response carries no revision id.
+  bool omitVersions = false;
+
   /// Runs inside [writeBatch] before anything is applied, so a test can
   /// simulate a local edit landing while a push is in flight.
   Future<void> Function()? onWriteBatch;
@@ -88,6 +92,6 @@ class InMemoryRemoteStore implements RemoteStore {
       }
       applied++;
     }
-    return versions;
+    return omitVersions ? const {} : versions;
   }
 }

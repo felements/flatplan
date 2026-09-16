@@ -123,10 +123,12 @@ class SyncEngine {
         journal.baseline.remove(name);
       } else {
         final version = versions[name];
-        if (version != null) {
-          journal.baseline[name] =
-              JournalEntry(version: version, contentHash: pushedHash);
-        }
+        // No version back means no baseline to record, so the next pull
+        // cannot tell this push apart from a remote edit. Leave the name
+        // dirty and push it again rather than stranding it locally.
+        if (version == null) continue;
+        journal.baseline[name] =
+            JournalEntry(version: version, contentHash: pushedHash);
       }
       final currentHash = await mirror.exists(name)
           ? contentHash(await mirror.readString(name))
@@ -168,6 +170,7 @@ class SyncEngine {
         continue;
       }
 
+      // TODO(sync): see spec §9, lock against concurrent local writes
       final local =
           await mirror.exists(name) ? await mirror.readString(name) : null;
       if (local == remoteFile.content) {
