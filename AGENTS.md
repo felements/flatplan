@@ -4,11 +4,12 @@
 FlatPlan is a Flutter budget-tracking app (desktop today, mobile planned) storing periods as YAML files inside named **vaults**. Full specification is in the `doc/` folder (`01_storage_models.md` through `05_implementation_plan.md`). Always consult these documents for detailed requirements.
 
 ## Current Progress
-- **Stages 1 through 5** are **COMPLETED**.
+- **Stages 1 through 5** and **Phase 6 (vaults and the storage abstraction)** are **COMPLETED**; Phase 7 candidates are listed in `doc/05_implementation_plan.md`.
 - Flutter desktop app with GoRouter routing and responsive `AppShell` with a 220 px dark sidebar.
 - Dashboard, Category Details, and Settings pages are live.
 - Period rollover logic generates new periods from existing ones or from scratch (cold-start).
-- Periods are persisted as sorted YAML files in `~/Documents/flatplan/periods/`.
+- Periods are persisted as sorted YAML files inside the selected **vault**. The default vault lives in the application support directory (`<app support>/periods`); a vault can also be a user-picked folder, and remote vaults (GitLab, WebDAV, S3 and others) are the next step on the roadmap.
+- Vaults are created, switched and removed from the sidebar switcher and Settings → Vaults; the pre-vault folder setting migrates into the first vault automatically.
 
 ## Important Technical Decisions & Deviations
 

@@ -53,6 +53,17 @@ Triggered when starting a new period.
 - **Base Currency Selector**.
 - **Review Step**: Shows the list of categories and planned expenses to be carried over. Allows quick adjustments before generating the YAML file.
 
-## 4. Settings/Template Manager Page
-- Manage the core `template.yaml`.
-- Define the root storage directory path.
+## 4. Settings Page
+- Vault card: the open vault's name and location, an access-error banner when it cannot be opened, the list of unreadable period files, and a "Manage vaults" button.
+- AI stats toggle, active tracking instance (period creation and rollover), and the About section.
+
+## 5. Vault Switcher (sidebar footer)
+- Sits above the Settings item: vault name with an up/down chevron; for a remote vault a one-line sync status ("Synced 2 min ago", "3 changes pending", "Offline", "Sync failed"); "Needs attention" when the vault cannot be opened.
+- Tapping opens a menu listing every vault (check on the current one), then "Manage vaults…".
+
+## 6. Vault Management (`/settings/vaults`)
+- List: one card per vault with name, location line, "Current" and "Needs attention" chips, sync status and "Sync now" for an open remote vault, and an overflow menu with Edit and Remove. Removing asks for confirmation and never deletes user files; the last vault cannot be removed.
+- Form (`/settings/vaults/new`, `/settings/vaults/:id/edit`): a kind chooser (only "Local folder" today; each remote provider adds one descriptor and one form), then the kind's form. The local form takes a name and, on desktop, an optional folder; without a folder the vault is stored inside the app, which is the only option on mobile.
+
+## 7. Vault Unavailable View (dashboard)
+- Shown instead of the dashboard when the selected vault cannot be opened: the reason and an "Open vault settings" button. Other vaults stay reachable from the switcher.

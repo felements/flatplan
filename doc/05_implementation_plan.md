@@ -5,7 +5,7 @@ This document breaks down the development phases. When feeding this to an AI ass
 ## Phase 1: Setup & Storage Models
 1. **Init**: Create a new Flutter desktop project. Add dependencies: `hooks_riverpod`, `go_router`, `freezed`, `yaml`, `path_provider`.
 2. **Models Directory (`lib/src/models/`)**: Implement the data classes (`Period`, `Category`, `PlannedExpense`, `FactExpense`) using `freezed` or standard Dart data classes with JSON/YAML serialization.
-3. **Storage Directory (`lib/src/storage/`)**: Create a `PeriodRepository` that can read/write these models to `.yaml` files in the app's documents directory. Sort dictionary keys alphabetically before saving.
+3. **Storage Directory (`lib/src/storage/`)**: Create a `PeriodRepository` that can read/write these models to `.yaml` files through a `VaultWorkspace` over the selected vault. Sort dictionary keys alphabetically before saving.
 
 ## Phase 2: Core Logic & State Management
 1. **Logic Directory (`lib/src/logic/`)**: Implement the rollover logic functions (create next period from current period/template, filtering `isOneTime` items, resetting `isCompleted`).
@@ -29,3 +29,12 @@ This document breaks down the development phases. When feeding this to an AI ass
 ## Phase 5: Polish & Template Management
 1. **Settings / Initialization View**: Build the screen to define the `template.yaml` and generate new months.
 2. **Polish**: Add empty states, error handling for corrupted YAML files, and configure window sizing for Desktop targets (`window_manager` or `desktop_window` package). Ensure the UI is clean to match a modern desktop experience.
+
+## Phase 6: Vaults & Storage Abstraction (completed)
+Named vaults with a sidebar switcher and a manage screen, the `VaultWorkspace` abstraction under the repository, the vault registry with migration from the single-folder setting, and the provider-independent sync engine (`lib/src/sync/`). Designed and executed from `docs/superpowers/specs/2026-09-16-vaults-and-storage-abstraction-design.md` and its plan.
+
+## Phase 7: Candidates (not started)
+1. **First remote provider**: WebDAV is the simplest and exercises the non-atomic path; GitLab is the simplest atomic one. Preconditions recorded in the spec's follow-ups: the keychain-backed `VaultSecrets`, and a lock between local writes and the engine's per-file pull resolution.
+2. **Android target and responsive shell**: the 220 px sidebar becomes a drawer or bottom navigation on narrow widths.
+3. **Per-file conflict chooser** ("keep mine / take theirs") on top of the newest-wins policy.
+4. **Android user-picked folders** through the Storage Access Framework.
