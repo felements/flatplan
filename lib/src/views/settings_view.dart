@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -121,6 +122,15 @@ class SettingsView extends HookConsumerWidget {
                   'vaults from the bottom of the sidebar.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/settings/vaults'),
+                    icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                    label: const Text('Manage vaults'),
                   ),
                 ),
               ],
