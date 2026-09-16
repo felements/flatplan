@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flatplan/src/providers/gitlab_connect_controller.dart';
@@ -8,6 +9,22 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'sync/gitlab/fake_gitlab.dart';
+
+/// Wraps [inner] so any request matched by [when] blocks until [gate]
+/// completes, then forwards a fresh (never-finalized) copy of the request.
+http.Client pausing(
+  http.Client inner, {
+  required bool Function(http.Request) when,
+  required Completer<void> gate,
+}) {
+  return MockClient((request) async {
+    if (when(request)) await gate.future;
+    final forwarded = http.Request(request.method, request.url)
+      ..headers.addAll(request.headers)
+      ..bodyBytes = request.bodyBytes;
+    return inner.send(forwarded).then(http.Response.fromStream);
+  });
+}
 
 void main() {
   late FakeGitLab gitlab;
@@ -187,5 +204,63 @@ void main() {
     expect(controller.connectError, isNull);
     expect(controller.token, gitlab.validToken);
     expect(gitlab.calls.last, 'GET /api/v4/projects/42');
+  });
+
+  test('busy stays true while an overlapping search finishes before a slower selection', () async {
+    final gate = Completer<void>();
+    final client = pausing(
+      gitlab.client,
+      when: (r) => r.url.path.contains('/repository/branches'),
+      gate: gate,
+    );
+    controller = make(client: client)
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+    await controller.connect(gitlab.validToken);
+
+    final selecting = controller.selectProject(controller.projects.single);
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.busy, isTrue);
+
+    await controller.search('');
+    expect(controller.busy, isTrue, reason: 'selectProject is still awaiting the paused branches call');
+
+    gate.complete();
+    await selecting;
+    expect(controller.busy, isFalse);
+  });
+
+  test('a disposed controller ignores a debounced search finishing later', () async {
+    final gate = Completer<void>();
+    final client = pausing(
+      gitlab.client,
+      when: (r) => r.url.queryParameters['search'] == 'x',
+      gate: gate,
+    );
+    controller = make(client: client)
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+    await controller.connect(gitlab.validToken);
+
+    final future = controller.search('x').timeout(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    controller.dispose();
+    gate.complete();
+
+    // Must resolve without throwing: notifyListeners() must not fire on a
+    // disposed ChangeNotifier once the paused request finally answers.
+    await future;
+  });
+
+  test('search does not hang when a later query supersedes it', () async {
+    await controller.connect(gitlab.validToken);
+    gitlab.calls.clear();
+
+    final first = controller.search('a').timeout(const Duration(seconds: 2));
+    final second = controller.search('ab').timeout(const Duration(seconds: 2));
+    await Future.wait([first, second]);
+
+    expect(gitlab.calls.where((c) => c.endsWith('search=a')), isEmpty);
+    expect(gitlab.calls.where((c) => c.endsWith('search=ab')), hasLength(1));
   });
 }

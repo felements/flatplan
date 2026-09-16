@@ -63,7 +63,6 @@ class GitLabConnectController extends ChangeNotifier {
   String baseUrl = GitLabSettings.gitLabCom;
   String? certFingerprint;
   ConnectStep step = ConnectStep.token;
-  bool busy = false;
   String? connectError;
   CertificateRejected? pendingCertificate;
 
@@ -80,7 +79,15 @@ class GitLabConnectController extends ChangeNotifier {
 
   GitLabApi? _api;
   Timer? _searchTimer;
+  Completer<void>? _searchCompleter;
   String? _pendingToken;
+  int _inFlight = 0;
+  bool _disposed = false;
+
+  /// True while any `_run`-driven action is in flight, even when several
+  /// overlap (e.g. a debounced search finishing while a slower selection
+  /// is still awaiting the network).
+  bool get busy => _inFlight > 0;
 
   GitLabConnectController({required this.apiFactory, GitLabSettings? existing}) {
     if (existing != null) {
@@ -104,12 +111,12 @@ class GitLabConnectController extends ChangeNotifier {
   void setSelfHosted(bool value) {
     selfHosted = value;
     if (!value) baseUrl = GitLabSettings.gitLabCom;
-    notifyListeners();
+    _notify();
   }
 
   void setBaseUrl(String raw) {
     baseUrl = GitLabSettings.normalizeBaseUrl(raw);
-    notifyListeners();
+    _notify();
   }
 
   GitLabSettings _probeSettings() => GitLabSettings(
@@ -156,7 +163,7 @@ class GitLabConnectController extends ChangeNotifier {
     if (offer == null || candidate == null) return;
     certFingerprint = offer.fingerprint;
     pendingCertificate = null;
-    notifyListeners();
+    _notify();
     if (step == ConnectStep.target) {
       await verifyReplacementToken(candidate);
     } else {
@@ -166,12 +173,18 @@ class GitLabConnectController extends ChangeNotifier {
 
   void dismissCertificate() {
     pendingCertificate = null;
-    notifyListeners();
+    _notify();
   }
 
+  /// Debounced by [searchDebounce]. A call superseded before its timer
+  /// fires completes immediately (with no request sent) so its caller
+  /// never hangs waiting on a query that was replaced.
   Future<void> search(String query) {
     _searchTimer?.cancel();
+    final previous = _searchCompleter;
+    if (previous != null && !previous.isCompleted) previous.complete();
     final completer = Completer<void>();
+    _searchCompleter = completer;
     _searchTimer = Timer(searchDebounce, () async {
       await _run(() async {
         final api = _api;
@@ -185,7 +198,7 @@ class GitLabConnectController extends ChangeNotifier {
           }
         }
       });
-      completer.complete();
+      if (!completer.isCompleted) completer.complete();
     });
     return completer.future;
   }
@@ -203,7 +216,7 @@ class GitLabConnectController extends ChangeNotifier {
 
   void selectBranch(String name) {
     branch = name;
-    notifyListeners();
+    _notify();
     final api = _api;
     if (api != null) unawaited(_run(() => _checkFolder(api)));
   }
@@ -268,11 +281,13 @@ class GitLabConnectController extends ChangeNotifier {
     certFingerprint: certFingerprint,
   );
 
-  /// Runs one wizard action: sets [busy], maps every failure to
-  /// [connectError] or [pendingCertificate], and notifies.
+  /// Runs one wizard action: tracks [busy] (reentrant-safe via a counter,
+  /// since a debounced search may finish while a slower action is still in
+  /// flight), maps every failure to [connectError] or [pendingCertificate],
+  /// and notifies. Never touches the widget tree once disposed.
   Future<void> _run(Future<void> Function() action) async {
-    busy = true;
-    notifyListeners();
+    _inFlight++;
+    _notify();
     try {
       await action();
     } on CertificateRejected catch (e) {
@@ -284,13 +299,22 @@ class GitLabConnectController extends ChangeNotifier {
     } on GitLabApiException catch (e) {
       connectError = e.message;
     } finally {
-      busy = false;
-      notifyListeners();
+      _inFlight--;
     }
+    _notify();
+  }
+
+  /// [notifyListeners] guarded against firing once disposed: a debounced
+  /// search's timer callback, or an action it started, can still resolve
+  /// after the widget that owns this controller has torn it down.
+  void _notify() {
+    if (_disposed) return;
+    notifyListeners();
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _searchTimer?.cancel();
     super.dispose();
   }
