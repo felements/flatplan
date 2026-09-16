@@ -8,12 +8,12 @@ part of 'open_vault_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Remote kinds this build can open. Empty until a provider registers.
+/// Remote kinds this build can open.
 
 @ProviderFor(remoteStoreRegistry)
 final remoteStoreRegistryProvider = RemoteStoreRegistryProvider._();
 
-/// Remote kinds this build can open. Empty until a provider registers.
+/// Remote kinds this build can open.
 
 final class RemoteStoreRegistryProvider
     extends
@@ -23,7 +23,7 @@ final class RemoteStoreRegistryProvider
           RemoteStoreRegistry
         >
     with $Provider<RemoteStoreRegistry> {
-  /// Remote kinds this build can open. Empty until a provider registers.
+  /// Remote kinds this build can open.
   RemoteStoreRegistryProvider._()
     : super(
         from: null,
@@ -59,7 +59,7 @@ final class RemoteStoreRegistryProvider
 }
 
 String _$remoteStoreRegistryHash() =>
-    r'd3b1943baf1b327f63feda233e080976f1717a32';
+    r'3fc706a161957f62ffe75dbf6aff00d76b479fe5';
 
 @ProviderFor(vaultResolver)
 final vaultResolverProvider = VaultResolverProvider._();

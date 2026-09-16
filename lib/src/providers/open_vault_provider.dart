@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../storage/vault_resolver.dart';
+import '../sync/gitlab/gitlab_provider.dart';
 import '../sync/remote_store.dart';
 import '../sync/sync_status.dart';
 import 'app_paths_provider.dart';
@@ -10,9 +11,13 @@ import 'vaults_provider.dart';
 
 part 'open_vault_provider.g.dart';
 
-/// Remote kinds this build can open. Empty until a provider registers.
+/// Remote kinds this build can open.
 @Riverpod(keepAlive: true)
-RemoteStoreRegistry remoteStoreRegistry(Ref ref) => RemoteStoreRegistry();
+RemoteStoreRegistry remoteStoreRegistry(Ref ref) {
+  final registry = RemoteStoreRegistry();
+  registerGitLabProvider(registry);
+  return registry;
+}
 
 @Riverpod(keepAlive: true)
 Future<VaultResolver> vaultResolver(Ref ref) async {

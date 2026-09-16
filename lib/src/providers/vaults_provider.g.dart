@@ -51,20 +51,20 @@ final class VaultRegistryServiceProvider
 String _$vaultRegistryServiceHash() =>
     r'b812629d0e21fea359b3915e3b606db21f3185d1';
 
-/// Secret storage for remote vaults. In-memory until the first remote
-/// provider brings the keychain implementation.
+/// Secret storage for remote vaults: the platform keychain or keystore.
+/// Tests override this with [MemoryVaultSecrets].
 
 @ProviderFor(vaultSecrets)
 final vaultSecretsProvider = VaultSecretsProvider._();
 
-/// Secret storage for remote vaults. In-memory until the first remote
-/// provider brings the keychain implementation.
+/// Secret storage for remote vaults: the platform keychain or keystore.
+/// Tests override this with [MemoryVaultSecrets].
 
 final class VaultSecretsProvider
     extends $FunctionalProvider<VaultSecrets, VaultSecrets, VaultSecrets>
     with $Provider<VaultSecrets> {
-  /// Secret storage for remote vaults. In-memory until the first remote
-  /// provider brings the keychain implementation.
+  /// Secret storage for remote vaults: the platform keychain or keystore.
+  /// Tests override this with [MemoryVaultSecrets].
   VaultSecretsProvider._()
     : super(
         from: null,
@@ -98,7 +98,7 @@ final class VaultSecretsProvider
   }
 }
 
-String _$vaultSecretsHash() => r'dfd6be2f498f33f6e20e254f9b833fbc0b8bfa1e';
+String _$vaultSecretsHash() => r'c425ce8fe6a3c3bf08a8eff37a6021ad826bc89d';
 
 /// The vault registry: every known vault and which one is selected.
 
