@@ -328,7 +328,8 @@ Runs on vault open, on "Sync now", and always as the first step of a push.
    and the baseline version. Build the batch: `put` with
    `expectedVersion` from the baseline, or `delete` when the file is gone
    locally. A name that is dirty, absent locally, and absent from the
-   baseline produces no change and simply leaves `dirty`.
+   baseline was created and deleted before it was ever pushed: it produces
+   no change and is dropped from `dirty`.
 4. `writeBatch`. On success: update each baseline entry with the returned
    version and the pushed content hash, and remove a name from `dirty`
    only if its current content hash still equals the snapshot's. Write the
@@ -383,7 +384,7 @@ divider, "Manage vaults…". Selecting a vault calls `select(id)`.
 
 Three routes in the existing Settings branch of the router:
 
-- `/settings/vaults`. A list. Each row: name, a location line ("~/Documents/budget", or later "GitLab · group/repo/budget"), a status chip (access error, sync state), and an overflow menu with Edit and Remove. A "New vault" button. Remove asks for confirmation and repeats that files are not deleted. Removing the last vault is disabled with a hint.
+- `/settings/vaults`. A list. Each row: name, a location line ("~/Documents/budget", or later "GitLab · group/repo/budget"), a status chip (access error, sync state), a "Sync now" button on remote vaults, and an overflow menu with Edit and Remove. A "New vault" button. Remove asks for confirmation and repeats that files are not deleted. Removing the last vault is disabled with a hint.
 - `/settings/vaults/new`. A kind chooser followed by the kind's form. The chooser is driven by a `VaultKindDescriptor` list (kind, label, icon, form builder). This spec registers one descriptor, **Local folder**. A provider spec adds one descriptor and one form, and nothing else in the UI changes.
 - `/settings/vaults/:id/edit`. The same form, pre-filled. For a remote vault of an unknown kind, the form shows only the name and the "not supported" notice.
 
@@ -432,7 +433,7 @@ Errors surface. Nothing falls back silently.
 
 - Registry unreadable or corrupt: rename it to `vaults.json.broken`, start
   with a fresh registry holding the default local vault, show a one-time
-  banner naming the broken file. User files are untouched.
+  banner on the dashboard naming the broken file. User files are untouched.
 - Vault cannot be resolved: see section 4.
 - Sync errors: recorded in the journal, shown in the switcher status and
   on the manage list, never thrown into period editing.
