@@ -3,7 +3,7 @@
 This document provides context for future AI assistants continuing the development of FlatPlan. Always read this file before proceeding with new implementation phases.
 
 ## Current Progress
-- **Stages 1 through 5** are **COMPLETED**.
+- **Stages 1 through 5** and **Phase 6 (vaults and the storage abstraction)** are **COMPLETED**.
 - The project is initialized as a Flutter application with Desktop support (Windows, macOS, Linux).
 - The full routing (GoRouter) and responsive `AppShell` with a 220 px dark sidebar is live.
 - The Dashboard, Category Details, and Settings pages are live, tracking dynamic expenditures mapping via Riverpod.
@@ -31,9 +31,6 @@ See [`07_domain_glossary.md`](07_domain_glossary.md) for a full reference of all
 
 ## Next Steps
 
-The defined original implementation pipeline (`05_implementation_plan.md`) is now fully built out. 
+The original pipeline (`05_implementation_plan.md`) and Phase 6 (vaults) are built out. `05_implementation_plan.md` lists the Phase 7 candidates: the first remote provider (WebDAV or GitLab), the Android target with a responsive shell, a per-file conflict chooser, and Storage Access Framework folders on Android. Each starts with its own spec under `docs/superpowers/specs/`.
 
-When resuming development, you should work with the user to outline **Post-Launch Feature Requests / Upgrades (Phase 6)**. This could involve items like:
-- Integrating Charts for visual analytics.
-- Defining strict `template.yaml` fallback parsing when the user deletes the active tracking period from disk manually.
-- Building the UI implementation for deleting a specific `FactExpense`.
+Other open ideas: charts for visual analytics, and strict `template.yaml` fallback parsing when the user deletes the active period file by hand.

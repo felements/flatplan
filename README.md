@@ -60,8 +60,8 @@ Flatplan is **not** for you if you are looking for:
 
 Flatplan doesn't use a database. Your entire setup lives in a **vault**: a named folder of period files. Keep several vaults (home, a side project, a shared household) and switch between them from the sidebar.
 
-* `period-2025-10.yaml`: The data file for October 2025. Holds your **planned** amounts for the month and a column for your **actual** spending.
-* `period-2025-11.yaml`: The data file for November 2025, rolled over from October's plan.
+* `2025-10-october.yaml`: The data file for October 2025. Holds your **planned** amounts for the month and a column for your **actual** spending.
+* `2025-11-november.yaml`: The data file for November 2025, rolled over from October's plan.
 * ...and so on.
 
 > 🔜 **Planned:** A persistent `template.yaml` — a reusable master template that seeds every new period automatically instead of copying from the previous one.

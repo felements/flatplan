@@ -14,14 +14,14 @@ Your financial planning in "flat" files. A simple, offline, privacy-first person
 
 Flatplan is a desktop personal budgeting application designed for users who value simplicity, privacy, and full control over their financial data.
 
-Unlike most financial apps, Flatplan does not use mandatory cloud services, subscriptions, or proprietary databases. Instead, your entire financial life—plans, categories, and expenses—is stored securely in human-readable YAML files directly in a folder on your Windows PC. 
+Unlike most financial apps, Flatplan does not use mandatory cloud services, subscriptions, or proprietary databases. Instead, your entire financial life—plans, categories, and expenses—is stored securely in human-readable YAML files directly in a folder on your Windows PC. Keep several such folders (vaults) and switch between them. 
 
 It implements the time-tested "Plan vs. Fact" (or "envelope") budgeting method without the confusing bloat of complex double-entry accounting. It's the perfect solution for tech-savvy users, privacy advocates, and anyone who prefers to manage their data transparently.
 
 🏛️ The "Local-First" Philosophy
 1. You Own Your Data: Your financial data lives only on your PC. No third-party servers, ever.
 2. Total Transparency: By using local YAML files, you can view (and even edit) your data in any plain text editor at any time.
-3. Sync Freedom: You decide how to sync your budget folder. Keep it local, use OneDrive, Dropbox, Syncthing, or even Git. The app doesn't lock you into a proprietary sync service.
+3. Sync Freedom: You decide how to sync your budget folder. Keep it local, use OneDrive, Dropbox, Syncthing, or even Git; connecting a vault straight to your own Git repository or cloud storage is on the roadmap. The app doesn't lock you into a proprietary sync service.
 4. Private by Default: The app requires no registration, does not link to your bank accounts, and respects your privacy.
 
 ✨ Key Features
