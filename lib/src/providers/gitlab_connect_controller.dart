@@ -80,6 +80,7 @@ class GitLabConnectController extends ChangeNotifier {
   GitLabApi? _api;
   Timer? _searchTimer;
   Completer<void>? _searchCompleter;
+  int _searchSeq = 0;
   String? _pendingToken;
   int _inFlight = 0;
   bool _disposed = false;
@@ -178,21 +179,29 @@ class GitLabConnectController extends ChangeNotifier {
 
   /// Debounced by [searchDebounce]. A call superseded before its timer
   /// fires completes immediately (with no request sent) so its caller
-  /// never hangs waiting on a query that was replaced.
+  /// never hangs waiting on a query that was replaced. A call superseded
+  /// *after* its timer fired but while its network call is still in
+  /// flight is left to finish, but [_searchSeq] stops its stale answer
+  /// from overwriting [projects] once a newer search has taken over.
   Future<void> search(String query) {
     _searchTimer?.cancel();
     final previous = _searchCompleter;
     if (previous != null && !previous.isCompleted) previous.complete();
     final completer = Completer<void>();
     _searchCompleter = completer;
+    final seq = ++_searchSeq;
     _searchTimer = Timer(searchDebounce, () async {
       await _run(() async {
         final api = _api;
         if (api == null) return;
-        projects = await api.searchProjects(query);
+        final found = await api.searchProjects(query);
+        if (seq != _searchSeq) return;
+        projects = found;
         if (projects.isEmpty && query.contains('/')) {
           try {
-            projects = [await api.projectByPath(query.trim())];
+            final byPath = await api.projectByPath(query.trim());
+            if (seq != _searchSeq) return;
+            projects = [byPath];
           } on GitLabApiException catch (e) {
             if (e.status != 404) rethrow;
           }
@@ -284,8 +293,12 @@ class GitLabConnectController extends ChangeNotifier {
   /// Runs one wizard action: tracks [busy] (reentrant-safe via a counter,
   /// since a debounced search may finish while a slower action is still in
   /// flight), maps every failure to [connectError] or [pendingCertificate],
-  /// and notifies. Never touches the widget tree once disposed.
+  /// and notifies. Never touches the widget tree once disposed; an action
+  /// already in flight when disposal happens is left to finish (its state
+  /// mutations are harmless once nothing is listening), but no new one
+  /// starts once [_disposed].
   Future<void> _run(Future<void> Function() action) async {
+    if (_disposed) return;
     _inFlight++;
     _notify();
     try {
@@ -300,8 +313,12 @@ class GitLabConnectController extends ChangeNotifier {
       connectError = e.message;
     } finally {
       _inFlight--;
+      // A plain call is fine in `finally` (only return/break/continue trip
+      // the control_flow_in_finally lint); this guarantees every listener
+      // sees `busy` fall back to false even when an untyped exception
+      // (e.g. a bang-operator failure) propagates past the catches above.
+      _notify();
     }
-    _notify();
   }
 
   /// [notifyListeners] guarded against firing once disposed: a debounced

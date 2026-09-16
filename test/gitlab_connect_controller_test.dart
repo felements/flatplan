@@ -26,6 +26,18 @@ http.Client pausing(
   });
 }
 
+/// A [GitLabApi] whose `searchProjects` always throws an exception type
+/// `_run` does not specifically handle, to prove `busy` still falls back
+/// to false when that happens.
+class ThrowingApi extends GitLabApi {
+  ThrowingApi() : super(client: http.Client(), baseUrl: 'https://example.test', token: 't');
+
+  @override
+  Future<List<ProjectSummary>> searchProjects(String query) {
+    throw StateError('boom');
+  }
+}
+
 void main() {
   late FakeGitLab gitlab;
   late GitLabConnectController controller;
@@ -262,5 +274,50 @@ void main() {
 
     expect(gitlab.calls.where((c) => c.endsWith('search=a')), isEmpty);
     expect(gitlab.calls.where((c) => c.endsWith('search=ab')), hasLength(1));
+  });
+
+  test('busy still notifies false when an untyped exception escapes _run', () async {
+    final busyHistory = <bool>[];
+    controller = GitLabConnectController(
+      apiFactory: ({required settings, required token}) => ThrowingApi(),
+    );
+    controller.addListener(() => busyHistory.add(controller.busy));
+
+    await expectLater(controller.connect('t'), throwsStateError);
+
+    expect(busyHistory.last, isFalse);
+  });
+
+  test('a stale search response does not overwrite newer results', () async {
+    gitlab.searchResults = [
+      {'id': 1, 'name': 'apple', 'path_with_namespace': 'group/apple', 'default_branch': 'main', 'empty_repo': false},
+      {'id': 2, 'name': 'crab', 'path_with_namespace': 'group/crab', 'default_branch': 'main', 'empty_repo': false},
+    ];
+    final gate = Completer<void>();
+    // Only the query='a' request pauses; connect()'s search='' and the
+    // later search='ab' both go straight through.
+    final client = pausing(
+      gitlab.client,
+      when: (r) => r.url.queryParameters['search'] == 'a',
+      gate: gate,
+    );
+    controller = make(client: client)
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+    await controller.connect(gitlab.validToken);
+
+    final first = controller.search('a');
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+
+    final second = controller.search('ab');
+    await second;
+    expect(controller.projects.single.name, 'crab');
+
+    // Release the paused 'a' request. Its answer is now stale and must
+    // not clobber the 'ab' result already applied above.
+    gate.complete();
+    await first;
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(controller.projects.single.name, 'crab');
   });
 }
