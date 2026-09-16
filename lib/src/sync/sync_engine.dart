@@ -58,8 +58,82 @@ class SyncEngine {
     }
   }
 
-  /// Sends every dirty file to the remote as one batch. Lands in Task 8.
-  Future<SyncFailure?> push() => throw UnimplementedError();
+  /// Sends every dirty file to the remote as one batch, pulling first so
+  /// conflicts are settled locally. Retries up to [maxConflictRounds] when
+  /// the remote moved underneath. Never throws.
+  Future<SyncFailure?> push() async {
+    try {
+      for (var round = 1; round <= maxConflictRounds; round++) {
+        if (journal.dirty.isEmpty) return await _succeed();
+        await _pull();
+        final snapshot = await _snapshot();
+        if (snapshot.changes.isEmpty) return await _succeed();
+        try {
+          final versions = await remote.writeBatch(snapshot.changes);
+          await _commit(snapshot, versions);
+          journal.lastPushAt = policy.now();
+          return await _succeed();
+        } on RemoteConflict {
+          continue;
+        }
+      }
+      return await _recordFailure(
+        StateError('The remote kept changing during sync; will retry later.'),
+      );
+    } catch (e) {
+      return _recordFailure(e);
+    }
+  }
+
+  Future<SyncFailure?> _succeed() async {
+    journal.lastError = null;
+    await journal.save();
+    return null;
+  }
+
+  /// What is about to be pushed: the batch, plus the hash of each pushed
+  /// content (null for a delete) so a later edit can be told apart.
+  Future<_Snapshot> _snapshot() async {
+    final changes = <RemoteChange>[];
+    final hashes = <String, String?>{};
+    for (final name in journal.dirty.toList()) {
+      final base = journal.baseline[name];
+      if (await mirror.exists(name)) {
+        final content = await mirror.readString(name);
+        changes.add(
+          RemotePut(name: name, content: content, expectedVersion: base?.version),
+        );
+        hashes[name] = contentHash(content);
+      } else if (base != null) {
+        changes.add(RemoteDelete(name: name, expectedVersion: base.version));
+        hashes[name] = null;
+      } else {
+        // Created and deleted before it was ever pushed.
+        journal.dirty.remove(name);
+      }
+    }
+    return _Snapshot(changes: changes, hashes: hashes);
+  }
+
+  Future<void> _commit(_Snapshot snapshot, Map<String, String> versions) async {
+    for (final entry in snapshot.hashes.entries) {
+      final name = entry.key;
+      final pushedHash = entry.value;
+      if (pushedHash == null) {
+        journal.baseline.remove(name);
+      } else {
+        final version = versions[name];
+        if (version != null) {
+          journal.baseline[name] =
+              JournalEntry(version: version, contentHash: pushedHash);
+        }
+      }
+      final currentHash = await mirror.exists(name)
+          ? contentHash(await mirror.readString(name))
+          : null;
+      if (currentHash == pushedHash) journal.dirty.remove(name);
+    }
+  }
 
   Future<SyncFailure> _recordFailure(Object error) async {
     final failure = SyncFailure.from(error);
@@ -145,4 +219,11 @@ class SyncEngine {
     }
     journal.dirty.add(sideName);
   }
+}
+
+class _Snapshot {
+  final List<RemoteChange> changes;
+  final Map<String, String?> hashes;
+
+  const _Snapshot({required this.changes, required this.hashes});
 }
