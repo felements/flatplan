@@ -154,7 +154,9 @@ class LocalVaultForm extends HookConsumerWidget {
         dialogTitle: 'Select vault folder',
       );
       if (picked == null) return;
+      if (!context.mounted) return;
       final resolver = await ref.read(vaultResolverProvider.future);
+      if (!context.mounted) return;
       pickedBookmark.value = await resolver.bookmarkFor(picked);
       pickedPath.value = picked;
     }
@@ -166,26 +168,35 @@ class LocalVaultForm extends HookConsumerWidget {
         return;
       }
       saving.value = true;
-      final id = existing?.id ?? const Uuid().v4();
-      final paths = await ref.read(appPathsProvider.future);
-      final vault = Vault(
-        id: id,
-        name: trimmed,
-        location: VaultLocation.local(
-          path: pickedPath.value ?? paths.mirrorFor(id),
-          bookmark: pickedBookmark.value,
-        ),
-        createdAt: existing?.createdAt ?? DateTime.now(),
-      );
-      final vaults = ref.read(vaultsProvider.notifier);
-      if (existing == null) {
-        await vaults.add(vault);
-      } else {
-        await vaults.updateVault(vault);
+      try {
+        final id = existing?.id ?? const Uuid().v4();
+        final paths = await ref.read(appPathsProvider.future);
+        final vault = Vault(
+          id: id,
+          name: trimmed,
+          location: VaultLocation.local(
+            path: pickedPath.value ?? paths.mirrorFor(id),
+            bookmark: pickedBookmark.value,
+          ),
+          createdAt: existing?.createdAt ?? DateTime.now(),
+        );
+        final vaults = ref.read(vaultsProvider.notifier);
+        if (existing == null) {
+          await vaults.add(vault);
+        } else {
+          await vaults.updateVault(vault);
+        }
+        if (!context.mounted) return;
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) navigator.pop();
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not save the vault: $e')));
+      } finally {
+        if (context.mounted) saving.value = false;
       }
-      if (!context.mounted) return;
-      final navigator = Navigator.of(context);
-      if (navigator.canPop()) navigator.pop();
     }
 
     return Material(

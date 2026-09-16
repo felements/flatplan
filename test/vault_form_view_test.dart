@@ -13,6 +13,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'support/fake_vaults.dart';
 
+/// A [FakeVaults] whose registry is read-only: every mutation throws, so
+/// tests can exercise the form's error path.
+class _ThrowingVaults extends FakeVaults {
+  _ThrowingVaults(super.registry);
+
+  @override
+  Future<void> add(Vault vault) async {
+    throw StateError('registry is read-only');
+  }
+}
+
 void main() {
   const paths = AppPaths(appSupportDir: '/support');
   final created = DateTime.utc(2026, 1, 1);
@@ -73,6 +84,44 @@ void main() {
 
     expect(find.text('Give the vault a name.'), findsOneWidget);
     expect(fakeVaults.added, isEmpty);
+  });
+
+  testWidgets('a save failure shows a snack bar and re-enables the button', (
+    tester,
+  ) async {
+    fakeVaults = _ThrowingVaults(
+      VaultRegistry(lastSelectedVaultId: 'home', vaults: [home]),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          vaultsProvider.overrideWith(() => fakeVaults),
+          appPathsProvider.overrideWith((ref) async => paths),
+          vaultResolverProvider.overrideWith(
+            (ref) async => VaultResolver(
+              paths: paths,
+              remoteStores: RemoteStoreRegistry(),
+              secrets: MemoryVaultSecrets(),
+              useBookmarks: false,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: LocalVaultForm(canPickFolder: false)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Travel');
+    await tester.tap(find.text('Create vault'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not save the vault'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNotNull,
+    );
   });
 
   testWidgets('creating without a folder puts the vault in the private area', (
