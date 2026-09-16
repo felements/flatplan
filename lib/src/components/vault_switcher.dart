@@ -46,6 +46,7 @@ class VaultSwitcher extends ConsumerWidget {
         child: PopupMenuButton<String>(
           tooltip: 'Switch vault',
           position: PopupMenuPosition.over,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           onSelected: (value) {
             if (value == manageValue) {
               onManage();

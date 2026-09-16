@@ -93,6 +93,9 @@ void main() {
     await tester.pumpWidget(app(selected: home));
     await tester.pumpAndSettle();
 
+    final button = tester.widget<PopupMenuButton<String>>(find.byType(PopupMenuButton<String>));
+    expect((button.shape as RoundedRectangleBorder).borderRadius, BorderRadius.circular(12));
+
     await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
 
