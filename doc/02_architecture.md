@@ -12,7 +12,7 @@ The app will use a **Feature-first** (layer-by-feature) architecture to maintain
 - **State Management**: `hooks_riverpod` or `riverpod` (v3 with code generators and riverpod_annotation) using Notifiers for predictable state mutations and easy testability.
 - **Routing**: `go_router` for declarative navigation between dashboard, category details, and period creation screens.
 - **Storage / File I/O**:
-  - `path_provider`: To resolve the local documents/app-data directory (or a custom git repo path selected by the user).
+  - `path_provider`: resolves the application support directory, which holds `vaults.json` and each vault's app-private area. Domain code never touches paths; it writes through `VaultWorkspace`.
   - `yaml` (parsing) and `json2yaml` (or equivalent writer) to serialize models.
   - *Note*: Ensure the YAML writer sorts keys alphabetically.
 - **Modelling**: `freezed` or `json_serializable` to generate `fromJson` / `toJson`.
@@ -32,7 +32,7 @@ The app will use a **Feature-first** (layer-by-feature) architecture to maintain
    - `periodStatsProvider`: Listens to `currentPeriodNotifier` and calculates the totals (Planned to Facts, Remaining limits, Heat indicators). Keeps complex math out of the UI.
 
 ## File System Strategy
-- User configures a **root directory** (which they can independently initialize as a git repository).
+- User keeps one or more **vaults**. A local vault is a folder (which they can independently initialize as a git repository). A remote vault is mirrored locally and synced by the engine in `lib/src/sync/`.
 - Files inside the directory:
   - `template.yaml` (The base template).
   - `YYYY_MM.yaml` (The tracking files).

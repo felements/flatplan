@@ -8,6 +8,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Vaults: keep several named folders of period files and switch between them from the sidebar. Manage them under Settings → Vaults. The existing folder becomes the first vault automatically.
+- Storage abstraction and a sync engine (local mirror, persisted change journal, newest-wins conflict handling with side files) preparing for remote vaults on GitLab, GitHub, WebDAV, S3 and Google Drive.
+
+### Changed
+- "Change Folder" and "Reset to default folder" moved into the vault's edit form.
+
 ### Planned
 - Multi-currency support
 - Improved charts and visualisations

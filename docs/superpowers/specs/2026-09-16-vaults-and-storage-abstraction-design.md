@@ -503,10 +503,27 @@ Changed: `period_repository.dart`, `period_stats_writer.dart`,
 `repository_provider.dart`, `current_period_stats_sync_provider.dart`,
 `app_router.dart`, `app_shell.dart`, `settings_view.dart`,
 `period_load_warning.dart`, `README.md`, `AGENTS.md`, `pubspec.yaml`
-(adds `flutter_secure_storage`).
+(adds `crypto`).
 
 Removed: `storage_settings_service.dart`, `storage_settings_provider.dart`
 and their tests, replaced by the registry and resolver tests.
+
+## Implementation notes
+
+Decided while planning, see `docs/superpowers/plans/2026-09-16-vaults-and-storage-abstraction.md`:
+
+- `flutter_secure_storage` is deferred to the first remote provider, the first code that stores a secret. `VaultSecrets` is the interface; `MemoryVaultSecrets` is the only implementation for now.
+- Sync status is tracked for the open vault only.
+- When the selected vault cannot be opened, the dashboard shows a dedicated "Vault unavailable" view with a button to the vault's edit form.
+- `periodRepositoryProvider` is a `Future` provider that errors with `VaultUnavailable`, so nothing runs against a placeholder folder while the vault resolves.
+- The push before switching vaults runs from `openVaultProvider`'s dispose hook, in the background, with the 5 s timeout.
+- A corrupt `sync.json` makes the engine treat every mirror file as dirty on the next pull, so a lost baseline can never cause local edits to be overwritten silently.
+- `Vaults.update` is named `updateVault`: Riverpod 3's notifier base already declares `update`.
+- `periodRepositoryProvider` disables Riverpod's default retry, otherwise a `VaultUnavailable` error would never surface.
+- `SyncScheduler.syncNow()` pulls when nothing is dirty and pushes (pulling first) otherwise; a queued re-run follows the same rule; `noteChange` keeps the current status; `flushBeforeSwitch` waits for an in-flight run before its own push, all under the 5 s timeout. A vault is opened with `syncNow()`, so changes left pending by an interrupted session are pushed on the next open.
+- `Vaults.remove` flushes and disposes the open vault's scheduler before saving the registry and only then deletes secrets and the private area, so forgetting a vault can never push remote deletions.
+- `SyncJournal.save` serialises concurrent writers over the single `sync.json.tmp`.
+- A corrupt `sync.json`, including one that parses but has a malformed entry, loads as an empty journal with `needsFullRescan` set.
 
 ## 9. Follow-ups, each its own spec
 
