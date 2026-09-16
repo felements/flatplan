@@ -559,7 +559,7 @@ import 'package:crypto/crypto.dart';
 /// push can report the new version of a file without another request.
 String gitBlobSha(String content) {
   final bytes = utf8.encode(content);
-  final header = utf8.encode('blob ${bytes.length} ');
+  final header = utf8.encode('blob ${bytes.length}\u0000');
   return sha1.convert([...header, ...bytes]).toString();
 }
 ```
