@@ -21,6 +21,7 @@ class SyncFailure {
   factory SyncFailure.from(Object error) => SyncFailure(
     message: error.toString(),
     isOffline:
+        error is RemoteUnreachable ||
         error is SocketException ||
         error is TimeoutException ||
         error is HttpException,
