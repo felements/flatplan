@@ -10,6 +10,22 @@ abstract interface class WorkspaceChangeListener {
   Future<void> onChanged(String name);
 }
 
+/// Throws [ArgumentError] unless [name] is a plain file name.
+///
+/// A workspace is flat, and names reach it from a remote store's tree
+/// listing, which a provider controls, so `../` or a subfolder must never be
+/// joined onto the vault's path.
+void assertSafeName(String name) {
+  if (name.isEmpty ||
+      name == '.' ||
+      name == '..' ||
+      name.contains('/') ||
+      name.contains(r'\') ||
+      p.basename(name) != name) {
+    throw ArgumentError.value(name, 'name', 'Not a plain file name');
+  }
+}
+
 /// The only surface domain storage code uses to touch a vault's files.
 ///
 /// Flat: names are plain file names, there are no subfolders.
@@ -59,13 +75,20 @@ class DirectoryWorkspace implements VaultWorkspace {
   }
 
   @override
-  Future<bool> exists(String name) => _file(name).exists();
+  Future<bool> exists(String name) {
+    assertSafeName(name);
+    return _file(name).exists();
+  }
 
   @override
-  Future<String> readString(String name) => _file(name).readAsString();
+  Future<String> readString(String name) {
+    assertSafeName(name);
+    return _file(name).readAsString();
+  }
 
   @override
   Future<void> writeString(String name, String content) async {
+    assertSafeName(name);
     await changeListener?.onChanged(name);
     final dir = Directory(path);
     if (!await dir.exists()) await dir.create(recursive: true);
@@ -74,6 +97,7 @@ class DirectoryWorkspace implements VaultWorkspace {
 
   @override
   Future<void> delete(String name) async {
+    assertSafeName(name);
     final file = _file(name);
     if (!await file.exists()) return;
     await changeListener?.onChanged(name);
@@ -98,10 +122,14 @@ class MemoryWorkspace implements VaultWorkspace {
   Future<List<String>> listFiles() async => files.keys.toList()..sort();
 
   @override
-  Future<bool> exists(String name) async => files.containsKey(name);
+  Future<bool> exists(String name) async {
+    assertSafeName(name);
+    return files.containsKey(name);
+  }
 
   @override
   Future<String> readString(String name) async {
+    assertSafeName(name);
     final content = files[name];
     if (content == null) {
       throw FileSystemException('File not found', name);
@@ -111,12 +139,14 @@ class MemoryWorkspace implements VaultWorkspace {
 
   @override
   Future<void> writeString(String name, String content) async {
+    assertSafeName(name);
     await changeListener?.onChanged(name);
     files[name] = content;
   }
 
   @override
   Future<void> delete(String name) async {
+    assertSafeName(name);
     if (!files.containsKey(name)) return;
     await changeListener?.onChanged(name);
     files.remove(name);

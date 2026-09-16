@@ -53,6 +53,21 @@ void runWorkspaceContract(
       expect(await ws.exists('nope.yaml'), isFalse);
     });
 
+    test('rejects names with separators or ..', () async {
+      for (final bad in ['../x.yaml', 'sub/x.yaml', '', '..']) {
+        expect(
+          () => ws.writeString(bad, 'x'),
+          throwsA(isA<ArgumentError>()),
+          reason: 'writeString must reject "$bad"',
+        );
+        expect(
+          () => ws.readString(bad),
+          throwsA(isA<ArgumentError>()),
+          reason: 'readString must reject "$bad"',
+        );
+      }
+    });
+
     test('readString of a missing file throws', () async {
       expect(() => ws.readString('nope.yaml'), throwsA(anything));
     });
