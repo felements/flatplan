@@ -110,6 +110,22 @@ void main() {
     expect(find.text('Create vault'), findsOneWidget);
   });
 
+  testWidgets('unchecking self-hosted after selecting a project resets the flow', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create vault'), findsOneWidget);
+    expect(find.text('group/repo'), findsOneWidget);
+
+    await tester.tap(find.text('Self-hosted instance'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create vault'), findsNothing);
+    expect(find.text('group/repo'), findsNothing);
+  });
+
   testWidgets('a rejected token shows the error and stays on the token step', (tester) async {
     gitlab.validToken = 'other';
     await tester.pumpWidget(app(const GitLabVaultForm()));

@@ -202,6 +202,43 @@ void main() {
     });
   });
 
+  test('changing the url after a project is selected resets the connect state', () async {
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+    expect(controller.canSave, isTrue);
+
+    controller.setBaseUrl('https://other.test');
+
+    expect(controller.canSave, isFalse);
+    expect(controller.step, ConnectStep.token);
+    expect(controller.project, isNull);
+    expect(controller.token, isNull);
+    expect(controller.branch, isNull);
+    expect(controller.projects, isEmpty);
+  });
+
+  test('unchecking self-hosted after a project is selected resets the same way', () async {
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+    controller.selectBranch('main');
+    expect(controller.canSave, isTrue);
+
+    controller.setSelfHosted(false);
+
+    expect(controller.canSave, isFalse);
+    expect(controller.step, ConnectStep.token);
+    expect(controller.project, isNull);
+    expect(controller.token, isNull);
+    expect(controller.baseUrl, GitLabSettings.gitLabCom);
+  });
+
+  test('setBaseUrl before any connect stays quiet: no reset needed', () {
+    final fresh = make();
+    fresh.setBaseUrl('https://example.test');
+    expect(fresh.step, ConnectStep.token);
+    expect(fresh.connectError, isNull);
+  });
+
   test('verifyReplacementToken checks the stored project', () async {
     final existing = GitLabSettings(baseUrl: FakeGitLab.baseUrl, projectId: 42, projectPath: 'group/repo', branch: 'main', folder: 'budget');
     controller = make(existing: existing);

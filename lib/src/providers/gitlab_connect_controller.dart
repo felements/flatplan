@@ -112,12 +112,35 @@ class GitLabConnectController extends ChangeNotifier {
   void setSelfHosted(bool value) {
     selfHosted = value;
     if (!value) baseUrl = GitLabSettings.gitLabCom;
+    _resetConnectionIfAdvanced();
     _notify();
   }
 
   void setBaseUrl(String raw) {
     baseUrl = GitLabSettings.normalizeBaseUrl(raw);
+    _resetConnectionIfAdvanced();
     _notify();
+  }
+
+  /// Changing which server the form points at must never leave `project`,
+  /// `branch` or `token` verified against the *previous* server: without
+  /// this, `canSave` would stay true and a save could combine the new
+  /// `baseUrl` with the old host's project id/path and token. A no-op
+  /// while still at the token step with nothing verified yet, so typing
+  /// the url before the first connect stays quiet.
+  void _resetConnectionIfAdvanced() {
+    if (step == ConnectStep.token && token == null) return;
+    token = null;
+    _api = null;
+    projects = const [];
+    project = null;
+    branches = const [];
+    branch = null;
+    folderCheck = null;
+    suggestedName = null;
+    connectError = null;
+    pendingCertificate = null;
+    step = ConnectStep.token;
   }
 
   GitLabSettings _probeSettings() => GitLabSettings(

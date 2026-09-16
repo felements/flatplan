@@ -133,7 +133,16 @@ class GitLabVaultForm extends HookConsumerWidget {
             controlAffinity: ListTileControlAffinity.leading,
             title: const Text('Self-hosted instance'),
             value: controller.selfHosted,
-            onChanged: isEdit ? null : (v) => controller.setSelfHosted(v ?? false),
+            onChanged: isEdit
+                ? null
+                : (v) {
+                    final checked = v ?? false;
+                    controller.setSelfHosted(checked);
+                    // Re-checking must re-sync the controller with
+                    // whatever the (still-mounted) url field shows,
+                    // rather than leaving it on gitlab.com.
+                    if (checked) controller.setBaseUrl(url.text);
+                  },
           ),
           if (controller.selfHosted) ...[
             TextField(
