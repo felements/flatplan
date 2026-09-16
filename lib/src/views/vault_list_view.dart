@@ -99,8 +99,14 @@ class VaultListView extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed == true) {
+    if (confirmed != true) return;
+    try {
       await ref.read(vaultsProvider.notifier).remove(vault.id);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not remove "${vault.name}": $e')),
+      );
     }
   }
 }

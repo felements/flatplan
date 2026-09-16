@@ -105,4 +105,41 @@ void main() {
     );
     expect(item.enabled, isFalse);
   });
+
+  testWidgets('shows an error snack bar when remove fails', (tester) async {
+    final throwingVaults = _ThrowingVaults(
+      VaultRegistry(lastSelectedVaultId: home.id, vaults: [home, future]),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          vaultsProvider.overrideWith(() => throwingVaults),
+          openVaultProvider.overrideWith(
+            (ref) async =>
+                OpenVault(vault: home, workspace: MemoryWorkspace()),
+          ),
+        ],
+        child: const MaterialApp(home: VaultListView()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not remove "Future"'), findsOneWidget);
+  });
+}
+
+class _ThrowingVaults extends FakeVaults {
+  _ThrowingVaults(super.registry);
+
+  @override
+  Future<void> remove(String id) async =>
+      throw StateError('disk is read-only');
 }
