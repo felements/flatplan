@@ -176,13 +176,15 @@ class SyncEngine {
         contentHash: contentHash(remoteFile.content),
       );
 
-      if (!journal.dirty.contains(name)) {
-        await mirror.writeString(name, remoteFile.content);
-        journal.baseline[name] = remoteEntry;
-        continue;
-      }
-
+      // One acquisition per name, covering the dirty check as well: a
+      // local save that starts mid-pull must either be seen here or wait
+      // and re-mark the name dirty, never be overwritten in between.
       await lock.synchronized(() async {
+        if (!journal.dirty.contains(name)) {
+          await mirror.writeString(name, remoteFile.content);
+          journal.baseline[name] = remoteEntry;
+          return;
+        }
         final local =
             await mirror.exists(name) ? await mirror.readString(name) : null;
         if (local == remoteFile.content) {
@@ -197,9 +199,11 @@ class SyncEngine {
 
     for (final name in journal.baseline.keys.toList()) {
       if (tree.containsKey(name)) continue;
-      journal.baseline.remove(name);
-      if (journal.dirty.contains(name)) continue; // push re-creates it
-      await mirror.delete(name);
+      await lock.synchronized(() async {
+        journal.baseline.remove(name);
+        if (journal.dirty.contains(name)) return; // push re-creates it
+        await mirror.delete(name);
+      });
     }
 
     journal.lastPullAt = policy.now();

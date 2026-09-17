@@ -216,11 +216,15 @@ method, `Future<T> synchronized<T>(Future<T> Function() action)`.
 
 - `DirectoryWorkspace` accepts an optional `lock`. `writeString` and
   `delete` run the file operation and the change-listener call inside it.
-- `SyncEngine` accepts an optional `lock`. In `_pull`, the block that
-  handles a dirty name (read the local copy, compare, resolve, update the
-  journal) runs inside it. Pulled files that are not dirty are written
-  outside the lock, as today. In `_snapshot`, reading each dirty file runs
-  inside it too, so the hash the engine records matches the bytes it sent.
+- `SyncEngine` accepts an optional `lock`. In `_pull`, every name is
+  handled under one acquisition of it: the dirty check itself, then either
+  the plain write of a clean file or the compare-and-resolve of a dirty
+  one, and the journal update. A local save that starts mid-pull therefore
+  either is seen by the dirty check or waits for the lock and re-marks the
+  name dirty; it can never be overwritten in between. Removing a file the
+  remote deleted takes the lock the same way. In `_snapshot`, reading each
+  dirty file runs inside it too, so the hash the engine records matches the
+  bytes it sent.
 - `VaultResolver._openRemote` creates one `Lock` per vault and passes it to
   the app-facing workspace and to the engine. The engine's own mirror
   workspace does not take the lock: the engine already holds it when it
