@@ -24,7 +24,7 @@ Flatplan is built on a few key principles:
 
 1.  **💻 You Own Your Data.** Your budget lives in plain files in a place you choose: a folder on your device, or your own private storage such as a Git repository, a WebDAV server, or an S3 bucket. FlatPlan runs no server of its own and never sees your data.
 2.  **✨ Total Transparency:** By using YAML, you can view (and even edit) your data in a plain text editor at any time.
-3.  **🔄 Sync Freedom.** Keep it local and sync with **Git**, **Syncthing** or **Dropbox** as you do today, or point FlatPlan straight at your private storage. Remote vaults are on the roadmap; local folders work now.
+3.  **🔄 Sync Freedom.** Keep it local and sync with **Git**, **Syncthing** or **Dropbox** as you do today, or point FlatPlan straight at your private storage. GitLab vaults work now (gitlab.com or your own instance); WebDAV and others are on the roadmap.
 4.  **🔒 Private by Default:** The app requires no registration, does not connect to your bank accounts, and sends no "anonymous" telemetry.
 
 ## ✨ Key Features

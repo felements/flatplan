@@ -8,7 +8,11 @@ This Privacy Policy applies to the **FlatPlan** application (hereinafter referre
 The Application is a local, open-source tool. It does not collect, store, transmit, or share any personal data, user analytics, or telemetry. All processing is done locally on your device.
 
 ## 2. Internet Connection
-The Application does not require an active internet connection to function and does not communicate with any external servers.
+The Application does not require an active internet connection to function. It does not communicate with any external servers unless you set up a remote vault yourself; see "Remote vaults" below.
+
+## Remote vaults
+
+A GitLab vault sends your period files to the GitLab server you configured and nowhere else. The access token you enter is stored in your operating system's keychain or keystore, never in a plain file, and is sent only to that server. FlatPlan makes no request to any server until you create a remote vault.
 
 ## 3. Third-Party Services
 The Application does not use any third-party services, trackers, or advertising frameworks that could collect user information.

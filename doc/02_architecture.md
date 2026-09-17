@@ -37,7 +37,7 @@ The app will use a **Feature-first** (layer-by-feature) architecture to maintain
    - `periodStatsProvider`: Listens to `currentPeriodNotifier` and calculates the totals (Planned to Facts, Remaining limits, Heat indicators). Keeps complex math out of the UI.
 
 ## File System Strategy
-- User keeps one or more **vaults**. A local vault is a folder (which they can independently initialize as a git repository). A remote vault is mirrored locally and synced by the engine in `lib/src/sync/`.
+- User keeps one or more **vaults**. A local vault is a folder (which they can independently initialize as a git repository). A remote vault is mirrored locally and synced by the engine in `lib/src/sync/`. The GitLab provider (`lib/src/sync/gitlab/`) pushes every batch as one commit and uses git blob ids as file versions.
 - Files inside a vault: `YYYY-MM-<slug>.yaml` tracking files, an optional template file, `current_stats.md`, and any `.conflict-` side files (see `01_storage_models.md`).
 - Local vaults are re-read whenever a save invalidates the period providers; there is no directory watcher, so files changed underneath by git pull show up on the next launch or vault switch.
 - Remote vaults pull when opened and push 15 s after the last edit, when the app goes to the background, on "Sync now", and before switching vaults. The journal in `sync.json` keeps every pending change across restarts.
