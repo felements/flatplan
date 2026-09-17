@@ -301,6 +301,19 @@ class GitLabConnectController extends ChangeNotifier {
     token = candidate;
   });
 
+  /// Edit form: reaches the server with the stored token so a changed
+  /// certificate is offered again. The pin changes only on
+  /// [trustCertificate].
+  Future<void> fetchCurrentCertificate(String storedToken) {
+    _pendingToken = storedToken;
+    return _run(() async {
+      final api = apiFactory(settings: _probeSettings(), token: storedToken);
+      await api.searchProjects('');
+      _api = api;
+      token = storedToken;
+    });
+  }
+
   bool get canSave =>
       token != null && project != null && branch != null && step == ConnectStep.target;
 

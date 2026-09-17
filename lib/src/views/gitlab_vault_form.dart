@@ -42,6 +42,18 @@ class GitLabVaultForm extends HookConsumerWidget {
     final nameError = useState<String?>(null);
     final saving = useState(false);
     final nameTouched = useState(existing != null);
+    final storedToken = useState<String?>(null);
+    final tokenLoaded = useState(false);
+    final replacing = useState(false);
+    useEffect(() {
+      if (existing == null) return null;
+      ref.read(vaultSecretsProvider).read(existing!.id, GitLabSettings.secretName).then((value) {
+        if (!context.mounted) return;
+        storedToken.value = value;
+        tokenLoaded.value = true;
+      });
+      return null;
+    }, [existing?.id]);
 
     // Suggest the project name once, unless the user already typed one.
     useEffect(() {
@@ -159,15 +171,29 @@ class GitLabVaultForm extends HookConsumerWidget {
             const SizedBox(height: 20),
           ],
           // 2. Token
-          if (!isEdit) ...[
-            _TokenField(controller: token, busy: controller.busy, onConnect: () => controller.connect(token.text.trim())),
+          if (!isEdit || replacing.value || (tokenLoaded.value && storedToken.value == null)) ...[
+            _TokenField(
+              controller: token,
+              busy: controller.busy,
+              onConnect: () => isEdit
+                  ? controller.verifyReplacementToken(token.text.trim())
+                  : controller.connect(token.text.trim()),
+            ),
             const _TokenHelp(),
             if (controller.connectError != null) _ErrorLine(controller.connectError!),
-            if (controller.step.index >= ConnectStep.project.index)
+            if (controller.token != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text('Connected', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.primary)),
               ),
+            const SizedBox(height: 20),
+          ] else if (isEdit && tokenLoaded.value) ...[
+            Row(
+              children: [
+                Expanded(child: Text('Token stored', style: theme.textTheme.bodyMedium)),
+                TextButton(onPressed: () => replacing.value = true, child: const Text('Replace token')),
+              ],
+            ),
             const SizedBox(height: 20),
           ],
           // 3. Project
@@ -198,6 +224,17 @@ class GitLabVaultForm extends HookConsumerWidget {
               Text('Location', style: theme.textTheme.labelLarge),
               Text(existingSettings!.locationLine, style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')),
               Text('To use a different repository or folder, create a new vault.', style: hint),
+              if (existingSettings.certFingerprint != null || controller.certFingerprint != null) ...[
+                const SizedBox(height: 12),
+                Text('Trusted certificate', style: theme.textTheme.labelLarge),
+                Text(controller.certFingerprint ?? existingSettings.certFingerprint!, style: const TextStyle(fontFamily: 'monospace')),
+                TextButton(
+                  onPressed: storedToken.value == null
+                      ? null
+                      : () => controller.fetchCurrentCertificate(storedToken.value!),
+                  child: const Text('Trust again'),
+                ),
+              ],
             ] else ...[
               DropdownButtonFormField<String>(
                 key: const Key('gitlab-branch'),

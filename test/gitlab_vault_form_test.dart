@@ -173,6 +173,72 @@ void main() {
     expect(await secrets.read(vault.id, 'token'), gitlab.validToken);
   });
 
+  Vault gitLabVault({String? fingerprint}) => Vault(
+    id: 'g',
+    name: 'Budget',
+    location: VaultLocation.remote(
+      kind: 'gitlab',
+      settings: {
+        'base_url': FakeGitLab.baseUrl,
+        'project_id': 42,
+        'project_path': 'group/repo',
+        'branch': 'main',
+        'folder': 'budget',
+        'cert_fingerprint': ?fingerprint,
+      },
+      secretNames: const ['token'],
+    ),
+    createdAt: created,
+  );
+
+  testWidgets('the edit form shows the location read-only and a token replacement', (tester) async {
+    await secrets.write('g', 'token', 'old');
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    expect(find.text('gitlab.test · group/repo/budget'), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-branch')), findsNothing);
+    expect(find.text('Token stored'), findsOneWidget);
+    expect(find.text('Replace token'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
+  });
+
+  testWidgets('replacing the token verifies it and saves the new secret', (tester) async {
+    await secrets.write('g', 'token', 'old');
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Replace token'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('gitlab-token')), gitlab.validToken);
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+    expect(find.text('Connected'), findsOneWidget);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(fakeVaults.updated.single.name, 'Budget');
+    expect(await secrets.read('g', 'token'), gitlab.validToken);
+  });
+
+  testWidgets('a missing secret makes the token field required', (tester) async {
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('gitlab-token')), findsOneWidget);
+    expect(find.text('Token stored'), findsNothing);
+  });
+
+  testWidgets('a self-hosted vault shows the trusted fingerprint and can trust again', (tester) async {
+    await secrets.write('g', 'token', gitlab.validToken);
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault(fingerprint: 'AA:BB'))));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('AA:BB'), findsOneWidget);
+    expect(find.text('Trust again'), findsOneWidget);
+  });
+
   test('the descriptor renders the location line', () {
     final vault = Vault(
       id: 'g',

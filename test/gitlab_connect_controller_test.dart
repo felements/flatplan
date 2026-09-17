@@ -325,6 +325,31 @@ void main() {
     expect(busyHistory.last, isFalse);
   });
 
+  test('fetchCurrentCertificate records the offer without changing the pin until trusted', () async {
+    final existing = GitLabSettings(baseUrl: FakeGitLab.baseUrl, projectId: 42, projectPath: 'group/repo', branch: 'main', certFingerprint: 'OLD');
+    final offer = CertificateRejected(host: 'gitlab.test', subject: 'CN=x', fingerprint: 'NEW');
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      if (calls == 1) throw const HandshakeException('changed');
+      // `request` is already finalized by this MockClient; forward a fresh
+      // copy since http.Request can only be finalized once.
+      final forwarded = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = request.bodyBytes;
+      return gitlab.client.send(forwarded).then(http.Response.fromStream);
+    });
+    controller = make(client: client, offer: offer, existing: existing);
+
+    await controller.fetchCurrentCertificate(gitlab.validToken);
+    expect(controller.pendingCertificate, same(offer));
+    expect(controller.certFingerprint, 'OLD');
+
+    await controller.trustCertificate();
+    expect(controller.certFingerprint, 'NEW');
+    expect(controller.token, gitlab.validToken);
+  });
+
   test('a stale search response does not overwrite newer results', () async {
     gitlab.searchResults = [
       {'id': 1, 'name': 'apple', 'path_with_namespace': 'group/apple', 'default_branch': 'main', 'empty_repo': false},
