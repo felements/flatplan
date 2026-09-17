@@ -351,10 +351,14 @@ self-hosted vault also shows "Trusted certificate: <fingerprint>" with a
 ## 5. Platform work
 
 - `pubspec.yaml`: add `http` and `flutter_secure_storage`.
-- macOS: add `com.apple.security.network.client` and an empty
-  `keychain-access-groups` array to both `DebugProfile.entitlements` and
-  `Release.entitlements`. Without the first the sandbox blocks every
-  request; without the second the keychain write fails.
+- macOS: add `com.apple.security.network.client` to both
+  `DebugProfile.entitlements` and `Release.entitlements`; without it the
+  sandbox blocks every request. No `keychain-access-groups` entitlement:
+  it requires signing with a development certificate, which the ad-hoc
+  signed development build does not have, so the build fails outright.
+  Instead `SecureVaultSecrets` uses the classic login keychain on macOS
+  (`MacOsOptions(usesDataProtectionKeychain: false)`), which needs no
+  entitlement.
 - Linux: the release workflow installs `libsecret-1-dev` alongside the GTK
   packages. Configured from `pubspec.yaml`, as here, `flutter_to_debian`
   derives `Depends:` from the shared libraries the bundle links against, so

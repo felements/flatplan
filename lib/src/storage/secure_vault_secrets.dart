@@ -7,8 +7,16 @@ import 'vault_secrets.dart';
 class SecureVaultSecrets implements VaultSecrets {
   final FlutterSecureStorage storage;
 
+  /// On macOS the classic login keychain is used rather than the
+  /// data-protection keychain: the latter needs the `keychain-access-groups`
+  /// entitlement, which Xcode refuses to ad-hoc sign, so a plain development
+  /// build could not run at all.
   SecureVaultSecrets([FlutterSecureStorage? storage])
-    : storage = storage ?? const FlutterSecureStorage();
+    : storage =
+          storage ??
+          const FlutterSecureStorage(
+            mOptions: MacOsOptions(usesDataProtectionKeychain: false),
+          );
 
   @override
   Future<String?> read(String vaultId, String name) =>

@@ -13,4 +13,12 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     return SecureVaultSecrets();
   });
+
+  test('uses the classic macOS keychain so no signing entitlement is needed', () {
+    // The data-protection keychain needs the keychain-access-groups
+    // entitlement, which cannot be ad-hoc signed; the login keychain works
+    // with the plain development build.
+    final options = SecureVaultSecrets().storage.mOptions as MacOsOptions;
+    expect(options.usesDataProtectionKeychain, isFalse);
+  });
 }
