@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show HandshakeException;
 
 import 'package:flatplan/src/models/models.dart';
@@ -284,6 +285,28 @@ void main() {
 
     expect(find.textContaining('Could not read the stored token'), findsOneWidget);
     expect(find.byKey(const Key('gitlab-token')), findsOneWidget);
+  });
+
+  testWidgets('Save is disabled while a Trust again is in flight', (tester) async {
+    await secrets.write('g', 'token', gitlab.validToken);
+    final gate = Completer<void>();
+    gitlab.pauseSearch = gate;
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault(fingerprint: 'AA:BB'))));
+    await tester.pumpAndSettle();
+
+    FilledButton saveButton() =>
+        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
+    expect(saveButton().onPressed, isNotNull);
+
+    await tester.tap(find.text('Trust again'));
+    await tester.pump();
+
+    expect(saveButton().onPressed, isNull, reason: 'the fingerprint is still being checked');
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(saveButton().onPressed, isNotNull);
   });
 
   testWidgets('a failed re-trust shows the error next to the certificate', (tester) async {

@@ -143,7 +143,12 @@ class GitLabVaultForm extends HookConsumerWidget {
     );
     final showTokenField = !isEdit || replacing.value || (tokenLoaded.value && storedToken.value == null);
     final tokenRequired = isEdit && (!tokenLoaded.value || replacing.value || storedToken.value == null);
-    final canSubmit = !saving.value && (isEdit ? (!tokenRequired || controller.token != null) : controller.canSave);
+    // `!controller.busy` matters on the edit form: a Save landing while a
+    // "Trust again" is still in flight would store the pre-trust
+    // fingerprint and lose the answer the user is waiting for.
+    final canSubmit = !saving.value &&
+        !controller.busy &&
+        (isEdit ? (!tokenRequired || controller.token != null) : controller.canSave);
 
     return Material(
       type: MaterialType.transparency,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -33,6 +34,10 @@ class FakeGitLab {
 
   /// When set, every request throws it (offline).
   Object? throwOnRequest;
+
+  /// When set, every project search waits for it before answering, so a
+  /// test can hold one call in flight.
+  Completer<void>? pauseSearch;
 
   /// Message returned with a forced 400 on commit.
   String commitErrorMessage = 'You are not allowed to push into this branch';
@@ -71,6 +76,7 @@ class FakeGitLab {
 
     final p = '/api/v4/projects/$projectId';
     if (path == '/api/v4/projects' && request.method == 'GET') {
+      await pauseSearch?.future;
       final results = searchResults ?? [_projectJson];
       final q = request.url.queryParameters['search'] ?? '';
       return _json(200, [
