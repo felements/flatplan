@@ -16,6 +16,7 @@ class SyncScheduler {
   bool _rerunQueued = false;
   bool _disposed = false;
   SyncStatus _status = const SyncStatus(state: SyncState.idle, dirtyCount: 0);
+  bool _needsAttention = false;
 
   SyncScheduler({
     required this.engine,
@@ -88,6 +89,7 @@ class SyncScheduler {
     _emit(SyncState.syncing);
     final failure = push ? await engine.push() : await engine.pull();
     if (_disposed) return;
+    _needsAttention = failure?.needsAttention ?? false;
     if (failure == null) {
       _emit(SyncState.idle);
     } else {
@@ -103,6 +105,7 @@ class SyncScheduler {
       lastPullAt: journal.lastPullAt,
       lastPushAt: journal.lastPushAt,
       lastError: journal.lastError,
+      needsAttention: _needsAttention,
     );
     onStatus(_status);
   }

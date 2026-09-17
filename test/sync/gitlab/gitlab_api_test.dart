@@ -114,6 +114,28 @@ void main() {
     await expectLater(api.project(42), throwsA(isA<RemoteAuthRejected>()));
   });
 
+  test('401 with an error description says why the token was rejected', () async {
+    final client = MockClient((_) async => http.Response(
+      '{"error":"invalid_token","error_description":"Token is expired. You can either do re-authorization or token refresh."}',
+      401,
+      headers: {'content-type': 'application/json'},
+    ));
+    api = GitLabApi(client: client, baseUrl: FakeGitLab.baseUrl, token: 't');
+    await expectLater(
+      api.project(42),
+      throwsA(isA<RemoteAuthRejected>().having(
+        (e) => e.message,
+        'message',
+        'GitLab rejected the token: Token is expired. Replace it in the vault settings.',
+      )),
+    );
+  });
+
+  test('CertificateRejected needs the user\'s attention', () {
+    const rejected = CertificateRejected(host: 'h', subject: 's', fingerprint: 'f');
+    expect(rejected, isA<RemoteNeedsAttention>());
+  });
+
   test('403 keeps GitLab message in GitLabApiException', () async {
     gitlab.failWith['/projects/42/repository/tree'] = 403;
     await expectLater(

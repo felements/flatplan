@@ -20,7 +20,7 @@ class GitLabApiException implements Exception {
 /// The server presented a certificate the system does not trust and that
 /// does not match the vault's pinned fingerprint. Carries what the user
 /// needs to decide whether to trust it.
-class CertificateRejected implements Exception {
+class CertificateRejected implements RemoteNeedsAttention {
   final String host;
   final String subject;
   final String fingerprint;
@@ -288,14 +288,31 @@ class GitLabApi {
     final status = response.statusCode;
     if (status >= 200 && status < 300) return response;
     if (status == 401) {
+      final reason = _authReasonOf(response);
       throw RemoteAuthRejected(
-        'GitLab rejected the token. Replace it in the vault settings.',
+        reason == null
+            ? 'GitLab rejected the token. Replace it in the vault settings.'
+            : 'GitLab rejected the token: $reason. Replace it in the vault settings.',
       );
     }
     if (status == 429 || status == 502 || status == 503 || status == 504) {
       throw RemoteUnreachable('${uri.host} answered $status; will retry later.');
     }
     throw GitLabApiException(status, _messageOf(response));
+  }
+
+  /// The first sentence of GitLab's `error_description` on a 401, e.g.
+  /// "Token is expired" or "Token was revoked". Null when absent.
+  static String? _authReasonOf(http.Response response) {
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) return null;
+      final description = decoded['error_description'];
+      if (description is! String || description.isEmpty) return null;
+      return description.split('.').first.trim();
+    } on FormatException {
+      return null;
+    }
   }
 
   static String _messageOf(http.Response response) {

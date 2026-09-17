@@ -17,6 +17,12 @@ void main() {
     expect(failure.message, contains('Replace it in the vault settings'));
   });
 
+  test('an auth rejection needs the user\'s attention; connectivity does not', () {
+    expect(SyncFailure.from(const RemoteAuthRejected()).needsAttention, isTrue);
+    expect(SyncFailure.from(const RemoteUnreachable('x')).needsAttention, isFalse);
+    expect(SyncFailure.from(StateError('x')).needsAttention, isFalse);
+  });
+
   test('socket errors stay offline', () {
     expect(SyncFailure.from(const SocketException('x')).isOffline, isTrue);
   });

@@ -16,7 +16,15 @@ class SyncFailure {
   /// rather than as an error.
   final bool isOffline;
 
-  const SyncFailure({required this.message, required this.isOffline});
+  /// True when only the user can fix it (rejected token, untrusted
+  /// certificate); see [RemoteNeedsAttention].
+  final bool needsAttention;
+
+  const SyncFailure({
+    required this.message,
+    required this.isOffline,
+    this.needsAttention = false,
+  });
 
   factory SyncFailure.from(Object error) => SyncFailure(
     message: error.toString(),
@@ -25,6 +33,7 @@ class SyncFailure {
         error is SocketException ||
         error is TimeoutException ||
         error is HttpException,
+    needsAttention: error is RemoteNeedsAttention,
   );
 }
 

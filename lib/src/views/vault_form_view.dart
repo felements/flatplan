@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -49,12 +50,23 @@ class VaultFormView extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 28),
-            child: Text(
-              existing == null ? 'New vault' : 'Edit vault',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    existing == null ? 'New vault' : 'Edit vault',
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => context.go('/settings/vaults'),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: const Text('Cancel'),
+                ),
+              ],
             ),
           ),
           Container(

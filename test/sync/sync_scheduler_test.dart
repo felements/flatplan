@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flatplan/src/sync/conflict_policy.dart';
+import 'package:flatplan/src/sync/remote_store.dart';
 import 'package:flatplan/src/sync/sync_engine.dart';
 import 'package:flatplan/src/sync/sync_journal.dart';
 import 'package:flatplan/src/sync/sync_scheduler.dart';
@@ -187,5 +188,26 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 60));
 
     expect(remote.calls, isEmpty);
+  });
+
+  test('a rejected token marks the status as needing attention', () async {
+    remote.failure = const RemoteAuthRejected('GitLab rejected the token.');
+    await app.writeString('a.yaml', 'a');
+
+    await scheduler.syncNow();
+
+    expect(scheduler.status.state, SyncState.error);
+    expect(scheduler.status.needsAttention, isTrue);
+    expect(scheduler.status.lastError, 'GitLab rejected the token.');
+  });
+
+  test('being offline does not need attention', () async {
+    remote.failure = const SocketException('down');
+    await app.writeString('a.yaml', 'a');
+
+    await scheduler.syncNow();
+
+    expect(scheduler.status.state, SyncState.offline);
+    expect(scheduler.status.needsAttention, isFalse);
   });
 }

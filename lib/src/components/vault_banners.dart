@@ -94,3 +94,62 @@ class BrokenRegistryBanner extends StatelessWidget {
     );
   }
 }
+
+/// Shown on the dashboard when the open remote vault's sync failed for a
+/// reason only the user can fix: a rejected or expired token, an untrusted
+/// certificate. Leads straight to the vault's edit form.
+class SyncAttentionBanner extends StatelessWidget {
+  final String message;
+  final int pendingChanges;
+  final VoidCallback onOpenSettings;
+
+  const SyncAttentionBanner({
+    super.key,
+    required this.message,
+    required this.pendingChanges,
+    required this.onOpenSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final pending = pendingChanges == 0
+        ? null
+        : pendingChanges == 1
+            ? '1 change is waiting to sync.'
+            : '$pendingChanges changes are waiting to sync.';
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.sync_problem_rounded,
+            size: 20,
+            color: colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              pending == null ? message : '$message $pending',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.tonalIcon(
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings_rounded, size: 18),
+            label: const Text('Open vault settings'),
+          ),
+        ],
+      ),
+    );
+  }
+}

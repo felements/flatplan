@@ -57,4 +57,13 @@ void main() {
     );
     expect(status.describe(now), 'Synced 1 min ago');
   });
+
+  test('needsAttention defaults to false and is carried', () {
+    expect(const SyncStatus(state: SyncState.error, dirtyCount: 0).needsAttention, isFalse);
+    expect(
+      const SyncStatus(state: SyncState.error, dirtyCount: 0, needsAttention: true)
+          .needsAttention,
+      isTrue,
+    );
+  });
 }

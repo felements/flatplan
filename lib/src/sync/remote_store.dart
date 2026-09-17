@@ -61,8 +61,13 @@ class RemoteUnreachable implements Exception {
   String toString() => message;
 }
 
+/// A failure the next retry cannot fix on its own: the user has to act in
+/// the vault's settings (replace the token, trust a certificate). The UI
+/// shows these prominently instead of as a quiet "Sync failed".
+abstract interface class RemoteNeedsAttention implements Exception {}
+
 /// The provider refused the stored credentials (HTTP 401).
-class RemoteAuthRejected implements Exception {
+class RemoteAuthRejected implements RemoteNeedsAttention {
   final String message;
 
   const RemoteAuthRejected([

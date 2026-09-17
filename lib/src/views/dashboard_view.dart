@@ -18,6 +18,7 @@ import '../providers/repository_provider.dart';
 import '../providers/vaults_provider.dart';
 import '../models/models.dart';
 import '../storage/period_repository.dart';
+import '../sync/sync_status.dart';
 
 /// The main dashboard showing period summary and category breakdown.
 class DashboardView extends ConsumerWidget {
@@ -59,6 +60,12 @@ class DashboardView extends ConsumerWidget {
 
     final openVault = ref.watch(openVaultProvider).value;
     final brokenRegistryFile = ref.watch(vaultsProvider).value?.brokenRegistryFile;
+    final syncStatus = ref.watch(currentSyncStatusProvider);
+    final attentionVaultId = syncStatus != null &&
+            syncStatus.state == SyncState.error &&
+            syncStatus.needsAttention
+        ? openVault?.vault.id
+        : null;
 
     final body = periodAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -390,6 +397,16 @@ class DashboardView extends ConsumerWidget {
                 onDismiss: () => ref
                     .read(vaultsProvider.notifier)
                     .dismissBrokenRegistryNotice(),
+              ),
+            ),
+          if (attentionVaultId != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: SyncAttentionBanner(
+                message: syncStatus!.lastError ?? 'Sync needs your attention.',
+                pendingChanges: syncStatus.dirtyCount,
+                onOpenSettings: () =>
+                    context.go('/settings/vaults/$attentionVaultId/edit'),
               ),
             ),
           Padding(
