@@ -187,6 +187,36 @@ void main() {
     expect(await secrets.read(vault.id, 'token'), gitlab.validToken);
   });
 
+  testWidgets('Create vault stays clickable while a folder check runs', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Create vault'));
+
+    // Pause the folder check the way the folder field's onTapOutside
+    // triggers one, then flip the controller busy without going through a
+    // real pointer-down/up pair (which is what actually raced in the bug).
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'reports');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    FilledButton createButton() =>
+        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Create vault'));
+    expect(
+      createButton().onPressed,
+      isNotNull,
+      reason: 'a folder check in flight must not disable Create vault',
+    );
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(createButton().onPressed, isNotNull);
+  });
+
   Vault gitLabVault({String? fingerprint}) => Vault(
     id: 'g',
     name: 'Budget',

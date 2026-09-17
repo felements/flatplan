@@ -39,6 +39,10 @@ class FakeGitLab {
   /// test can hold one call in flight.
   Completer<void>? pauseSearch;
 
+  /// When set, every repository tree request (the folder check) waits for
+  /// it before answering, so a test can hold a folder check in flight.
+  Completer<void>? pauseTree;
+
   /// Message returned with a forced 400 on commit.
   String commitErrorMessage = 'You are not allowed to push into this branch';
 
@@ -100,7 +104,10 @@ class FakeGitLab {
           ? _json(200, {'name': name})
           : _json(404, {'message': '404 Branch Not Found'});
     }
-    if (path == '$p/repository/tree') return _tree(request);
+    if (path == '$p/repository/tree') {
+      await pauseTree?.future;
+      return _tree(request);
+    }
     if (path.startsWith('$p/repository/files/') && path.endsWith('/raw')) {
       final encoded = path.substring('$p/repository/files/'.length, path.length - '/raw'.length);
       final filePath = Uri.decodeComponent(encoded);

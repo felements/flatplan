@@ -145,10 +145,15 @@ class GitLabVaultForm extends HookConsumerWidget {
     final tokenRequired = isEdit && (!tokenLoaded.value || replacing.value || storedToken.value == null);
     // `!controller.busy` matters on the edit form: a Save landing while a
     // "Trust again" is still in flight would store the pre-trust
-    // fingerprint and lose the answer the user is waiting for.
+    // fingerprint and lose the answer the user is waiting for. In create
+    // mode gating on busy would swallow the first click on "Create vault":
+    // the folder field's onTapOutside starts a folder check on
+    // pointer-down, flipping busy true before pointer-up disables the
+    // button.
     final canSubmit = !saving.value &&
-        !controller.busy &&
-        (isEdit ? (!tokenRequired || controller.token != null) : controller.canSave);
+        (isEdit
+            ? (!controller.busy && (!tokenRequired || controller.token != null))
+            : controller.canSave);
 
     return Material(
       type: MaterialType.transparency,
