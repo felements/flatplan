@@ -112,14 +112,25 @@ class GitLabConnectController extends ChangeNotifier {
   void setSelfHosted(bool value) {
     selfHosted = value;
     if (!value) baseUrl = GitLabSettings.gitLabCom;
-    _resetConnectionIfAdvanced();
+    _serverChanged();
     _notify();
   }
 
   void setBaseUrl(String raw) {
     baseUrl = GitLabSettings.normalizeBaseUrl(raw);
-    _resetConnectionIfAdvanced();
+    _serverChanged();
     _notify();
+  }
+
+  /// A pinned fingerprint and an open trust offer both belong to one host,
+  /// so pointing the form at another server drops them unconditionally --
+  /// even before anything was verified, where [_resetConnectionIfAdvanced]
+  /// returns early. Otherwise a vault could be saved with the fingerprint
+  /// of a host it never talked to.
+  void _serverChanged() {
+    certFingerprint = null;
+    pendingCertificate = null;
+    _resetConnectionIfAdvanced();
   }
 
   /// Changing which server the form points at must never leave `project`,
@@ -170,14 +181,19 @@ class GitLabConnectController extends ChangeNotifier {
 
   /// Best effort: only a legacy token can answer, and only a legacy token
   /// can lack `api`. A fine-grained token either reports granular scopes
-  /// or cannot read tokens at all (403); both continue.
+  /// or cannot read tokens at all (403); both continue. Any other failure
+  /// -- an old instance without the endpoint, a 5xx, a server that cannot
+  /// be reached for this one call -- is inconclusive rather than proof of
+  /// a bad token, so it continues too and the real work reports the
+  /// problem if it persists.
   Future<bool> _legacyScopeOk(GitLabApi api) async {
     try {
       final info = await api.tokenInfo();
       return info.isFineGrained || info.scopes.contains('api');
-    } on GitLabApiException catch (e) {
-      if (e.status == 403 || e.status == 404) return true;
-      rethrow;
+    } on GitLabApiException {
+      return true;
+    } on RemoteUnreachable {
+      return true;
     }
   }
 
@@ -185,6 +201,13 @@ class GitLabConnectController extends ChangeNotifier {
     final offer = pendingCertificate;
     final candidate = _pendingToken;
     if (offer == null || candidate == null) return;
+    if (offer.host != Uri.tryParse(baseUrl)?.host) {
+      // The form moved to another server while the offer was in flight:
+      // that fingerprint says nothing about the host now configured.
+      pendingCertificate = null;
+      _notify();
+      return;
+    }
     certFingerprint = offer.fingerprint;
     pendingCertificate = null;
     _notify();
@@ -347,12 +370,16 @@ class GitLabConnectController extends ChangeNotifier {
       connectError = 'Could not reach $baseUrl. ${e.message}';
     } on GitLabApiException catch (e) {
       connectError = e.message;
+    } catch (e) {
+      // Fire-and-forget callers (a debounced search, a branch selection)
+      // never await this future, so an untyped failure would otherwise
+      // vanish and leave the form looking idle and fine.
+      connectError = 'Unexpected error: $e';
     } finally {
       _inFlight--;
       // A plain call is fine in `finally` (only return/break/continue trip
       // the control_flow_in_finally lint); this guarantees every listener
-      // sees `busy` fall back to false even when an untyped exception
-      // (e.g. a bang-operator failure) propagates past the catches above.
+      // sees `busy` fall back to false.
       _notify();
     }
   }
@@ -369,6 +396,11 @@ class GitLabConnectController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _searchTimer?.cancel();
+    // The cancelled timer will never fire, so nothing else would ever
+    // complete a search awaited by the caller that started it.
+    final pending = _searchCompleter;
+    if (pending != null && !pending.isCompleted) pending.complete();
+    _searchCompleter = null;
     super.dispose();
   }
 }

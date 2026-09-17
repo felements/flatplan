@@ -33,7 +33,7 @@ class CertificateRejected implements Exception {
 
   @override
   String toString() =>
-      'The certificate of $host is not trusted. '
+      'The certificate of $host is not trusted or has changed. '
       'Trust it in the vault settings.';
 }
 
@@ -187,7 +187,11 @@ class GitLabApi {
       );
       final next = response.headers['x-next-page'];
       if (next == null || next.isEmpty) return entries;
-      page = int.parse(next);
+      // A header we cannot read is not a page number: stop with what we
+      // have rather than letting a FormatException escape the client.
+      final parsed = int.tryParse(next);
+      if (parsed == null) return entries;
+      page = parsed;
     }
   }
 
@@ -261,8 +265,12 @@ class GitLabApi {
 
     final http.Response response;
     try {
-      final streamed = await client.send(request).timeout(timeout);
-      response = await http.Response.fromStream(streamed).timeout(timeout);
+      // One deadline for the whole exchange: two consecutive timeouts
+      // would let a slow server take twice as long as `timeout` says.
+      response = await Future(() async {
+        final streamed = await client.send(request);
+        return http.Response.fromStream(streamed);
+      }).timeout(timeout);
     } on HandshakeException catch (e) {
       final rejected = takeRejectedCertificate?.call();
       if (rejected != null) throw rejected;

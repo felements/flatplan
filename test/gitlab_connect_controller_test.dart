@@ -313,16 +313,84 @@ void main() {
     expect(gitlab.calls.where((c) => c.endsWith('search=ab')), hasLength(1));
   });
 
-  test('busy still notifies false when an untyped exception escapes _run', () async {
+  test('an untyped failure is reported instead of escaping _run', () async {
     final busyHistory = <bool>[];
     controller = GitLabConnectController(
       apiFactory: ({required settings, required token}) => ThrowingApi(),
     );
     controller.addListener(() => busyHistory.add(controller.busy));
 
-    await expectLater(controller.connect('t'), throwsStateError);
+    await controller.connect('t');
 
+    expect(controller.connectError, contains('Unexpected error'));
+    expect(controller.busy, isFalse);
     expect(busyHistory.last, isFalse);
+  });
+
+  test('a token whose scopes cannot be read still reaches the project step', () async {
+    gitlab.tokenInfoStatus = 500;
+    await controller.connect(gitlab.validToken);
+    expect(controller.connectError, isNull);
+    expect(controller.step, ConnectStep.project);
+
+    // 429 arrives as RemoteUnreachable rather than GitLabApiException.
+    controller = make()
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+    gitlab.tokenInfoStatus = 429;
+    await controller.connect(gitlab.validToken);
+    expect(controller.connectError, isNull);
+    expect(controller.step, ConnectStep.project);
+  });
+
+  test('changing the server drops the trusted fingerprint', () async {
+    final offer = CertificateRejected(host: 'gitlab.test', subject: 'CN=gitlab.test', fingerprint: 'AA:BB');
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      if (calls == 1) throw const HandshakeException('untrusted');
+      final forwarded = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = request.bodyBytes;
+      return gitlab.client.send(forwarded).then(http.Response.fromStream);
+    });
+    controller = make(client: client, offer: offer)
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+
+    await controller.connect(gitlab.validToken);
+    await controller.trustCertificate();
+    expect(controller.certFingerprint, 'AA:BB');
+
+    controller.setBaseUrl('https://b.test');
+
+    expect(controller.certFingerprint, isNull, reason: 'a pin belongs to one host');
+  });
+
+  test('a pending offer is not trusted for a server the form has moved to', () async {
+    final offer = CertificateRejected(host: 'gitlab.test', subject: 'CN=gitlab.test', fingerprint: 'AA:BB');
+    final client = MockClient((request) async => throw const HandshakeException('untrusted'));
+    controller = make(client: client, offer: offer)
+      ..setSelfHosted(true)
+      ..setBaseUrl(FakeGitLab.baseUrl);
+
+    await controller.connect(gitlab.validToken);
+    expect(controller.pendingCertificate, same(offer));
+
+    controller.setBaseUrl('https://other.test');
+    await controller.trustCertificate();
+
+    expect(controller.certFingerprint, isNull);
+    expect(controller.pendingCertificate, isNull);
+  });
+
+  test('a search awaited across dispose does not hang', () async {
+    await controller.connect(gitlab.validToken);
+
+    final pending = controller.search('x');
+    controller.dispose();
+
+    await pending.timeout(const Duration(seconds: 1));
   });
 
   test('fetchCurrentCertificate records the offer without changing the pin until trusted', () async {

@@ -40,19 +40,15 @@ class GitLabSettings {
     if (certFingerprint != null) 'cert_fingerprint': certFingerprint,
   };
 
-  GitLabSettings copyWith({
-    String? folder,
-    String? certFingerprint,
-    bool clearFingerprint = false,
-  }) => GitLabSettings(
-    baseUrl: baseUrl,
-    projectId: projectId,
-    projectPath: projectPath,
-    branch: branch,
-    folder: folder ?? this.folder,
-    certFingerprint:
-        clearFingerprint ? null : (certFingerprint ?? this.certFingerprint),
-  );
+  GitLabSettings copyWith({String? folder, String? certFingerprint}) =>
+      GitLabSettings(
+        baseUrl: baseUrl,
+        projectId: projectId,
+        projectPath: projectPath,
+        branch: branch,
+        folder: folder ?? this.folder,
+        certFingerprint: certFingerprint ?? this.certFingerprint,
+      );
 
   String get host => Uri.parse(baseUrl).host;
 

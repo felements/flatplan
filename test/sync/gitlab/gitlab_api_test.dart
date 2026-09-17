@@ -51,6 +51,24 @@ void main() {
     expect(gitlab.calls.first, contains('per_page=100'));
   });
 
+  test('tree stops instead of throwing on a malformed x-next-page', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      return http.Response(
+        '[{"id": "a", "name": "f.yaml", "type": "blob", "path": "budget/f.yaml"}]',
+        200,
+        headers: {'content-type': 'application/json', 'x-next-page': 'abc'},
+      );
+    });
+    final scrambled = GitLabApi(client: client, baseUrl: FakeGitLab.baseUrl, token: 't');
+
+    final entries = await scrambled.tree(42, 'main', 'budget');
+
+    expect(entries.single.name, 'f.yaml');
+    expect(calls, 1, reason: 'there is no page to continue with');
+  });
+
   test('rawFile encodes the path and reads the blob id header', () async {
     gitlab.files['budget/2026-09-september.yaml'] = 'id: p1\n';
     final file = await api.rawFile(42, 'main', 'budget/2026-09-september.yaml');
