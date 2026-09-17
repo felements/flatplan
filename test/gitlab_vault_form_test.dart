@@ -14,6 +14,19 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'support/fake_vaults.dart';
 import 'sync/gitlab/fake_gitlab.dart';
 
+/// A [VaultSecrets] whose [read] always fails, to prove the form surfaces
+/// the failure instead of hanging on a blank token section forever.
+class ThrowingVaultSecrets implements VaultSecrets {
+  @override
+  Future<String?> read(String vaultId, String name) => throw StateError('keychain locked');
+
+  @override
+  Future<void> write(String vaultId, String name, String value) async {}
+
+  @override
+  Future<void> deleteAll(String vaultId, List<String> names) async {}
+}
+
 void main() {
   late FakeGitLab gitlab;
   late FakeVaults fakeVaults;
@@ -26,13 +39,13 @@ void main() {
     createdAt: created,
   );
 
-  Widget app(Widget child, {CertificateRejected? offer}) {
+  Widget app(Widget child, {CertificateRejected? offer, VaultSecrets? secretsOverride}) {
     fakeVaults = FakeVaults(VaultRegistry(lastSelectedVaultId: 'home', vaults: [home]));
     var offered = false;
     return ProviderScope(
       overrides: [
         vaultsProvider.overrideWith(() => fakeVaults),
-        vaultSecretsProvider.overrideWith((ref) => secrets),
+        vaultSecretsProvider.overrideWith((ref) => secretsOverride ?? secrets),
         gitLabApiFactoryProvider.overrideWith(
           (ref) => ({required settings, required token}) => GitLabApi(
             client: gitlab.client,
@@ -237,6 +250,52 @@ void main() {
 
     expect(find.textContaining('AA:BB'), findsOneWidget);
     expect(find.text('Trust again'), findsOneWidget);
+  });
+
+  testWidgets('Save is disabled until a missing token is verified', (tester) async {
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNull);
+
+    await tester.enterText(find.byKey(const Key('gitlab-token')), gitlab.validToken);
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNotNull);
+  });
+
+  testWidgets('Save stays disabled after Replace token until Connect succeeds', (tester) async {
+    await secrets.write('g', 'token', 'old');
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNotNull);
+
+    await tester.tap(find.text('Replace token'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save')).onPressed, isNull);
+  });
+
+  testWidgets('a secret read failure shows an error and still requires a token', (tester) async {
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault()), secretsOverride: ThrowingVaultSecrets()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not read the stored token'), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-token')), findsOneWidget);
+  });
+
+  testWidgets('a failed re-trust shows the error next to the certificate', (tester) async {
+    await secrets.write('g', 'token', gitlab.validToken);
+    gitlab.throwOnRequest = socketDropped();
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault(fingerprint: 'AA:BB'))));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Trust again'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not reach'), findsOneWidget);
   });
 
   test('the descriptor renders the location line', () {

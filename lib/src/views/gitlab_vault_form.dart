@@ -44,14 +44,23 @@ class GitLabVaultForm extends HookConsumerWidget {
     final nameTouched = useState(existing != null);
     final storedToken = useState<String?>(null);
     final tokenLoaded = useState(false);
+    final secretError = useState<String?>(null);
     final replacing = useState(false);
     useEffect(() {
       if (existing == null) return null;
-      ref.read(vaultSecretsProvider).read(existing!.id, GitLabSettings.secretName).then((value) {
-        if (!context.mounted) return;
-        storedToken.value = value;
-        tokenLoaded.value = true;
-      });
+      () async {
+        try {
+          final value = await ref.read(vaultSecretsProvider).read(existing!.id, GitLabSettings.secretName);
+          if (!context.mounted) return;
+          storedToken.value = value;
+          tokenLoaded.value = true;
+        } catch (e) {
+          if (!context.mounted) return;
+          storedToken.value = null;
+          secretError.value = 'Could not read the stored token: $e';
+          tokenLoaded.value = true;
+        }
+      }();
       return null;
     }, [existing?.id]);
 
@@ -132,6 +141,9 @@ class GitLabVaultForm extends HookConsumerWidget {
     final hint = theme.textTheme.bodySmall?.copyWith(
       color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
     );
+    final showTokenField = !isEdit || replacing.value || (tokenLoaded.value && storedToken.value == null);
+    final tokenRequired = isEdit && (!tokenLoaded.value || replacing.value || storedToken.value == null);
+    final canSubmit = !saving.value && (isEdit ? (!tokenRequired || controller.token != null) : controller.canSave);
 
     return Material(
       type: MaterialType.transparency,
@@ -171,7 +183,8 @@ class GitLabVaultForm extends HookConsumerWidget {
             const SizedBox(height: 20),
           ],
           // 2. Token
-          if (!isEdit || replacing.value || (tokenLoaded.value && storedToken.value == null)) ...[
+          if (showTokenField) ...[
+            if (secretError.value != null) _ErrorLine(secretError.value!),
             _TokenField(
               controller: token,
               busy: controller.busy,
@@ -229,11 +242,12 @@ class GitLabVaultForm extends HookConsumerWidget {
                 Text('Trusted certificate', style: theme.textTheme.labelLarge),
                 Text(controller.certFingerprint ?? existingSettings.certFingerprint!, style: const TextStyle(fontFamily: 'monospace')),
                 TextButton(
-                  onPressed: storedToken.value == null
+                  onPressed: storedToken.value == null || controller.busy
                       ? null
                       : () => controller.fetchCurrentCertificate(storedToken.value!),
                   child: const Text('Trust again'),
                 ),
+                if (!showTokenField && controller.connectError != null) _ErrorLine(controller.connectError!),
               ],
             ] else ...[
               DropdownButtonFormField<String>(
@@ -275,7 +289,7 @@ class GitLabVaultForm extends HookConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton(
-                onPressed: saving.value || (!isEdit && !controller.canSave) ? null : save,
+                onPressed: canSubmit ? save : null,
                 child: Text(isEdit ? 'Save' : 'Create vault'),
               ),
             ),
