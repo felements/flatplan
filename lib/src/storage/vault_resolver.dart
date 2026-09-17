@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../models/models.dart';
 import '../sync/conflict_policy.dart';
+import '../sync/lock.dart';
 import '../sync/remote_store.dart';
 import '../sync/sync_engine.dart';
 import '../sync/sync_journal.dart';
@@ -159,11 +160,16 @@ class VaultResolver {
     }
     final journal = await SyncJournal.load(paths.journalFor(vault.id));
     final mirrorPath = paths.mirrorFor(vault.id);
+    // One lock per vault: the app-facing workspace and the engine share it.
+    // The engine's own mirror workspace does not take it, because the engine
+    // already holds it when it writes and the lock is not reentrant.
+    final lock = Lock();
     final engine = SyncEngine(
       mirror: DirectoryWorkspace(mirrorPath),
       remote: store,
       journal: journal,
       policy: policy,
+      lock: lock,
     );
     final scheduler = SyncScheduler(
       engine: engine,
@@ -175,7 +181,7 @@ class VaultResolver {
 
     return OpenVault(
       vault: vault,
-      workspace: DirectoryWorkspace(mirrorPath, changeListener: journal),
+      workspace: DirectoryWorkspace(mirrorPath, changeListener: journal, lock: lock),
       scheduler: scheduler,
     );
   }

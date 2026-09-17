@@ -53,6 +53,44 @@ void main() {
     expect(vaultKindFor(future).label, 'Unsupported (teleport)');
   });
 
+  Vault gitLab(String? expiresAt) => Vault(
+    id: 'g',
+    name: 'Budget',
+    location: VaultLocation.remote(
+      kind: 'gitlab',
+      settings: {
+        'base_url': 'https://gitlab.com',
+        'project_id': 1,
+        'project_path': 'me/budget',
+        'branch': 'main',
+        'folder': '',
+        'token_expires_at': ?expiresAt,
+      },
+      secretNames: const ['token'],
+    ),
+    createdAt: created,
+  );
+
+  test('the GitLab kind reports the token expiry as a notice', () {
+    final now = DateTime(2026, 9, 17, 10);
+    VaultNotice? notice(String? at) => gitLabVaultKind.notice(gitLab(at), now);
+
+    expect(notice(null), isNull);
+    expect(notice('2026-09-22'), const VaultNotice('Token expires in 5 days', urgent: true));
+    expect(notice('2026-09-18'), const VaultNotice('Token expires tomorrow', urgent: true));
+    expect(notice('2026-09-17'), const VaultNotice('Token expires today', urgent: true));
+    expect(notice('2026-09-01'), const VaultNotice('Token expired on 2026-09-01', urgent: true));
+    expect(notice('2027-03-01'), const VaultNotice('Token expires on 2027-03-01', urgent: false));
+    expect(localVaultKind.notice(home, now), isNull);
+  });
+
+  testWidgets('shows the token expiry notice on a GitLab vault card', (tester) async {
+    await tester.pumpWidget(app([home, gitLab(DateTime.now().add(const Duration(days: 5)).toIso8601String().substring(0, 10))]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Token expires in 5 days'), findsOneWidget);
+  });
+
   testWidgets('lists vaults with location, current chip and kind', (tester) async {
     await tester.pumpWidget(app([home, future]));
     await tester.pumpAndSettle();

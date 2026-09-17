@@ -26,8 +26,12 @@ void main() {
       'Offline',
     );
     expect(
-      const SyncStatus(state: SyncState.error, dirtyCount: 0, lastError: 'x')
+      const SyncStatus(state: SyncState.error, dirtyCount: 0, lastError: 'GitLab rejected the token.')
           .describe(now),
+      'Sync failed: GitLab rejected the token.',
+    );
+    expect(
+      const SyncStatus(state: SyncState.error, dirtyCount: 0).describe(now),
       'Sync failed',
     );
     expect(idle(dirty: 1).describe(now), '1 change pending');
@@ -52,5 +56,14 @@ void main() {
       pushed: now.subtract(const Duration(hours: 1)),
     );
     expect(status.describe(now), 'Synced 1 min ago');
+  });
+
+  test('needsAttention defaults to false and is carried', () {
+    expect(const SyncStatus(state: SyncState.error, dirtyCount: 0).needsAttention, isFalse);
+    expect(
+      const SyncStatus(state: SyncState.error, dirtyCount: 0, needsAttention: true)
+          .needsAttention,
+      isTrue,
+    );
   });
 }

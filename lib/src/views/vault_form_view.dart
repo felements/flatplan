@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -49,12 +50,23 @@ class VaultFormView extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 28),
-            child: Text(
-              existing == null ? 'New vault' : 'Edit vault',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    existing == null ? 'New vault' : 'Edit vault',
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => context.go('/settings/vaults'),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: const Text('Cancel'),
+                ),
+              ],
             ),
           ),
           Container(
@@ -91,19 +103,25 @@ class _KindChooserState extends State<_KindChooser> {
   Widget build(BuildContext context) {
     final chosen = _chosen;
     if (chosen != null) return chosen.buildForm(context, null);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final kind in widget.kinds)
-          ListTile(
-            leading: Icon(kind.icon),
-            title: Text(kind.label),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    // A Material ancestor of its own: without it, the ListTiles' ink
+    // splashes paint on (and this assertion flags) the decorated
+    // container VaultFormView wraps the chooser in.
+    return Material(
+      type: MaterialType.transparency,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final kind in widget.kinds)
+            ListTile(
+              leading: Icon(kind.icon),
+              title: Text(kind.label),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onTap: () => setState(() => _chosen = kind),
             ),
-            onTap: () => setState(() => _chosen = kind),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

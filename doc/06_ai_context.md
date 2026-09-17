@@ -31,6 +31,6 @@ See [`07_domain_glossary.md`](07_domain_glossary.md) for a full reference of all
 
 ## Next Steps
 
-The original pipeline (`05_implementation_plan.md`) and Phase 6 (vaults) are built out. `05_implementation_plan.md` lists the Phase 7 candidates: the first remote provider (WebDAV or GitLab), the Android target with a responsive shell, a per-file conflict chooser, and Storage Access Framework folders on Android. Each starts with its own spec under `docs/superpowers/specs/`.
+The original pipeline (`05_implementation_plan.md`) and Phase 6 (vaults) are built out. `05_implementation_plan.md` lists the Phase 7 candidates: further remote providers (WebDAV, GitHub), the Android target with a responsive shell, a per-file conflict chooser, and Storage Access Framework folders on Android. Each starts with its own spec under `docs/superpowers/specs/`.
 
 Other open ideas: charts for visual analytics, and strict `template.yaml` fallback parsing when the user deletes the active period file by hand.

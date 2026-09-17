@@ -3,6 +3,7 @@ import 'dart:io';
 
 import '../storage/vault_workspace.dart';
 import 'conflict_policy.dart';
+import 'lock.dart';
 import 'remote_store.dart';
 import 'sync_journal.dart';
 
@@ -15,14 +16,24 @@ class SyncFailure {
   /// rather than as an error.
   final bool isOffline;
 
-  const SyncFailure({required this.message, required this.isOffline});
+  /// True when only the user can fix it (rejected token, untrusted
+  /// certificate); see [RemoteNeedsAttention].
+  final bool needsAttention;
+
+  const SyncFailure({
+    required this.message,
+    required this.isOffline,
+    this.needsAttention = false,
+  });
 
   factory SyncFailure.from(Object error) => SyncFailure(
     message: error.toString(),
     isOffline:
+        error is RemoteUnreachable ||
         error is SocketException ||
         error is TimeoutException ||
         error is HttpException,
+    needsAttention: error is RemoteNeedsAttention,
   );
 }
 
@@ -39,12 +50,18 @@ class SyncEngine {
   final SyncJournal journal;
   final ConflictPolicy policy;
 
+  /// Shared with the app-facing workspace. Held while a dirty file is read,
+  /// compared and resolved, so a concurrent local write waits and then
+  /// re-marks the name dirty instead of being stranded.
+  final Lock lock;
+
   SyncEngine({
     required this.mirror,
     required this.remote,
     required this.journal,
     required this.policy,
-  });
+    Lock? lock,
+  }) : lock = lock ?? Lock();
 
   /// Brings the mirror up to date with the remote. Never throws.
   Future<SyncFailure?> pull() async {
@@ -97,43 +114,47 @@ class SyncEngine {
     final changes = <RemoteChange>[];
     final hashes = <String, String?>{};
     for (final name in journal.dirty.toList()) {
-      final base = journal.baseline[name];
-      if (await mirror.exists(name)) {
-        final content = await mirror.readString(name);
-        changes.add(
-          RemotePut(name: name, content: content, expectedVersion: base?.version),
-        );
-        hashes[name] = contentHash(content);
-      } else if (base != null) {
-        changes.add(RemoteDelete(name: name, expectedVersion: base.version));
-        hashes[name] = null;
-      } else {
-        // Created and deleted before it was ever pushed.
-        journal.dirty.remove(name);
-      }
+      await lock.synchronized(() async {
+        final base = journal.baseline[name];
+        if (await mirror.exists(name)) {
+          final content = await mirror.readString(name);
+          changes.add(
+            RemotePut(name: name, content: content, expectedVersion: base?.version),
+          );
+          hashes[name] = contentHash(content);
+        } else if (base != null) {
+          changes.add(RemoteDelete(name: name, expectedVersion: base.version));
+          hashes[name] = null;
+        } else {
+          // Created and deleted before it was ever pushed.
+          journal.dirty.remove(name);
+        }
+      });
     }
     return _Snapshot(changes: changes, hashes: hashes);
   }
 
   Future<void> _commit(_Snapshot snapshot, Map<String, String> versions) async {
     for (final entry in snapshot.hashes.entries) {
-      final name = entry.key;
-      final pushedHash = entry.value;
-      if (pushedHash == null) {
-        journal.baseline.remove(name);
-      } else {
-        final version = versions[name];
-        // No version back means no baseline to record, so the next pull
-        // cannot tell this push apart from a remote edit. Leave the name
-        // dirty and push it again rather than stranding it locally.
-        if (version == null) continue;
-        journal.baseline[name] =
-            JournalEntry(version: version, contentHash: pushedHash);
-      }
-      final currentHash = await mirror.exists(name)
-          ? contentHash(await mirror.readString(name))
-          : null;
-      if (currentHash == pushedHash) journal.dirty.remove(name);
+      await lock.synchronized(() async {
+        final name = entry.key;
+        final pushedHash = entry.value;
+        if (pushedHash == null) {
+          journal.baseline.remove(name);
+        } else {
+          final version = versions[name];
+          // No version back means no baseline to record, so the next pull
+          // cannot tell this push apart from a remote edit. Leave the name
+          // dirty and push it again rather than stranding it locally.
+          if (version == null) return;
+          journal.baseline[name] =
+              JournalEntry(version: version, contentHash: pushedHash);
+        }
+        final currentHash = await mirror.exists(name)
+            ? contentHash(await mirror.readString(name))
+            : null;
+        if (currentHash == pushedHash) journal.dirty.remove(name);
+      });
     }
   }
 
@@ -164,29 +185,34 @@ class SyncEngine {
         contentHash: contentHash(remoteFile.content),
       );
 
-      if (!journal.dirty.contains(name)) {
-        await mirror.writeString(name, remoteFile.content);
+      // One acquisition per name, covering the dirty check as well: a
+      // local save that starts mid-pull must either be seen here or wait
+      // and re-mark the name dirty, never be overwritten in between.
+      await lock.synchronized(() async {
+        if (!journal.dirty.contains(name)) {
+          await mirror.writeString(name, remoteFile.content);
+          journal.baseline[name] = remoteEntry;
+          return;
+        }
+        final local =
+            await mirror.exists(name) ? await mirror.readString(name) : null;
+        if (local == remoteFile.content) {
+          // An interrupted earlier push already landed this file.
+          journal.dirty.remove(name);
+        } else {
+          await _resolveConflict(name, local, remoteFile.content);
+        }
         journal.baseline[name] = remoteEntry;
-        continue;
-      }
-
-      // TODO(sync): see spec §9, lock against concurrent local writes
-      final local =
-          await mirror.exists(name) ? await mirror.readString(name) : null;
-      if (local == remoteFile.content) {
-        // An interrupted earlier push already landed this file.
-        journal.dirty.remove(name);
-      } else {
-        await _resolveConflict(name, local, remoteFile.content);
-      }
-      journal.baseline[name] = remoteEntry;
+      });
     }
 
     for (final name in journal.baseline.keys.toList()) {
       if (tree.containsKey(name)) continue;
-      journal.baseline.remove(name);
-      if (journal.dirty.contains(name)) continue; // push re-creates it
-      await mirror.delete(name);
+      await lock.synchronized(() async {
+        journal.baseline.remove(name);
+        if (journal.dirty.contains(name)) return; // push re-creates it
+        await mirror.delete(name);
+      });
     }
 
     journal.lastPullAt = policy.now();

@@ -139,6 +139,7 @@ class _VaultCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final kind = vaultKindFor(vault);
+    final notice = kind.notice(vault, DateTime.now());
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -196,6 +197,18 @@ class _VaultCard extends StatelessWidget {
                     statusLine!,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (notice != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    notice.text,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: notice.urgent
+                          ? colorScheme.error
+                          : colorScheme.onSurfaceVariant,
+                      fontWeight: notice.urgent ? FontWeight.w600 : null,
                     ),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/models.dart';
+import '../storage/secure_vault_secrets.dart';
 import '../storage/vault_registry_service.dart';
 import '../storage/vault_secrets.dart';
 import 'app_paths_provider.dart';
@@ -16,10 +17,10 @@ Future<VaultRegistryService> vaultRegistryService(Ref ref) async {
   return VaultRegistryService.withSharedPreferences(paths);
 }
 
-/// Secret storage for remote vaults. In-memory until the first remote
-/// provider brings the keychain implementation.
+/// Secret storage for remote vaults: the platform keychain or keystore.
+/// Tests override this with [MemoryVaultSecrets].
 @Riverpod(keepAlive: true)
-VaultSecrets vaultSecrets(Ref ref) => MemoryVaultSecrets();
+VaultSecrets vaultSecrets(Ref ref) => SecureVaultSecrets();
 
 /// The vault registry: every known vault and which one is selected.
 @Riverpod(keepAlive: true)

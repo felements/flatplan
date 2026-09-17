@@ -1,7 +1,7 @@
 # Stage 1: Storage Structure & Models
 
 ## Overview
-The app stores everything as **YAML files** inside a **vault**: a named folder of period files. A vault is a local folder (the default one lives in the application support directory; the user can also pick any folder) or, on the roadmap, a remote location such as a GitLab repository, a WebDAV server or an S3 bucket, which the app mirrors locally and syncs. To prevent merge conflicts and line drift in Git, all YAML keys must be sorted alphabetically when saved. The exception is the list of fact expenses which must preserve chronological order (implemented via an incrementing order number or timestamp for each expense record). Every tracking period (e.g., a month) is represented by a single YAML file.
+The app stores everything as **YAML files** inside a **vault**: a named folder of period files. A vault is a local folder (the default one lives in the application support directory; the user can also pick any folder) or a remote location: a folder in a GitLab repository today, with WebDAV and S3 on the roadmap, which the app mirrors locally and syncs. To prevent merge conflicts and line drift in Git, all YAML keys must be sorted alphabetically when saved. The exception is the list of fact expenses which must preserve chronological order (implemented via an incrementing order number or timestamp for each expense record). Every tracking period (e.g., a month) is represented by a single YAML file.
 
 ## File Types
 1. **Period Data File** (`YYYY-MM-<slug>.yaml`, e.g. `2026-09-september.yaml`): Contains all data (categories, planned, and factual expenses) for a specific period. The slug is derived from the period name; a file that fails to load keeps its name reserved so it is never overwritten.

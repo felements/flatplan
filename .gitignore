@@ -55,3 +55,6 @@ current_stats.md
 insights/
 20[0-9][0-9]-[0-9][0-9]-*.yaml
 !examples/20[0-9][0-9]-[0-9][0-9]-*.yaml
+
+# Claude Code worktrees
+.claude/worktrees/

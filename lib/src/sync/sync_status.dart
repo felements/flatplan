@@ -8,12 +8,18 @@ class SyncStatus {
   final DateTime? lastPushAt;
   final String? lastError;
 
+  /// True when the last failure needs the user (rejected token, untrusted
+  /// certificate). The dashboard shows a bar with a way to the vault's
+  /// settings; the switcher says "Needs attention".
+  final bool needsAttention;
+
   const SyncStatus({
     required this.state,
     required this.dirtyCount,
     this.lastPullAt,
     this.lastPushAt,
     this.lastError,
+    this.needsAttention = false,
   });
 
   /// One short line for the UI.
@@ -25,7 +31,8 @@ class SyncStatus {
       case SyncState.offline:
         return dirtyCount > 0 ? 'Offline · $pending' : 'Offline';
       case SyncState.error:
-        return 'Sync failed';
+        final error = lastError;
+        return error == null || error.isEmpty ? 'Sync failed' : 'Sync failed: $error';
       case SyncState.idle:
         if (dirtyCount > 0) return pending;
         final last = _latest(lastPullAt, lastPushAt);

@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/models.dart';
 import '../providers/open_vault_provider.dart';
 import '../providers/vaults_provider.dart';
+import '../sync/sync_status.dart';
 
 /// The sidebar footer control: current vault name, a status line, and a
 /// menu to switch vaults or open the manage screen.
@@ -27,7 +28,8 @@ class VaultSwitcher extends ConsumerWidget {
 
     final String? subtitle;
     final bool attention;
-    if (open?.accessError != null) {
+    if (open?.accessError != null ||
+        (status != null && status.state == SyncState.error && status.needsAttention)) {
       subtitle = 'Needs attention';
       attention = true;
     } else if (current.location is RemoteVaultLocation && status != null) {

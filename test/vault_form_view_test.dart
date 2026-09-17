@@ -9,6 +9,7 @@ import 'package:flatplan/src/sync/remote_store.dart';
 import 'package:flatplan/src/views/vault_form_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'support/fake_vaults.dart';
@@ -159,10 +160,20 @@ void main() {
     expect(updated.location, home.location);
   });
 
-  testWidgets('VaultFormView opens the local form directly for a new vault', (
+  testWidgets('a new vault starts with the kind chooser', (tester) async {
+    await tester.pumpWidget(app(const VaultFormView()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Local folder'), findsOneWidget);
+    expect(find.text('GitLab'), findsOneWidget);
+  });
+
+  testWidgets('choosing local folder from the chooser opens the local form', (
     tester,
   ) async {
     await tester.pumpWidget(app(const VaultFormView()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Local folder'));
     await tester.pumpAndSettle();
 
     expect(find.text('New vault'), findsOneWidget);
@@ -195,5 +206,35 @@ void main() {
       find.textContaining('not supported in this version'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Cancel on the new-vault page returns to the vault list', (tester) async {
+    fakeVaults = FakeVaults(
+      VaultRegistry(lastSelectedVaultId: 'home', vaults: [home]),
+    );
+    final router = GoRouter(
+      initialLocation: '/settings/vaults/new',
+      routes: [
+        GoRoute(path: '/settings/vaults', builder: (_, _) => const Text('VAULT LIST')),
+        GoRoute(path: '/settings/vaults/new', builder: (_, _) => const VaultFormView()),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          vaultsProvider.overrideWith(() => fakeVaults),
+          appPathsProvider.overrideWith((ref) async => paths),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('New vault'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('VAULT LIST'), findsOneWidget);
+    expect(fakeVaults.added, isEmpty);
   });
 }

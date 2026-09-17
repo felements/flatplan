@@ -88,6 +88,22 @@ void main() {
     expect(find.text('Needs attention'), findsOneWidget);
   });
 
+  testWidgets('a sync failure that needs attention says so', (tester) async {
+    await tester.pumpWidget(app(
+      selected: work,
+      status: const SyncStatus(
+        state: SyncState.error,
+        dirtyCount: 1,
+        lastError: 'GitLab rejected the token.',
+        needsAttention: true,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.textContaining('Sync failed'), findsNothing);
+  });
+
   testWidgets('menu lists every vault, checks the current one, and selects',
       (tester) async {
     await tester.pumpWidget(app(selected: home));

@@ -49,6 +49,36 @@ class RemoteConflict implements Exception {
   String toString() => 'RemoteConflict(${names.join(', ')})';
 }
 
+/// The provider could not be reached: no network, a timeout, a handshake
+/// failure, or the server asking to come back later (429, 502, 503, 504).
+/// The engine shows this as "Offline" and retries on the next trigger.
+class RemoteUnreachable implements Exception {
+  final String message;
+
+  const RemoteUnreachable(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// A failure the next retry cannot fix on its own: the user has to act in
+/// the vault's settings (replace the token, trust a certificate). The UI
+/// shows these prominently instead of as a quiet "Sync failed".
+abstract interface class RemoteNeedsAttention implements Exception {}
+
+/// The provider refused the stored credentials (HTTP 401).
+class RemoteAuthRejected implements RemoteNeedsAttention {
+  final String message;
+
+  const RemoteAuthRejected([
+    this.message =
+        'The provider rejected the token. Replace it in the vault settings.',
+  ]);
+
+  @override
+  String toString() => message;
+}
+
 /// The whole surface a provider implements. Only the sync engine calls it.
 abstract interface class RemoteStore {
   /// File name to version for every file in the vault's remote folder.

@@ -33,8 +33,15 @@ This document breaks down the development phases. When feeding this to an AI ass
 ## Phase 6: Vaults & Storage Abstraction (completed)
 Named vaults with a sidebar switcher and a manage screen, the `VaultWorkspace` abstraction under the repository, the vault registry with migration from the single-folder setting, and the provider-independent sync engine (`lib/src/sync/`). Designed and executed from `docs/superpowers/specs/2026-09-16-vaults-and-storage-abstraction-design.md` and its plan.
 
-## Phase 7: Candidates (not started)
-1. **First remote provider**: WebDAV is the simplest and exercises the non-atomic path; GitLab is the simplest atomic one. Preconditions recorded in the spec's follow-ups: the keychain-backed `VaultSecrets`, and a lock between local writes and the engine's per-file pull resolution.
-2. **Android target and responsive shell**: the 220 px sidebar becomes a drawer or bottom navigation on narrow widths.
-3. **Per-file conflict chooser** ("keep mine / take theirs") on top of the newest-wins policy.
-4. **Android user-picked folders** through the Storage Access Framework.
+## Phase 7: Remote providers and mobile
+
+### 7.1 GitLab vault provider (completed)
+The first remote provider: a folder in a GitLab repository, on gitlab.com or self-hosted, through the REST API with a personal access token (fine-grained or legacy). Brought the keychain-backed secrets and the pull/write lock with it. Designed and executed from `docs/superpowers/specs/2026-09-16-gitlab-vault-provider-design.md` and its plan.
+
+### Candidates (not started)
+1. **WebDAV provider**: the first non-atomic store, exercising per-file writes and partial-failure recovery.
+2. **GitHub provider**: a near copy of GitLab over the contents and git data APIs.
+3. **Android target and responsive shell**: the 220 px sidebar becomes a drawer or bottom navigation on narrow widths.
+4. **Per-file conflict chooser** ("keep mine / take theirs") on top of the newest-wins policy.
+5. **Android user-picked folders** through the Storage Access Framework.
+6. **OAuth sign-in for gitlab.com**, where one registered application serves everyone.
