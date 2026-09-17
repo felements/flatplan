@@ -26,8 +26,12 @@ void main() {
       'Offline',
     );
     expect(
-      const SyncStatus(state: SyncState.error, dirtyCount: 0, lastError: 'x')
+      const SyncStatus(state: SyncState.error, dirtyCount: 0, lastError: 'GitLab rejected the token.')
           .describe(now),
+      'Sync failed: GitLab rejected the token.',
+    );
+    expect(
+      const SyncStatus(state: SyncState.error, dirtyCount: 0).describe(now),
       'Sync failed',
     );
     expect(idle(dirty: 1).describe(now), '1 change pending');

@@ -25,7 +25,8 @@ class SyncStatus {
       case SyncState.offline:
         return dirtyCount > 0 ? 'Offline · $pending' : 'Offline';
       case SyncState.error:
-        return 'Sync failed';
+        final error = lastError;
+        return error == null || error.isEmpty ? 'Sync failed' : 'Sync failed: $error';
       case SyncState.idle:
         if (dirtyCount > 0) return pending;
         final last = _latest(lastPullAt, lastPushAt);
