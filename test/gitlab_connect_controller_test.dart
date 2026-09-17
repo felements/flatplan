@@ -74,6 +74,25 @@ void main() {
     expect(fresh.folder, 'budget');
   });
 
+  test('connect records the token expiry and carries it into the settings', () async {
+    gitlab.tokenExpiresAt = '2026-12-31';
+    await controller.connect(gitlab.validToken);
+    expect(controller.tokenExpiresAt, DateTime(2026, 12, 31));
+    await controller.selectProject(controller.projects.single);
+    expect(controller.toSettings().tokenExpiresAt, DateTime(2026, 12, 31));
+  });
+
+  test('a replacement token updates the expiry', () async {
+    final existing = GitLabSettings(baseUrl: FakeGitLab.baseUrl, projectId: 42, projectPath: 'group/repo', branch: 'main', tokenExpiresAt: DateTime(2026, 1, 1));
+    controller = make(existing: existing);
+    expect(controller.tokenExpiresAt, DateTime(2026, 1, 1));
+    gitlab.tokenExpiresAt = '2027-06-30';
+
+    await controller.verifyReplacementToken(gitlab.validToken);
+
+    expect(controller.tokenExpiresAt, DateTime(2027, 6, 30));
+  });
+
   test('connect with a legacy api token reaches the project step', () async {
     await controller.connect(gitlab.validToken);
     expect(controller.connectError, isNull);

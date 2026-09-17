@@ -54,6 +54,7 @@ secretNames: ['token'])`. Settings keys, all non-secret:
 | `branch` | `main` | |
 | `folder` | `budget` | no leading or trailing slash. Empty string means the repository root. |
 | `cert_fingerprint` | `AB:CD:…` | SHA-256 of the trusted certificate's DER bytes, upper-case hex pairs joined by colons. Absent when the system trust store is used. |
+| `token_expires_at` | `2026-12-31` | Date the token expires, read from the token-info endpoint when the token was verified. Absent when unknown. The vault list shows "Token expires in N days" (urgent within 14 days or once past). |
 
 `GitLabSettings` (`lib/src/sync/gitlab/gitlab_settings.dart`) is a typed
 view over this map with `fromSettings` and `toSettings`, so the store, the

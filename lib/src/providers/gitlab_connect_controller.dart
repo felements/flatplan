@@ -62,6 +62,10 @@ class GitLabConnectController extends ChangeNotifier {
   bool selfHosted = false;
   String baseUrl = GitLabSettings.gitLabCom;
   String? certFingerprint;
+
+  /// Expiry of the verified token, read at connect time. Kept in the vault
+  /// settings so the vault list can warn before it runs out.
+  DateTime? tokenExpiresAt;
   ConnectStep step = ConnectStep.token;
   String? connectError;
   CertificateRejected? pendingCertificate;
@@ -95,6 +99,7 @@ class GitLabConnectController extends ChangeNotifier {
       selfHosted = !existing.isGitLabCom;
       baseUrl = existing.baseUrl;
       certFingerprint = existing.certFingerprint;
+      tokenExpiresAt = existing.tokenExpiresAt;
       project = ProjectSummary(
         id: existing.projectId,
         name: existing.projectPath.split('/').last,
@@ -189,6 +194,7 @@ class GitLabConnectController extends ChangeNotifier {
   Future<bool> _legacyScopeOk(GitLabApi api) async {
     try {
       final info = await api.tokenInfo();
+      tokenExpiresAt = info.expiresAt;
       return info.isFineGrained || info.scopes.contains('api');
     } on GitLabApiException {
       return true;
@@ -347,6 +353,7 @@ class GitLabConnectController extends ChangeNotifier {
     branch: branch!,
     folder: folder,
     certFingerprint: certFingerprint,
+    tokenExpiresAt: tokenExpiresAt,
   );
 
   /// Runs one wizard action: tracks [busy] (reentrant-safe via a counter,

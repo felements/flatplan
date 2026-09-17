@@ -107,7 +107,10 @@ class GitLabVaultForm extends HookConsumerWidget {
         }
         final settings = existing == null
             ? controller.toSettings()
-            : existingSettings!.copyWith(certFingerprint: controller.certFingerprint);
+            : existingSettings!.copyWith(
+                certFingerprint: controller.certFingerprint,
+                tokenExpiresAt: controller.tokenExpiresAt,
+              );
         final vault = Vault(
           id: id,
           name: trimmed,

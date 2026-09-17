@@ -107,7 +107,15 @@ class TokenInfo {
   /// instead of `scopes`.
   final bool isFineGrained;
 
-  const TokenInfo({required this.scopes, required this.isFineGrained});
+  /// `expires_at` as a date; null when the token never expires or the
+  /// field is absent.
+  final DateTime? expiresAt;
+
+  const TokenInfo({
+    required this.scopes,
+    required this.isFineGrained,
+    this.expiresAt,
+  });
 }
 
 /// Thin typed client over the GitLab REST API v4. Every method throws
@@ -223,6 +231,9 @@ class GitLabApi {
     return TokenInfo(
       scopes: ((body['scopes'] as List?) ?? const []).cast<String>().toList(),
       isFineGrained: body['granular_scopes'] != null,
+      expiresAt: body['expires_at'] is String
+          ? DateTime.tryParse(body['expires_at'] as String)
+          : null,
     );
   });
 

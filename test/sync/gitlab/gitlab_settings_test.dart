@@ -61,4 +61,12 @@ void main() {
     expect(GitLabSettings.normalizeFolder(' /budget/2026/ '), 'budget/2026');
     expect(GitLabSettings.normalizeFolder('/'), '');
   });
+
+  test('carries the token expiry as a date-only key and omits it when unknown', () {
+    final s = full.copyWith(tokenExpiresAt: DateTime(2026, 12, 31));
+    expect(s.toSettings()['token_expires_at'], '2026-12-31');
+    expect(GitLabSettings.fromSettings(s.toSettings()).tokenExpiresAt, DateTime(2026, 12, 31));
+    expect(full.toSettings().containsKey('token_expires_at'), isFalse);
+    expect(GitLabSettings.fromSettings({...full.toSettings(), 'token_expires_at': 'junk'}).tokenExpiresAt, isNull);
+  });
 }

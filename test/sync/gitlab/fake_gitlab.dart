@@ -29,6 +29,10 @@ class FakeGitLab {
   /// When set, `/personal_access_tokens/self` answers with this status.
   int? tokenInfoStatus;
 
+  /// `expires_at` reported by `/personal_access_tokens/self`, e.g.
+  /// `2026-12-31`. Null omits the field.
+  String? tokenExpiresAt;
+
   /// Path prefix -> status code, to force errors on specific endpoints.
   final Map<String, int> failWith = {};
 
@@ -127,6 +131,7 @@ class FakeGitLab {
       return _json(200, {
         'id': 1,
         'scopes': fineGrained ? <String>[] : tokenScopes,
+        'expires_at': tokenExpiresAt,
         if (fineGrained)
           'granular_scopes': [
             {'access': 'selected_memberships', 'permissions': ['read_repository'], 'project_id': projectId, 'group_id': null},

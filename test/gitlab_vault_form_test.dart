@@ -249,6 +249,7 @@ void main() {
 
   testWidgets('replacing the token verifies it and saves the new secret', (tester) async {
     await secrets.write('g', 'token', 'old');
+    gitlab.tokenExpiresAt = '2027-01-01';
     await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
     await tester.pumpAndSettle();
 
@@ -264,6 +265,8 @@ void main() {
 
     expect(fakeVaults.updated.single.name, 'Budget');
     expect(await secrets.read('g', 'token'), gitlab.validToken);
+    final saved = fakeVaults.updated.single.location as RemoteVaultLocation;
+    expect(saved.settings['token_expires_at'], '2027-01-01');
   });
 
   testWidgets('a missing secret makes the token field required', (tester) async {

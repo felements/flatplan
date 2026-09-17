@@ -85,6 +85,12 @@ void main() {
     expect(gitlab.files['budget/a.yaml'], 'a');
   });
 
+  test('tokenInfo reads the expiry date when present', () async {
+    expect((await api.tokenInfo()).expiresAt, isNull);
+    gitlab.tokenExpiresAt = '2026-12-31';
+    expect((await api.tokenInfo()).expiresAt, DateTime(2026, 12, 31));
+  });
+
   test('tokenInfo reports legacy scopes and fine-grained tokens', () async {
     expect((await api.tokenInfo()).scopes, ['api']);
     gitlab.fineGrained = true;
