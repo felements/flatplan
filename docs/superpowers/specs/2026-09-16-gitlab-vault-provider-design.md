@@ -355,8 +355,11 @@ self-hosted vault also shows "Trusted certificate: <fingerprint>" with a
   `Release.entitlements`. Without the first the sandbox blocks every
   request; without the second the keychain write fails.
 - Linux: the release workflow installs `libsecret-1-dev` alongside the GTK
-  packages; the `flutter_to_debian` config declares `libsecret-1-0` as a
-  runtime dependency so the package pulls it in. Without a running secret
+  packages. Configured from `pubspec.yaml`, as here, `flutter_to_debian`
+  derives `Depends:` from the shared libraries the bundle links against, so
+  installing `libsecret-1-dev` in the release job is enough and no runtime
+  dependency has to be declared by hand; verify the generated control file
+  lists `libsecret-1-0` on the next release. Without a running secret
   service the keychain write throws, which the form reports as "Could not
   save the vault" rather than crashing.
 - Windows: nothing.
