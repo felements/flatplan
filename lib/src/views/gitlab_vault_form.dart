@@ -263,6 +263,15 @@ class GitLabVaultForm extends HookConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           onTap: () => controller.selectProject(p),
         ),
+      if (controller.avatarsForbidden)
+        Padding(
+          padding: const EdgeInsets.only(left: 16, top: 4),
+          child: Text(
+            'Project logos need the Avatar: Read permission on the token; '
+            'initials are shown instead.',
+            style: hint,
+          ),
+        ),
       const SizedBox(height: 20),
     ];
 
@@ -558,8 +567,9 @@ class _TokenHelp extends StatelessWidget {
                 'User settings → Access → Personal access tokens → Generate token → '
                 'Fine-grained. Under "Group and project access" pick the vault '
                 'repository, then grant Project: Read, Branch: Read, Repository: Read '
-                'and Commit: Create. Under the User tab grant Project: Read. '
-                'Available on every tier from GitLab 19.2.',
+                'and Commit: Create; add Avatar: Read to see project logos. Under '
+                'the User tab grant Project: Read. Available on every tier from '
+                'GitLab 19.2.',
                 style: style,
               ),
               const SizedBox(height: 8),

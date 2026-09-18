@@ -310,9 +310,11 @@ hover or a wide screen:
    - **Fine-grained (recommended).** User settings → Access → Personal
      access tokens → Generate token → Fine-grained. Under "Group and
      project access" pick the vault repository, then grant: Project: Read,
-     Branch: Read, Repository: Read, Commit: Create. Under the User tab
-     grant Project: Read. Available on every tier and every instance from
-     GitLab 19.2.
+     Branch: Read, Repository: Read, Commit: Create. Optional: Avatar: Read,
+     which lets the project list show logos (`GET /projects/:id/avatar`);
+     without it the list shows the project's initial and says why. Under
+     the User tab grant Project: Read. Available on every tier and every
+     instance from GitLab 19.2.
    - **Legacy.** Scope `api`. Needed on instances older than GitLab 18.10.
      Group or instance admins can block legacy tokens after a date they
      set, in which case GitLab answers with an error naming the fine-grained

@@ -108,6 +108,7 @@ void main() {
 
     expect(find.textContaining('Commit: Create'), findsOneWidget);
     expect(find.textContaining('Repository: Read'), findsOneWidget);
+    expect(find.textContaining('Avatar: Read'), findsOneWidget);
     expect(find.textContaining('api'), findsWidgets);
   });
 
@@ -301,6 +302,18 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+  });
+
+  testWidgets('a token that cannot read avatars gets a hint under the project list', (tester) async {
+    gitlab.hasAvatar = true;
+    gitlab.failWith['/projects/42/avatar'] = 403;
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Avatar: Read'), findsOneWidget);
+    expect(find.byType(GitLabIdenticon), findsOneWidget);
   });
 
   testWidgets('project rows are inset like the search field above them', (tester) async {

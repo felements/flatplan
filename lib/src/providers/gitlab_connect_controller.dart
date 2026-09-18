@@ -129,6 +129,11 @@ class GitLabConnectController extends ChangeNotifier {
   /// One download per project for the life of the connection; a failure
   /// resolves to null so a missing picture never shows as an error.
   final Map<int, Future<Uint8List?>> _avatars = {};
+
+  /// True once the avatar endpoint answered 403: a fine-grained token
+  /// without the Avatar: Read permission. The form then says why the
+  /// list shows initials instead of logos.
+  bool avatarsForbidden = false;
   Timer? _searchTimer;
   Completer<void>? _searchCompleter;
   int _searchSeq = 0;
@@ -196,6 +201,7 @@ class GitLabConnectController extends ChangeNotifier {
     token = null;
     _api = null;
     _avatars.clear();
+    avatarsForbidden = false;
     // A search still in flight belongs to the dropped connection.
     _searchSeq++;
     projects = const [];
@@ -323,6 +329,10 @@ class GitLabConnectController extends ChangeNotifier {
       project.id,
       () => api.projectAvatar(project.id).catchError((Object e) {
         log('Avatar of ${project.pathWithNamespace} not loaded: $e', name: 'flatplan.gitlab');
+        if (e is GitLabApiException && e.status == 403 && !avatarsForbidden) {
+          avatarsForbidden = true;
+          _notify();
+        }
         return null;
       }),
     );

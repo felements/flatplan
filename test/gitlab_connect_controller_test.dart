@@ -586,4 +586,18 @@ void main() {
     expect(controller.step, ConnectStep.project);
     expect(controller.folderCheck, isNull);
   });
+
+  test('a 403 on the avatar endpoint marks avatars as forbidden for this token', () async {
+    gitlab.hasAvatar = true;
+    await controller.connect(gitlab.validToken);
+    expect(controller.avatarsForbidden, isFalse);
+
+    gitlab.failWith['/projects/42/avatar'] = 403;
+    expect(await controller.avatarFor(controller.projects.single), isNull);
+    expect(controller.avatarsForbidden, isTrue);
+
+    // A new connection starts clean.
+    controller.back();
+    expect(controller.avatarsForbidden, isFalse);
+  });
 }
