@@ -6,7 +6,7 @@ FlatPlan is a Flutter budget-tracking app (desktop today, mobile planned) storin
 ## Current Progress
 - **Stages 1 through 5** and **Phase 6 (vaults and the storage abstraction)** are **COMPLETED**; Phase 7.1 (GitLab provider) is **COMPLETED**; further Phase 7 candidates are listed in `doc/05_implementation_plan.md`.
 - Flutter desktop app with GoRouter routing and responsive `AppShell` with a 220 px dark sidebar.
-- Dashboard, Category Details, and Settings pages are live.
+- Dashboard, Category Details, and Settings pages are live. Periods are created from the sidebar's "Next period" button (`showNewPeriodDialog`), not from Settings.
 - Period rollover logic generates new periods from existing ones or from scratch (cold-start).
 - Periods are persisted as sorted YAML files inside the selected **vault**. The default vault lives in the application support directory (`<app support>/periods`); a vault can also be a user-picked folder, or a remote GitLab vault; WebDAV, S3 and other providers are still on the roadmap.
 - Vaults are created, switched and removed from the sidebar switcher and Settings → Vaults; the pre-vault folder setting migrates into the first vault automatically.
@@ -28,7 +28,7 @@ FlatPlan is a Flutter budget-tracking app (desktop today, mobile planned) storin
 - `lib/src/providers/` — Riverpod providers binding storage to logic: `appPathsProvider`, `vaultsProvider` (registry), `openVaultProvider`, `currentSyncStatusProvider`, `periodRepositoryProvider` (async, errors with `VaultUnavailable`), `currentPeriodProvider`, `periodProvider`, `allPeriodsProvider`, `periodStatsProvider`, `currentPeriodStatsSyncProvider`, the settings providers, `gitLabApiFactoryProvider`, and `GitLabConnectController`
 - `lib/src/routing/` — GoRouter with `StatefulShellRoute` (Dashboard + Settings branches)
 - `lib/src/views/` — `DashboardView`, `CategoryDetailView`, `CategoryEditorView`, `SettingsView`, `AppShell`, `VaultListView`, `VaultFormView`, `GitLabVaultForm`, and the `vault_kinds.dart` descriptor list
-- `lib/src/components/` — `CategoryTile`, `SummaryCard`, `PeriodLoadBanner`, the `showCategoryDialog` / `showPlannedExpenseDialog` editors, `VaultSwitcher`, `VaultAccessBanner`, `BrokenRegistryBanner`, `SyncLifecycleBridge`
+- `lib/src/components/` — `CategoryTile`, `SummaryCard`, `PeriodLoadBanner`, the `showCategoryDialog` / `showPlannedExpenseDialog` / `showNewPeriodDialog` editors, `VaultSwitcher`, `VaultAccessBanner`, `BrokenRegistryBanner`, `SyncLifecycleBridge`
 
 ## Design Guidelines
 See `doc/08_design_guidelines.md` for the full visual identity — color palette (gold `#D4A84B`, teal `#5A8F7B`, coral `#E07A5F`), Outfit typography, component standards (16 px radius cards, 12 px buttons/inputs), sidebar spec, and spacing conventions. All new UI must follow this document.

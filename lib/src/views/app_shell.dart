@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../components/period_dialogs.dart';
 import '../components/vault_switcher.dart';
 import '../logic/period_extensions.dart';
 import '../models/models.dart';
@@ -95,10 +96,15 @@ class AppShell extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // ─── Today (active period) ────────────────────────
+                // Today is the period covering today, so it stays lit while
+                // that period is viewed, not only on the bare dashboard route.
                 _SidebarItem(
                   icon: Icons.calendar_today_rounded,
                   label: 'Today',
-                  isSelected: selectedIndex == 0 && activePeriodId == null,
+                  isSelected:
+                      selectedIndex == 0 &&
+                      (activePeriodId == null ||
+                          activePeriodId == todayPeriod?.id),
                   onTap: () {
                     if (todayPeriod != null) {
                       context.go('/period/${todayPeriod.id}');
@@ -109,6 +115,11 @@ class AppShell extends ConsumerWidget {
                       );
                     }
                   },
+                ),
+
+                // ─── Next period ──────────────────────────────────
+                _NextPeriodButton(
+                  onPressed: () => showNewPeriodDialog(context, ref),
                 ),
 
                 // ─── Period links ───────────────────────────────────
@@ -248,6 +259,54 @@ class _SidebarItem extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The full-width outlined "+ Next period" button between Today and the
+/// period list. Periods sort newest first, so the row a new period will
+/// occupy is directly below the button. Outlined rather than filled so it
+/// does not compete with the selected nav item.
+class _NextPeriodButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _NextPeriodButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: colorScheme.primary,
+            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
+            // Left inset puts the plus's centre on the period dots' column
+            // (34 px sub-item inset + 3 px dot radius = 37 px from the
+            // button edge minus half the 18 px icon) and the label on the
+            // period names' column (dot + 10 px gap = 50 px).
+            padding: const EdgeInsets.fromLTRB(28, 10, 14, 10),
+            alignment: Alignment.centerLeft,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_rounded, size: 18),
+              SizedBox(width: 4),
+              Flexible(
+                child: Text('Next period', overflow: TextOverflow.ellipsis),
+              ),
+            ],
           ),
         ),
       ),
