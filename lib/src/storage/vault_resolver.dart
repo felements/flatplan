@@ -83,15 +83,18 @@ class VaultResolver {
   Future<String?> bookmarkFor(String path) =>
       _bookmarks?.bookmarkForPath(path) ?? Future.value(null);
 
+  /// [onMirrorChanged] fires after a pull wrote or deleted files in a
+  /// remote vault's mirror, with their names; local vaults never call it.
   Future<OpenVault> open(
     Vault vault, {
     void Function(SyncStatus)? onStatus,
+    void Function(Set<String> names)? onMirrorChanged,
   }) {
     switch (vault.location) {
       case LocalVaultLocation(:final path, :final bookmark):
         return _openLocal(vault, path, bookmark);
       case final RemoteVaultLocation location:
-        return _openRemote(vault, location, onStatus);
+        return _openRemote(vault, location, onStatus, onMirrorChanged);
     }
   }
 
@@ -132,6 +135,7 @@ class VaultResolver {
     Vault vault,
     RemoteVaultLocation location,
     void Function(SyncStatus)? onStatus,
+    void Function(Set<String> names)? onMirrorChanged,
   ) async {
     final factory = remoteStores.factoryFor(location.kind);
     if (factory == null) {
@@ -170,7 +174,7 @@ class VaultResolver {
       journal: journal,
       policy: policy,
       lock: lock,
-    );
+    )..onMirrorChanged = onMirrorChanged;
     final scheduler = SyncScheduler(
       engine: engine,
       onStatus: onStatus ?? (_) {},

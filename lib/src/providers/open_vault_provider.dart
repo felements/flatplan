@@ -6,7 +6,10 @@ import '../storage/vault_resolver.dart';
 import '../sync/gitlab/gitlab_provider.dart';
 import '../sync/remote_store.dart';
 import '../sync/sync_status.dart';
+import 'all_periods_provider.dart';
 import 'app_paths_provider.dart';
+import 'current_period_provider.dart';
+import 'repository_provider.dart';
 import 'vaults_provider.dart';
 
 part 'open_vault_provider.g.dart';
@@ -70,6 +73,9 @@ Future<OpenVault> openVault(Ref ref) async {
     onStatus: (value) {
       if (live) status.set(value);
     },
+    onMirrorChanged: (names) {
+      if (live && ref.mounted) _reloadPeriods(ref.container, names);
+    },
   );
   if (!ref.mounted) {
     // A newer selection won while this vault was opening. Nothing has been
@@ -84,4 +90,23 @@ Future<OpenVault> openVault(Ref ref) async {
   // session left changes pending.
   unawaited(open.scheduler?.syncNow());
   return open;
+}
+
+/// A pull changed [names] in the mirror the app is reading. The period
+/// list always re-reads; the open period is re-read only when it has no
+/// value yet or its own file changed, so an edit still waiting for its
+/// debounced save is not thrown away over an unrelated file.
+///
+/// Through the container: these providers depend on [openVaultProvider],
+/// and `ref.read` from here would report that as a circular dependency.
+void _reloadPeriods(ProviderContainer container, Set<String> names) {
+  container.invalidate(periodLoadResultProvider);
+  if (!container.exists(currentPeriodProvider)) return;
+  final current = container.read(currentPeriodProvider).value;
+  final file = current == null
+      ? null
+      : container.read(periodRepositoryProvider).value?.filenameForPeriod(current.id);
+  if (current == null || file == null || names.contains(file)) {
+    container.invalidate(currentPeriodProvider);
+  }
 }

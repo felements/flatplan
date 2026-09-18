@@ -2,15 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flatplan/src/models/models.dart';
+import 'package:flatplan/src/providers/all_periods_provider.dart';
 import 'package:flatplan/src/providers/app_paths_provider.dart';
+import 'package:flatplan/src/providers/current_period_provider.dart';
 import 'package:flatplan/src/providers/open_vault_provider.dart';
 import 'package:flatplan/src/providers/period_notifier_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
 import 'package:flatplan/src/storage/app_paths.dart';
+import 'package:flatplan/src/storage/period_repository.dart';
 import 'package:flatplan/src/storage/vault_registry_service.dart';
 import 'package:flatplan/src/storage/vault_resolver.dart';
 import 'package:flatplan/src/storage/vault_secrets.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flatplan/src/sync/remote_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -166,6 +170,33 @@ void main() {
     expect(await open.workspace!.readString('x.yaml'), 'x');
     expect(container.read(currentSyncStatusProvider), isNotNull);
     expect(container.read(currentSyncStatusProvider)!.lastPullAt, isNotNull);
+  });
+
+  test('periods pulled after a remote vault opens show up without a switch', () async {
+    // Serialise a real period the way the repository writes it.
+    final scratch = MemoryWorkspace();
+    await PeriodRepository(workspace: scratch).savePeriod(
+      Period(
+        id: 'p1',
+        name: 'September 2026',
+        startDate: DateTime(2026, 9, 1),
+        baseCurrency: 'EUR',
+        lastModified: DateTime(2026, 9, 1),
+      ),
+    );
+    final fileName = (await scratch.listFiles()).single;
+    remote.seed(fileName, await scratch.readString(fileName));
+    container = makeContainer(VaultRegistry(lastSelectedVaultId: 'r', vaults: [remoteVault()]));
+
+    // The UI holds these alive from the first frame, before the pull lands.
+    container.listen(allPeriodsProvider, (_, _) {});
+    container.listen(currentPeriodProvider, (_, _) {});
+    await container.read(openVaultProvider.future);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    final periods = await container.read(allPeriodsProvider.future);
+    expect(periods.map((p) => p.id), ['p1']);
+    expect((await container.read(currentPeriodProvider.future))?.id, 'p1');
   });
 
   test('switching away from a remote vault flushes its pending changes',

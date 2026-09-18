@@ -55,6 +55,14 @@ class SyncEngine {
   /// re-marks the name dirty instead of being stranded.
   final Lock lock;
 
+  /// Called after a pull that wrote or deleted mirror files, with their
+  /// names, so the app can re-read what changed under it. Not called for
+  /// a pull that only adopted versions or found nothing new.
+  void Function(Set<String> names)? onMirrorChanged;
+
+  /// Names written or deleted by the pull in progress.
+  Set<String>? _pullChanges;
+
   SyncEngine({
     required this.mirror,
     required this.remote,
@@ -166,6 +174,16 @@ class SyncEngine {
   }
 
   Future<void> _pull() async {
+    final changes = _pullChanges = <String>{};
+    try {
+      await _pullInto(changes);
+    } finally {
+      _pullChanges = null;
+    }
+    if (changes.isNotEmpty) onMirrorChanged?.call(changes);
+  }
+
+  Future<void> _pullInto(Set<String> changes) async {
     if (journal.needsFullRescan) {
       journal.dirty.addAll(await mirror.listFiles());
       journal.needsFullRescan = false;
@@ -191,6 +209,7 @@ class SyncEngine {
       await lock.synchronized(() async {
         if (!journal.dirty.contains(name)) {
           await mirror.writeString(name, remoteFile.content);
+          changes.add(name);
           journal.baseline[name] = remoteEntry;
           return;
         }
@@ -212,6 +231,7 @@ class SyncEngine {
         journal.baseline.remove(name);
         if (journal.dirty.contains(name)) return; // push re-creates it
         await mirror.delete(name);
+        changes.add(name);
       });
     }
 
@@ -228,6 +248,7 @@ class SyncEngine {
     if (local == null) {
       // Deleted here, edited there: keeping the edit loses nothing.
       await mirror.writeString(name, remoteContent);
+      _pullChanges?.add(name);
       journal.dirty.remove(name);
       return;
     }
@@ -242,10 +263,12 @@ class SyncEngine {
     if (remoteWins) {
       await mirror.writeString(sideName, local);
       await mirror.writeString(name, remoteContent);
+      _pullChanges?.add(name);
       journal.dirty.remove(name);
     } else {
       await mirror.writeString(sideName, remoteContent);
     }
+    _pullChanges?.add(sideName);
     journal.dirty.add(sideName);
   }
 }
