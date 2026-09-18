@@ -7,7 +7,7 @@ import 'package:flatplan/src/providers/gitlab_connect_controller.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
 import 'package:flatplan/src/storage/vault_secrets.dart';
 import 'package:flatplan/src/sync/gitlab/gitlab_api.dart';
-import 'package:flatplan/src/views/gitlab_identicon.dart';
+import 'package:flatplan/src/views/project_initial.dart';
 import 'package:flatplan/src/views/gitlab_vault_form.dart';
 import 'package:flatplan/src/views/vault_kinds.dart';
 import 'package:flutter/material.dart';
@@ -313,7 +313,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Avatar: Read'), findsOneWidget);
-    expect(find.byType(GitLabIdenticon), findsOneWidget);
+    expect(find.byType(ProjectInitial), findsOneWidget);
   });
 
   testWidgets('project rows are inset like the search field above them', (tester) async {
@@ -329,7 +329,7 @@ void main() {
     await connect(tester, url: FakeGitLab.baseUrl);
 
     expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsOneWidget);
-    expect(find.byType(GitLabIdenticon), findsOneWidget);
+    expect(find.byType(ProjectInitial), findsOneWidget);
     expect(find.byType(Image), findsNothing);
 
     gitlab.hasAvatar = true;

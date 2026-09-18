@@ -11,7 +11,7 @@ import '../providers/gitlab_connect_controller.dart';
 import '../providers/vaults_provider.dart';
 import '../sync/gitlab/gitlab_api.dart';
 import '../sync/gitlab/gitlab_settings.dart';
-import 'gitlab_identicon.dart';
+import 'project_initial.dart';
 
 /// Create or edit a GitLab vault. One scrolling column that reveals each
 /// step as the previous one succeeds; nothing needs a wide screen.
@@ -460,7 +460,7 @@ class _ProjectAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = GitLabIdenticon(id: project.id, name: project.name, size: size);
+    final initial = ProjectInitial(name: project.name, size: size);
     if (project.avatarUrl == null) return initial;
     return FutureBuilder<Uint8List?>(
       future: load(project),
