@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../app_theme.dart';
 import '../components/category_tile.dart';
+import '../components/period_dialogs.dart';
 import '../components/period_load_warning.dart';
 import '../components/summary_card.dart';
 import '../components/vault_banners.dart';
@@ -59,9 +60,13 @@ class DashboardView extends ConsumerWidget {
         const <PeriodLoadFailure>[];
 
     final openVault = ref.watch(openVaultProvider).value;
-    final brokenRegistryFile = ref.watch(vaultsProvider).value?.brokenRegistryFile;
+    final brokenRegistryFile = ref
+        .watch(vaultsProvider)
+        .value
+        ?.brokenRegistryFile;
     final syncStatus = ref.watch(currentSyncStatusProvider);
-    final attentionVaultId = syncStatus != null &&
+    final attentionVaultId =
+        syncStatus != null &&
             syncStatus.state == SyncState.error &&
             syncStatus.needsAttention
         ? openVault?.vault.id
@@ -74,7 +79,7 @@ class DashboardView extends ConsumerWidget {
           : Center(child: Text('Error: $err')),
       data: (period) {
         if (period == null) {
-          return _buildEmptyState(context);
+          return _buildEmptyState(context, ref);
         }
 
         // Compute the effective end date from the full list of periods.
@@ -423,7 +428,7 @@ class DashboardView extends ConsumerWidget {
   }
 
   /// Empty-state when no period exists.
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -460,9 +465,9 @@ class DashboardView extends ConsumerWidget {
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () => GoRouter.of(context).go('/settings'),
-            icon: const Icon(Icons.settings_rounded),
-            label: const Text('Go to Settings to Generate Period'),
+            onPressed: () => showNewPeriodDialog(context, ref),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Create first period'),
           ),
         ],
       ),
@@ -509,7 +514,9 @@ class DashboardView extends ConsumerWidget {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () => GoRouter.of(context).go(
-                vaultId == null ? '/settings/vaults' : '/settings/vaults/$vaultId/edit',
+                vaultId == null
+                    ? '/settings/vaults'
+                    : '/settings/vaults/$vaultId/edit',
               ),
               icon: const Icon(Icons.settings_rounded),
               label: const Text('Open vault settings'),

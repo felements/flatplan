@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 - "Change Folder" and "Reset to default folder" moved into the vault's edit form.
+- Period creation moved out of Settings: the sidebar's Periods header now carries a gold "+ Add" button that creates the first period of an empty vault or rolls the current one over. The dashboard's empty state opens the same dialog directly.
 
 ### Planned
 - Multi-currency support

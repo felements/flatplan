@@ -66,6 +66,7 @@ Used on `SummaryCard` for visual differentiation:
 - Top: FlatPlan branding (wallet icon in rounded badge + bold title)
 - Items: icon + label in a `Row`, 12 px rounded `Material` highlight (gold @ 12 % opacity when selected)
 - Hover: gold @ 6 % opacity
+- Periods header: `labelSmall` "Periods" label inset to the period names, with a compact gold "+ Add" elevated button (12 px radius, 10 × 6 px padding) on the right. It sits above the list because periods sort newest first.
 
 ### Category Tiles
 - Animated hover background transition (180 ms ease-out)

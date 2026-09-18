@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../components/period_dialogs.dart';
 import '../components/vault_switcher.dart';
 import '../logic/period_extensions.dart';
 import '../models/models.dart';
@@ -109,6 +110,11 @@ class AppShell extends ConsumerWidget {
                       );
                     }
                   },
+                ),
+
+                // ─── Periods header + New period ──────────────────
+                _PeriodsHeader(
+                  onNewPeriod: () => showNewPeriodDialog(context, ref),
                 ),
 
                 // ─── Period links ───────────────────────────────────
@@ -250,6 +256,55 @@ class _SidebarItem extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The "Periods" section label with the gold "+ Add" button on its
+/// right. Sits above the period list because periods are sorted newest
+/// first: the row a new period will occupy is directly below this header.
+class _PeriodsHeader extends StatelessWidget {
+  final VoidCallback onNewPeriod;
+
+  const _PeriodsHeader({required this.onNewPeriod});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      // Matches the sub-item inset so the label lines up with period names.
+      padding: const EdgeInsets.only(left: 46, right: 20, top: 12, bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Periods',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: onNewPeriod,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('Add'),
+            // The theme's CTA style (gold, 12 px radius) at sidebar scale.
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
