@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io' show HandshakeException;
 
+import 'package:flatplan/src/components/wizard_steps.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/gitlab_connect_controller.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
 import 'package:flatplan/src/storage/vault_secrets.dart';
 import 'package:flatplan/src/sync/gitlab/gitlab_api.dart';
+import 'package:flatplan/src/views/project_initial.dart';
 import 'package:flatplan/src/views/gitlab_vault_form.dart';
 import 'package:flatplan/src/views/vault_kinds.dart';
 import 'package:flutter/material.dart';
@@ -106,39 +108,83 @@ void main() {
 
     expect(find.textContaining('Commit: Create'), findsOneWidget);
     expect(find.textContaining('Repository: Read'), findsOneWidget);
+    expect(find.textContaining('Avatar: Read'), findsOneWidget);
     expect(find.textContaining('api'), findsWidgets);
   });
 
-  testWidgets('connecting reveals projects, selecting reveals branch, folder and name', (tester) async {
+  testWidgets('the step indicator follows the wizard and is absent when editing', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await tester.pumpAndSettle();
+    WizardSteps steps() => tester.widget<WizardSteps>(find.byType(WizardSteps));
+    expect(steps().labels, ['Token', 'Repository', 'Location']);
+    expect(steps().current, 0);
+
+    await connect(tester, url: FakeGitLab.baseUrl);
+    expect(steps().current, 1);
+
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+    expect(steps().current, 2);
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(steps().current, 1);
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(steps().current, 0);
+    expect(find.text('Back'), findsNothing);
+  });
+
+  testWidgets('each step shows only its own fields; earlier steps collapse to one line', (tester) async {
     gitlab.files['budget/2026-09-september.yaml'] = 'id: p\n';
     await tester.pumpWidget(app(const GitLabVaultForm()));
     await connect(tester, url: FakeGitLab.baseUrl);
 
-    expect(find.text('Connected'), findsOneWidget);
+    // Repository step: the token section is a summary line now.
+    expect(find.text('gitlab.test · Token verified'), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-token')), findsNothing);
+    expect(find.text('Self-hosted instance'), findsNothing);
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
     expect(find.text('group/repo'), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-branch')), findsNothing);
 
     await tester.tap(find.text('group/repo'));
     await tester.pumpAndSettle();
 
+    // Location step: the project list is gone, the chosen project is a line.
+    expect(find.byKey(const Key('gitlab-search')), findsNothing);
+    expect(find.byType(ListTile), findsNothing);
+    expect(find.text('group/repo'), findsOneWidget);
+    expect(find.text('gitlab.test · Token verified'), findsOneWidget);
     expect(find.text('1 period file found'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'repo'), findsOneWidget);
     expect(find.text('Create vault'), findsOneWidget);
   });
 
-  testWidgets('unchecking self-hosted after selecting a project resets the flow', (tester) async {
+  testWidgets('Back walks the wizard backwards and the token step ends with Connect again', (tester) async {
     await tester.pumpWidget(app(const GitLabVaultForm()));
     await connect(tester, url: FakeGitLab.baseUrl);
     await tester.tap(find.text('group/repo'));
     await tester.pumpAndSettle();
-
     expect(find.text('Create vault'), findsOneWidget);
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Create vault'), findsNothing);
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
     expect(find.text('group/repo'), findsOneWidget);
 
-    await tester.tap(find.text('Self-hosted instance'));
+    await tester.tap(find.text('Back'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Create vault'), findsNothing);
+    expect(find.byKey(const Key('gitlab-token')), findsOneWidget);
+    expect(find.text('Self-hosted instance'), findsOneWidget);
     expect(find.text('group/repo'), findsNothing);
+
+    // The typed token is still in the field: Connect moves forward again.
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+    expect(find.text('group/repo'), findsOneWidget);
   });
 
   testWidgets('a rejected token shows the error and stays on the token step', (tester) async {
@@ -164,7 +210,7 @@ void main() {
     await tester.tap(find.text('Trust'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text('gitlab.test · Token verified'), findsOneWidget);
   });
 
   testWidgets('creating writes the secret first and then adds the vault', (tester) async {
@@ -208,6 +254,125 @@ void main() {
 
     final location = fakeVaults.added.single.location as RemoteVaultLocation;
     expect(location.settings['folder'], 'finance');
+  });
+
+  testWidgets('the folder status sits in the field helper with an icon per state', (tester) async {
+    gitlab.files['budget/2026-01-january.yaml'] = 'a';
+    gitlab.files['budget/2026-11-november.yaml'] = 'c';
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+
+    // In flight: a progress indicator and "Checking folder…".
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    await tester.tap(find.text('group/repo'));
+    // The branches request answers first; the tree request then blocks
+    // on the gate, leaving the check in flight.
+    for (var i = 0; i < 10 && find.text('Checking folder…').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(find.text('Checking folder…'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    // Found: green check, count, first … last.
+    TextField folderField() => tester.widget<TextField>(find.byKey(const Key('gitlab-folder')));
+    expect(folderField().decoration!.helper, isNotNull, reason: 'status aligns with the helper text');
+    expect(find.text('2 period files found'), findsOneWidget);
+    expect(find.text('2026-01-january … 2026-11-november'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Icon && w.icon == Icons.check_circle_rounded && w.color == Colors.green.shade600,
+      ),
+      findsOneWidget,
+    );
+
+    // Missing: its own icon, not an error.
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'nowhere');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(find.text('Folder not found, it will be created on first sync'), findsOneWidget);
+    expect(find.byIcon(Icons.create_new_folder_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline_rounded), findsNothing);
+
+    // Error: the error icon.
+    gitlab.failWith['/projects/42/repository/tree'] = 403;
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'other');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+  });
+
+  testWidgets('a token that cannot read avatars gets a hint under the project list', (tester) async {
+    gitlab.hasAvatar = true;
+    gitlab.failWith['/projects/42/avatar'] = 403;
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Avatar: Read'), findsOneWidget);
+    expect(find.byType(ProjectInitial), findsOneWidget);
+  });
+
+  testWidgets('project rows are inset like the search field above them', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+
+    final row = tester.widget<ListTile>(find.byType(ListTile).first);
+    expect(row.contentPadding, const EdgeInsets.symmetric(horizontal: 16));
+  });
+
+  testWidgets('project rows show the GitLab avatar, or the initial when there is none', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+
+    expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsOneWidget);
+    expect(find.byType(ProjectInitial), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+
+    gitlab.hasAvatar = true;
+    await tester.enterText(find.byKey(const Key('gitlab-search')), 'repo');
+    await tester.pumpAndSettle();
+    // The download starts on a zero-length timer, which the test clock only
+    // fires when time passes; pumpAndSettle stops as soon as no frame is due.
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    final image = tester.widget<Image>(find.descendant(of: find.byType(ListTile), matching: find.byType(Image)));
+    expect((image.image as MemoryImage).bytes, FakeGitLab.avatarPng);
+    expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsNothing);
+  });
+
+  testWidgets('Back stays clickable while the folder check the click itself started runs', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+
+    // Leaving the folder field (which a click on Back does, on pointer-down)
+    // starts a check; Back must survive the busy flag it raises.
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'budget');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('Checking folder…'), findsOneWidget);
+    expect(
+      tester.widget<TextButton>(find.widgetWithText(TextButton, 'Back')).onPressed,
+      isNotNull,
+      reason: 'a folder check in flight must not disable Back',
+    );
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-folder')), findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
   });
 
   testWidgets('Create vault stays clickable while a folder check runs', (tester) async {
@@ -391,5 +556,11 @@ void main() {
     expect(vaultKindFor(vault), same(gitLabVaultKind));
     expect(gitLabVaultKind.locationLine(vault), 'GitLab · me/budget/budget');
     expect(vaultKinds.map((k) => k.kind), ['local', 'gitlab']);
+  });
+  testWidgets('the edit form has no step indicator', (tester) async {
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WizardSteps), findsNothing);
   });
 }

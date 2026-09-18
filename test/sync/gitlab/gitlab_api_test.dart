@@ -200,4 +200,19 @@ void main() {
     api = GitLabApi(client: client, baseUrl: FakeGitLab.baseUrl, token: 't', takeRejectedCertificate: () => rejected);
     await expectLater(api.project(42), throwsA(same(rejected)));
   });
+
+  test('projectAvatar returns the image bytes, or null when there is none', () async {
+    expect(await api.projectAvatar(42), isNull);
+
+    gitlab.hasAvatar = true;
+    final bytes = await api.projectAvatar(42);
+    expect(bytes, FakeGitLab.avatarPng);
+    expect(gitlab.calls.last, 'GET /api/v4/projects/42/avatar');
+  });
+
+  test('search carries the avatar url', () async {
+    gitlab.hasAvatar = true;
+    final found = await api.searchProjects('');
+    expect(found.single.avatarUrl, endsWith('/logo.png'));
+  });
 }

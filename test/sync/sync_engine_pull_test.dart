@@ -53,6 +53,28 @@ void main() {
     expect(journal.lastPullAt, fixedNow);
   });
 
+  test('pull reports the mirror files it wrote or deleted', () async {
+    final reported = <Set<String>>[];
+    engine.onMirrorChanged = reported.add;
+    remote.seed('a.yaml', 'a1');
+    remote.seed('b.yaml', 'b1');
+
+    await engine.pull();
+    expect(reported, [
+      {'a.yaml', 'b.yaml'},
+    ]);
+
+    // Nothing new on the remote: no report.
+    await engine.pull();
+    expect(reported, hasLength(1));
+
+    // A remote delete of a clean file is a mirror change too.
+    remote.remove('b.yaml');
+    await engine.pull();
+    expect(reported.last, {'b.yaml'});
+    expect(files.containsKey('b.yaml'), isFalse);
+  });
+
   test('a second pull reads only files whose version changed', () async {
     remote.seed('a.yaml', 'a1');
     remote.seed('b.yaml', 'b1');

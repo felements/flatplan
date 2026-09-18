@@ -237,4 +237,80 @@ void main() {
     expect(find.text('VAULT LIST'), findsOneWidget);
     expect(fakeVaults.added, isEmpty);
   });
+
+  Widget routed(List<Vault> vaults, String location) {
+    fakeVaults = FakeVaults(
+      VaultRegistry(lastSelectedVaultId: 'home', vaults: vaults),
+    );
+    final router = GoRouter(
+      initialLocation: location,
+      routes: [
+        GoRoute(path: '/settings/vaults', builder: (_, _) => const Text('VAULT LIST')),
+        GoRoute(path: '/settings/vaults/new', builder: (_, _) => const VaultFormView()),
+        GoRoute(
+          path: '/settings/vaults/:id/edit',
+          builder: (_, state) => VaultFormView(vaultId: state.pathParameters['id']),
+        ),
+      ],
+    );
+    return ProviderScope(
+      overrides: [
+        vaultsProvider.overrideWith(() => fakeVaults),
+        appPathsProvider.overrideWith((ref) async => paths),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    );
+  }
+
+  final travel = Vault(
+    id: 'travel',
+    name: 'Travel',
+    location: const VaultLocation.local(path: '/Users/me/travel'),
+    createdAt: created,
+  );
+
+  testWidgets('the new-vault page has no Remove button', (tester) async {
+    await tester.pumpWidget(routed([home, travel], '/settings/vaults/new'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remove'), findsNothing);
+  });
+
+  testWidgets('Remove on the edit page confirms, removes and returns to the list', (tester) async {
+    await tester.pumpWidget(routed([home, travel], '/settings/vaults/travel/edit'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove "Travel"?'), findsOneWidget);
+    expect(fakeVaults.removed, isEmpty);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(fakeVaults.removed, ['travel']);
+    expect(find.text('VAULT LIST'), findsOneWidget);
+  });
+
+  testWidgets('cancelling the Remove dialog keeps the vault and stays on the page', (tester) async {
+    await tester.pumpWidget(routed([home, travel], '/settings/vaults/travel/edit'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel').last);
+    await tester.pumpAndSettle();
+
+    expect(fakeVaults.removed, isEmpty);
+    expect(find.text('Edit vault'), findsOneWidget);
+  });
+
+  testWidgets('Remove is disabled for the last vault', (tester) async {
+    await tester.pumpWidget(routed([home], '/settings/vaults/home/edit'));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<TextButton>(find.widgetWithText(TextButton, 'Remove'));
+    expect(button.onPressed, isNull);
+    expect(find.byTooltip('The last vault cannot be removed.'), findsOneWidget);
+  });
 }

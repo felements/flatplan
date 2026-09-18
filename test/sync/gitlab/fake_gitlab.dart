@@ -22,6 +22,19 @@ class FakeGitLab {
   /// Projects returned by the search, in order. Defaults to the one above.
   List<Map<String, dynamic>>? searchResults;
 
+  /// A valid 1x1 PNG, what `/projects/:id/avatar` serves when [hasAvatar].
+  static const avatarPng = <int>[
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, //
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, //
+    0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0xf8, 0xdf, 0xc0, 0xf0, //
+    0x1f, 0x00, 0x06, 0x80, 0x02, 0x7f, 0x10, 0x4c, 0x1b, 0xe1, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, //
+    0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+  ];
+
+  /// Whether the project has an avatar: sets `avatar_url` in its JSON and
+  /// makes the avatar endpoint answer with [avatarPng] instead of 404.
+  bool hasAvatar = false;
+
   String validToken = 'glpat-secret';
   List<String> tokenScopes = ['api'];
   bool fineGrained = false;
@@ -65,6 +78,7 @@ class FakeGitLab {
     'path_with_namespace': projectPath,
     'default_branch': defaultBranch,
     'empty_repo': emptyRepo,
+    'avatar_url': hasAvatar ? '$baseUrl/uploads/-/system/project/avatar/$projectId/logo.png' : null,
   };
 
   Future<http.Response> _handle(http.Request request) async {
@@ -107,6 +121,10 @@ class FakeGitLab {
       return branches.contains(name)
           ? _json(200, {'name': name})
           : _json(404, {'message': '404 Branch Not Found'});
+    }
+    if (path == '$p/avatar') {
+      if (!hasAvatar) return _json(404, {'message': '404 Not Found'});
+      return http.Response.bytes(avatarPng, 200, headers: {'content-type': 'image/png'});
     }
     if (path == '$p/repository/tree') {
       await pauseTree?.future;
