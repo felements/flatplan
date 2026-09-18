@@ -127,6 +127,30 @@ void main() {
     expect(tester.getBottomLeft(buttonFinder).dy, lessThan(firstPeriodTop));
   });
 
+  testWidgets(
+    'the plus lines up with the period dots and the label with the names',
+    (tester) async {
+      await pumpShell(tester, periods: [activePeriod()]);
+
+      final dot = find
+          .byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.constraints ==
+                    const BoxConstraints.tightFor(width: 6, height: 6),
+          )
+          .first;
+      final plus = find.byIcon(Icons.add_rounded);
+      expect(tester.getCenter(plus).dx, closeTo(tester.getCenter(dot).dx, 0.5));
+
+      final firstLabel = DateFormat('MMM yy').format(activePeriod().startDate);
+      expect(
+        tester.getTopLeft(find.text('Next period')).dx,
+        closeTo(tester.getTopLeft(find.text(firstLabel)).dx, 0.5),
+      );
+    },
+  );
+
   testWidgets('Next period on an empty vault opens the first-period dialog', (
     tester,
   ) async {

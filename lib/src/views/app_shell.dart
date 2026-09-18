@@ -278,17 +278,30 @@ class _NextPeriodButton extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       child: SizedBox(
         width: double.infinity,
-        child: OutlinedButton.icon(
+        child: OutlinedButton(
           onPressed: onPressed,
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Next period'),
           style: OutlinedButton.styleFrom(
             foregroundColor: colorScheme.primary,
             side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            // Left inset puts the plus's centre on the period dots' column
+            // (34 px sub-item inset + 3 px dot radius = 37 px from the
+            // button edge minus half the 18 px icon) and the label on the
+            // period names' column (dot + 10 px gap = 50 px).
+            padding: const EdgeInsets.fromLTRB(28, 10, 14, 10),
+            alignment: Alignment.centerLeft,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_rounded, size: 18),
+              SizedBox(width: 4),
+              Flexible(
+                child: Text('Next period', overflow: TextOverflow.ellipsis),
+              ),
+            ],
           ),
         ),
       ),
