@@ -173,6 +173,32 @@ void main() {
     expect(find.text('Generate Next Period'), findsOneWidget);
   });
 
+  testWidgets('Today stays highlighted while the current period is viewed', (
+    tester,
+  ) async {
+    await pumpShell(tester, periods: [activePeriod()]);
+
+    Color? todayColor() => tester
+        .widget<Material>(
+          find
+              .ancestor(of: find.text('Today'), matching: find.byType(Material))
+              .first,
+        )
+        .color;
+
+    await tester.tap(find.text('Today'));
+    await tester.pumpAndSettle();
+    expect(
+      GoRouter.of(tester.element(find.text('Today'))).state.uri.path,
+      '/period/p1',
+    );
+
+    final highlight = Theme.of(
+      tester.element(find.text('Today')),
+    ).colorScheme.primary.withValues(alpha: 0.12);
+    expect(todayColor(), highlight);
+  });
+
   testWidgets('the generate dialog names the period used as the template', (
     tester,
   ) async {

@@ -96,10 +96,15 @@ class AppShell extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // ─── Today (active period) ────────────────────────
+                // Today is the period covering today, so it stays lit while
+                // that period is viewed, not only on the bare dashboard route.
                 _SidebarItem(
                   icon: Icons.calendar_today_rounded,
                   label: 'Today',
-                  isSelected: selectedIndex == 0 && activePeriodId == null,
+                  isSelected:
+                      selectedIndex == 0 &&
+                      (activePeriodId == null ||
+                          activePeriodId == todayPeriod?.id),
                   onTap: () {
                     if (todayPeriod != null) {
                       context.go('/period/${todayPeriod.id}');
