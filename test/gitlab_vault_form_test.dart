@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show HandshakeException;
 
+import 'package:flatplan/src/components/wizard_steps.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/gitlab_connect_controller.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
@@ -107,6 +108,26 @@ void main() {
     expect(find.textContaining('Commit: Create'), findsOneWidget);
     expect(find.textContaining('Repository: Read'), findsOneWidget);
     expect(find.textContaining('api'), findsWidgets);
+  });
+
+  testWidgets('the step indicator follows the wizard and is absent when editing', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await tester.pumpAndSettle();
+    WizardSteps steps() => tester.widget<WizardSteps>(find.byType(WizardSteps));
+    expect(steps().labels, ['Token', 'Repository', 'Location']);
+    expect(steps().current, 0);
+
+    await connect(tester, url: FakeGitLab.baseUrl);
+    expect(steps().current, 1);
+
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+    expect(steps().current, 2);
+
+    // Changing the server sends the wizard back to the start.
+    await tester.tap(find.text('Self-hosted instance'));
+    await tester.pumpAndSettle();
+    expect(steps().current, 0);
   });
 
   testWidgets('connecting reveals projects, selecting reveals branch, folder and name', (tester) async {
@@ -391,5 +412,11 @@ void main() {
     expect(vaultKindFor(vault), same(gitLabVaultKind));
     expect(gitLabVaultKind.locationLine(vault), 'GitLab · me/budget/budget');
     expect(vaultKinds.map((k) => k.kind), ['local', 'gitlab']);
+  });
+  testWidgets('the edit form has no step indicator', (tester) async {
+    await tester.pumpWidget(app(GitLabVaultForm(existing: gitLabVault())));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WizardSteps), findsNothing);
   });
 }

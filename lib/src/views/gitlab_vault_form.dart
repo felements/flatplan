@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../components/wizard_steps.dart';
 import '../models/models.dart';
 import '../providers/gitlab_connect_controller.dart';
 import '../providers/vaults_provider.dart';
@@ -173,6 +174,17 @@ class GitLabVaultForm extends HookConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!isEdit) ...[
+            WizardSteps(
+              labels: const ['Token', 'Repository', 'Location'],
+              current: switch (controller.step) {
+                ConnectStep.server || ConnectStep.token => 0,
+                ConnectStep.project => 1,
+                ConnectStep.target => 2,
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
           // 1. Server
           CheckboxListTile(
             key: const Key('gitlab-self-hosted'),
