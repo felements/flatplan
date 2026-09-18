@@ -48,7 +48,7 @@ Future<void> _showGenerateDialog(
 ) async {
   final result = await showDialog<({String name, DateTime startDate})>(
     context: context,
-    builder: (ctx) => const _GeneratePeriodDialog(),
+    builder: (ctx) => _GeneratePeriodDialog(templateName: currentPeriod.name),
   );
   if (result == null || !context.mounted) return;
 
@@ -185,7 +185,11 @@ class _CreateFirstPeriodDialogState extends State<_CreateFirstPeriodDialog> {
 /// Owns its [TextEditingController] so it is disposed only after the
 /// dialog's exit animation completes.
 class _GeneratePeriodDialog extends StatefulWidget {
-  const _GeneratePeriodDialog();
+  /// Name of the current period, whose categories and recurring planned
+  /// payments seed the new one.
+  final String templateName;
+
+  const _GeneratePeriodDialog({required this.templateName});
 
   @override
   State<_GeneratePeriodDialog> createState() => _GeneratePeriodDialogState();
@@ -248,6 +252,29 @@ class _GeneratePeriodDialogState extends State<_GeneratePeriodDialog> {
           ),
           const SizedBox(height: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.copy_all_rounded,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Categories and recurring planned payments are carried '
+                  'over from "${widget.templateName}". One-off payments and '
+                  'spending are not.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
                 Icons.info_outline_rounded,

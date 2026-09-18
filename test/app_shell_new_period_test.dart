@@ -172,4 +172,21 @@ void main() {
 
     expect(find.text('Generate Next Period'), findsOneWidget);
   });
+
+  testWidgets('the generate dialog names the period used as the template', (
+    tester,
+  ) async {
+    await pumpShell(tester, periods: [activePeriod()]);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Next period'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Categories and recurring planned payments are carried over from '
+        '"This Month". One-off payments and spending are not.',
+      ),
+      findsOneWidget,
+    );
+  });
 }
