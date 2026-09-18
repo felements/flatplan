@@ -22,31 +22,73 @@ GitLabApiFactory gitLabApiFactory(Ref ref) =>
 
 enum ConnectStep { server, token, project, target }
 
-enum FolderCheckKind { periodFiles, empty, newRepository, error }
+enum FolderCheckKind { checking, periodFiles, empty, missing, newRepository, error }
 
+/// What the chosen folder holds on the remote, as the form shows it.
 class FolderCheck {
   final FolderCheckKind kind;
   final int count;
   final String? message;
 
-  const FolderCheck.periodFiles(this.count)
+  /// First and last period file names (without `.yaml`), sorted; set for
+  /// [FolderCheckKind.periodFiles] so a wrong path is caught before it is
+  /// saved, when it is still cheap to fix.
+  final String? first;
+  final String? last;
+
+  const FolderCheck.checking()
+    : kind = FolderCheckKind.checking,
+      count = 0,
+      message = null,
+      first = null,
+      last = null;
+  const FolderCheck.periodFiles(this.count, {required this.first, required this.last})
     : kind = FolderCheckKind.periodFiles,
       message = null;
-  const FolderCheck.empty() : kind = FolderCheckKind.empty, count = 0, message = null;
+  const FolderCheck.empty()
+    : kind = FolderCheckKind.empty,
+      count = 0,
+      message = null,
+      first = null,
+      last = null;
+  const FolderCheck.missing()
+    : kind = FolderCheckKind.missing,
+      count = 0,
+      message = null,
+      first = null,
+      last = null;
   const FolderCheck.newRepository()
     : kind = FolderCheckKind.newRepository,
       count = 0,
-      message = null;
-  const FolderCheck.error(this.message) : kind = FolderCheckKind.error, count = 0;
+      message = null,
+      first = null,
+      last = null;
+  const FolderCheck.error(this.message)
+    : kind = FolderCheckKind.error,
+      count = 0,
+      first = null,
+      last = null;
 
   String describe() => switch (kind) {
+    FolderCheckKind.checking => 'Checking folder…',
     FolderCheckKind.periodFiles =>
       '$count period ${count == 1 ? 'file' : 'files'} found',
-    FolderCheckKind.empty => 'Empty, files will be created on first sync',
+    FolderCheckKind.empty =>
+      'No period files here yet, they will be created on first sync',
+    FolderCheckKind.missing => 'Folder not found, it will be created on first sync',
     FolderCheckKind.newRepository =>
       'New repository, the branch will be created on first sync',
     FolderCheckKind.error => message ?? 'Could not read the folder',
   };
+
+  /// "first … last" for found period files, the one name when there is a
+  /// single file, null otherwise.
+  String? get detail {
+    final a = first;
+    final b = last;
+    if (a == null || b == null) return null;
+    return a == b ? a : '$a … $b';
+  }
 }
 
 /// Drives the GitLab connect wizard: server, token, project, branch and
@@ -82,6 +124,10 @@ class GitLabConnectController extends ChangeNotifier {
   String? suggestedName;
 
   GitLabApi? _api;
+
+  /// One download per project for the life of the connection; a failure
+  /// resolves to null so a missing picture never shows as an error.
+  final Map<int, Future<Uint8List?>> _avatars = {};
   Timer? _searchTimer;
   Completer<void>? _searchCompleter;
   int _searchSeq = 0;
@@ -148,6 +194,7 @@ class GitLabConnectController extends ChangeNotifier {
     if (step == ConnectStep.token && token == null) return;
     token = null;
     _api = null;
+    _avatars.clear();
     projects = const [];
     project = null;
     branches = const [];
@@ -264,6 +311,17 @@ class GitLabConnectController extends ChangeNotifier {
     return completer.future;
   }
 
+  /// The project's avatar for its list row. No request for a project
+  /// without one, and never an error: null means "show the initial".
+  Future<Uint8List?> avatarFor(ProjectSummary project) {
+    final api = _api;
+    if (project.avatarUrl == null || api == null) return Future.value(null);
+    return _avatars.putIfAbsent(
+      project.id,
+      () => api.projectAvatar(project.id).catchError((Object _) => null),
+    );
+  }
+
   Future<void> selectProject(ProjectSummary chosen) => _run(() async {
     final api = _api!;
     project = chosen;
@@ -317,21 +375,29 @@ class GitLabConnectController extends ChangeNotifier {
     final chosen = project;
     final ref = branch;
     if (chosen == null || ref == null) return;
+    folderCheck = const FolderCheck.checking();
+    _notify();
     try {
       final entries = await api.tree(chosen.id, ref, folder);
       final prefix = folder.isEmpty ? '' : '$folder/';
-      final periods = entries.where(
-        (e) =>
-            e.isBlob &&
-            e.path == '$prefix${e.name}' &&
-            e.name.endsWith('.yaml') &&
-            !e.name.contains('.conflict-'),
-      );
-      folderCheck = periods.isEmpty ? const FolderCheck.empty() : FolderCheck.periodFiles(periods.length);
+      final periods = entries
+          .where(
+            (e) =>
+                e.isBlob &&
+                e.path == '$prefix${e.name}' &&
+                e.name.endsWith('.yaml') &&
+                !e.name.contains('.conflict-'),
+          )
+          .map((e) => e.name.substring(0, e.name.length - '.yaml'.length))
+          .toList()
+        ..sort();
+      folderCheck = periods.isEmpty
+          ? const FolderCheck.empty()
+          : FolderCheck.periodFiles(periods.length, first: periods.first, last: periods.last);
     } on GitLabApiException catch (e) {
       if (e.status == 404) {
         final fresh = await api.project(chosen.id);
-        folderCheck = fresh.emptyRepo ? const FolderCheck.newRepository() : const FolderCheck.empty();
+        folderCheck = fresh.emptyRepo ? const FolderCheck.newRepository() : const FolderCheck.missing();
       } else {
         folderCheck = FolderCheck.error(e.message);
       }

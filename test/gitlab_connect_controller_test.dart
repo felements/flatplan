@@ -187,10 +187,55 @@ void main() {
     expect(controller.folderCheck!.describe(), '1 period file found');
   });
 
-  test('folder check reports empty, new repository and errors', () async {
+  test('folder check names the first and last period files', () async {
+    gitlab.files['budget/2026-01-january.yaml'] = 'a';
+    gitlab.files['budget/2026-05-may.yaml'] = 'b';
+    gitlab.files['budget/2026-11-november.yaml'] = 'c';
     await controller.connect(gitlab.validToken);
     await controller.selectProject(controller.projects.single);
-    expect(controller.folderCheck!.describe(), 'Empty, files will be created on first sync');
+
+    final check = controller.folderCheck!;
+    expect(check.describe(), '3 period files found');
+    expect(check.detail, '2026-01-january … 2026-11-november');
+
+    gitlab.files.clear();
+    gitlab.files['budget/2026-05-may.yaml'] = 'b';
+    await controller.setFolder('budget');
+    expect(controller.folderCheck!.detail, '2026-05-may');
+  });
+
+  test('folder check is in the checking state while the request is in flight', () async {
+    gitlab.files['budget/2026-05-may.yaml'] = 'b';
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    final pending = controller.setFolder('budget');
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.folderCheck!.kind, FolderCheckKind.checking);
+    expect(controller.folderCheck!.describe(), 'Checking folder…');
+
+    gate.complete();
+    await pending;
+    expect(controller.folderCheck!.kind, FolderCheckKind.periodFiles);
+  });
+
+  test('folder check tells a missing folder from one without period files', () async {
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+    expect(controller.folderCheck!.kind, FolderCheckKind.missing);
+    expect(controller.folderCheck!.describe(), 'Folder not found, it will be created on first sync');
+
+    gitlab.files['budget/notes.md'] = 'x';
+    await controller.setFolder('budget');
+    expect(controller.folderCheck!.kind, FolderCheckKind.empty);
+    expect(controller.folderCheck!.describe(), 'No period files here yet, they will be created on first sync');
+  });
+
+  test('folder check reports new repository and errors', () async {
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
 
     gitlab.emptyRepo = true;
     await controller.setFolder('/budget/');
@@ -499,5 +544,26 @@ void main() {
   test('back on the token step is a no-op', () {
     controller.back();
     expect(controller.step, ConnectStep.token);
+  });
+
+  test('avatarFor loads a project avatar once and skips projects without one', () async {
+    await controller.connect(gitlab.validToken);
+    final noAvatar = controller.projects.single;
+    expect(await controller.avatarFor(noAvatar), isNull);
+    expect(gitlab.calls.where((c) => c.endsWith('/avatar')), isEmpty);
+
+    gitlab.hasAvatar = true;
+    await controller.search('');
+    final withAvatar = controller.projects.single;
+    expect(await controller.avatarFor(withAvatar), FakeGitLab.avatarPng);
+    expect(await controller.avatarFor(withAvatar), FakeGitLab.avatarPng);
+    expect(gitlab.calls.where((c) => c.endsWith('/avatar')).length, 1);
+  });
+
+  test('avatarFor turns a failed download into no avatar', () async {
+    gitlab.hasAvatar = true;
+    await controller.connect(gitlab.validToken);
+    gitlab.failWith['/projects/42/avatar'] = 500;
+    expect(await controller.avatarFor(controller.projects.single), isNull);
   });
 }

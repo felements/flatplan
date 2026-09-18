@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -44,12 +45,18 @@ class ProjectSummary {
   final String defaultBranch;
   final bool emptyRepo;
 
+  /// Null when the project has no avatar. Only its presence matters: the
+  /// image itself comes from [GitLabApi.projectAvatar], which the token
+  /// can read where a plain upload url may need a browser session.
+  final String? avatarUrl;
+
   const ProjectSummary({
     required this.id,
     required this.name,
     required this.pathWithNamespace,
     required this.defaultBranch,
     required this.emptyRepo,
+    this.avatarUrl,
   });
 
   factory ProjectSummary.fromJson(Map<String, dynamic> json) => ProjectSummary(
@@ -58,6 +65,7 @@ class ProjectSummary {
     pathWithNamespace: json['path_with_namespace'] as String,
     defaultBranch: json['default_branch'] as String? ?? 'main',
     emptyRepo: json['empty_repo'] as bool? ?? false,
+    avatarUrl: json['avatar_url'] as String?,
   );
 }
 
@@ -160,6 +168,17 @@ class GitLabApi {
 
   Future<ProjectSummary> project(int id) async =>
       _getJson('/projects/$id', (json) => ProjectSummary.fromJson(json as Map<String, dynamic>));
+
+  /// The project's avatar image, or null when it has none.
+  Future<Uint8List?> projectAvatar(int id) async {
+    try {
+      final response = await _send('GET', '/projects/$id/avatar', accept: 'image/*');
+      return response.bodyBytes;
+    } on GitLabApiException catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
 
   Future<List<String>> branches(int id) async => _getJson(
     '/projects/$id/repository/branches',
@@ -264,11 +283,12 @@ class GitLabApi {
     String path, {
     Map<String, String>? query,
     Map<String, dynamic>? jsonBody,
+    String accept = 'application/json',
   }) async {
     final uri = _uri(path, query);
     final request = http.Request(method, uri)
       ..headers['PRIVATE-TOKEN'] = token
-      ..headers['Accept'] = 'application/json';
+      ..headers['Accept'] = accept;
     if (jsonBody != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(jsonBody);

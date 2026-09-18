@@ -254,6 +254,82 @@ void main() {
     expect(location.settings['folder'], 'finance');
   });
 
+  testWidgets('the folder status sits in the field helper with an icon per state', (tester) async {
+    gitlab.files['budget/2026-01-january.yaml'] = 'a';
+    gitlab.files['budget/2026-11-november.yaml'] = 'c';
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+
+    // In flight: a progress indicator and "Checking folder…".
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    await tester.tap(find.text('group/repo'));
+    // The branches request answers first; the tree request then blocks
+    // on the gate, leaving the check in flight.
+    for (var i = 0; i < 10 && find.text('Checking folder…').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(find.text('Checking folder…'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    // Found: green check, count, first … last.
+    TextField folderField() => tester.widget<TextField>(find.byKey(const Key('gitlab-folder')));
+    expect(folderField().decoration!.helper, isNotNull, reason: 'status aligns with the helper text');
+    expect(find.text('2 period files found'), findsOneWidget);
+    expect(find.text('2026-01-january … 2026-11-november'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Icon && w.icon == Icons.check_circle_rounded && w.color == Colors.green.shade600,
+      ),
+      findsOneWidget,
+    );
+
+    // Missing: its own icon, not an error.
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'nowhere');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(find.text('Folder not found, it will be created on first sync'), findsOneWidget);
+    expect(find.byIcon(Icons.create_new_folder_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline_rounded), findsNothing);
+
+    // Error: the error icon.
+    gitlab.failWith['/projects/42/repository/tree'] = 403;
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'other');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+  });
+
+  testWidgets('project rows are inset like the search field above them', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+
+    final row = tester.widget<ListTile>(find.byType(ListTile).first);
+    expect(row.contentPadding, const EdgeInsets.symmetric(horizontal: 16));
+  });
+
+  testWidgets('project rows show the GitLab avatar, or the initial when there is none', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+
+    expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+
+    gitlab.hasAvatar = true;
+    await tester.enterText(find.byKey(const Key('gitlab-search')), 'repo');
+    await tester.pumpAndSettle();
+    // The download starts on a zero-length timer, which the test clock only
+    // fires when time passes; pumpAndSettle stops as soon as no frame is due.
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    final image = tester.widget<Image>(find.descendant(of: find.byType(ListTile), matching: find.byType(Image)));
+    expect((image.image as MemoryImage).bytes, FakeGitLab.avatarPng);
+    expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsNothing);
+  });
+
   testWidgets('Create vault stays clickable while a folder check runs', (tester) async {
     await tester.pumpWidget(app(const GitLabVaultForm()));
     await connect(tester, url: FakeGitLab.baseUrl);

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -252,7 +254,8 @@ class GitLabVaultForm extends HookConsumerWidget {
       ),
       for (final p in controller.projects)
         ListTile(
-          contentPadding: EdgeInsets.zero,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: _ProjectAvatar(project: p, load: controller.avatarFor),
           title: Text(p.name),
           subtitle: Text(p.pathWithNamespace),
           selected: controller.project?.id == p.id,
@@ -292,19 +295,17 @@ class GitLabVaultForm extends HookConsumerWidget {
           key: const Key('gitlab-folder'),
           controller: folder,
           focusNode: folderFocus,
-          decoration: const InputDecoration(
+          // The check result replaces the helper text, so it sits exactly
+          // where the helper does and inherits its inset.
+          decoration: InputDecoration(
             labelText: 'Folder',
-            helperText: 'Empty means the repository root.',
+            helperText: controller.folderCheck == null ? 'Empty means the repository root.' : null,
+            helper: controller.folderCheck == null ? null : _FolderStatus(controller.folderCheck!),
           ),
           onChanged: controller.updateFolder,
           onSubmitted: controller.setFolder,
           onTapOutside: (_) => controller.setFolder(folder.text),
         ),
-        if (controller.folderCheck != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(controller.folderCheck!.describe(), style: hint),
-          ),
       ],
       const SizedBox(height: 20),
       TextField(
@@ -370,6 +371,113 @@ class GitLabVaultForm extends HookConsumerWidget {
                 ],
               ],
       ),
+    );
+  }
+}
+
+/// The folder check as the Folder field's helper: an icon per state so
+/// "checking", "found", "nothing there" and "failed" read at a glance.
+class _FolderStatus extends StatelessWidget {
+  final FolderCheck check;
+
+  const _FolderStatus(this.check);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final muted = colorScheme.onSurfaceVariant;
+    final Widget icon;
+    Color color = muted;
+    switch (check.kind) {
+      case FolderCheckKind.checking:
+        icon = SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2, color: muted),
+        );
+      case FolderCheckKind.periodFiles:
+        color = Colors.green.shade600;
+        icon = Icon(Icons.check_circle_rounded, size: 16, color: color);
+      case FolderCheckKind.empty:
+        icon = Icon(Icons.folder_open_outlined, size: 16, color: muted);
+      case FolderCheckKind.missing:
+        icon = Icon(Icons.create_new_folder_outlined, size: 16, color: muted);
+      case FolderCheckKind.newRepository:
+        icon = Icon(Icons.fiber_new_outlined, size: 16, color: muted);
+      case FolderCheckKind.error:
+        color = colorScheme.error;
+        icon = Icon(Icons.error_outline_rounded, size: 16, color: color);
+    }
+    final style = theme.textTheme.bodySmall?.copyWith(color: color);
+    final detail = check.detail;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: const EdgeInsets.only(top: 1), child: icon),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(check.describe(), style: style),
+              if (detail != null)
+                Text(
+                  detail,
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted, fontFamily: 'monospace'),
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The project's GitLab avatar, or its initial while loading and when it
+/// has none.
+class _ProjectAvatar extends StatelessWidget {
+  static const size = 32.0;
+
+  final ProjectSummary project;
+  final Future<Uint8List?> Function(ProjectSummary) load;
+
+  const _ProjectAvatar({required this.project, required this.load});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final initial = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        project.name.isEmpty ? '?' : project.name.substring(0, 1).toUpperCase(),
+        style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600),
+      ),
+    );
+    if (project.avatarUrl == null) return initial;
+    return FutureBuilder<Uint8List?>(
+      future: load(project),
+      builder: (context, snapshot) {
+        final bytes = snapshot.data;
+        if (bytes == null) return initial;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => initial,
+          ),
+        );
+      },
     );
   }
 }
