@@ -282,8 +282,16 @@ class GitLabConnectController extends ChangeNotifier {
     if (api != null) unawaited(_run(() => _checkFolder(api)));
   }
 
-  Future<void> setFolder(String raw) => _run(() async {
+  /// Keeps [folder] in step with the field on every keystroke, so a save
+  /// can never carry a value the user has already replaced. No request and
+  /// no notification: the remote check waits for [setFolder].
+  void updateFolder(String raw) {
     folder = GitLabSettings.normalizeFolder(raw);
+  }
+
+  /// Commits the field and checks the folder on the remote.
+  Future<void> setFolder(String raw) => _run(() async {
+    updateFolder(raw);
     final api = _api;
     if (api != null) await _checkFolder(api);
   });

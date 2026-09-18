@@ -9,6 +9,7 @@ import 'package:flatplan/src/sync/gitlab/gitlab_api.dart';
 import 'package:flatplan/src/views/gitlab_vault_form.dart';
 import 'package:flatplan/src/views/vault_kinds.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -185,6 +186,28 @@ void main() {
     expect(location.settings['project_id'], 42);
     expect(location.settings['folder'], 'budget');
     expect(await secrets.read(vault.id, 'token'), gitlab.validToken);
+  });
+
+  testWidgets('a folder typed and left with Tab is what gets saved', (tester) async {
+    gitlab.files['finance/2026-09-september.yaml'] = 'id: p\n';
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Create vault'));
+
+    // Type the folder, then move on with the keyboard: no Enter, no click
+    // in the field's surroundings.
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'finance');
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    expect(find.text('1 period file found'), findsOneWidget, reason: 'losing focus runs the folder check');
+
+    await tester.tap(find.text('Create vault'));
+    await tester.pumpAndSettle();
+
+    final location = fakeVaults.added.single.location as RemoteVaultLocation;
+    expect(location.settings['folder'], 'finance');
   });
 
   testWidgets('Create vault stays clickable while a folder check runs', (tester) async {

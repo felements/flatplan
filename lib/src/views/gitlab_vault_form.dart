@@ -39,6 +39,16 @@ class GitLabVaultForm extends HookConsumerWidget {
     final token = useTextEditingController();
     final search = useTextEditingController();
     final folder = useTextEditingController(text: controller.folder);
+    final folderFocus = useFocusNode();
+    // Tab and programmatic focus moves never fire onTapOutside or
+    // onSubmitted, so the check also runs when the field loses focus.
+    useEffect(() {
+      void onFocus() {
+        if (!folderFocus.hasFocus) controller.setFolder(folder.text);
+      }
+      folderFocus.addListener(onFocus);
+      return () => folderFocus.removeListener(onFocus);
+    }, [folderFocus, controller]);
     final nameError = useState<String?>(null);
     final saving = useState(false);
     final nameTouched = useState(existing != null);
@@ -274,10 +284,12 @@ class GitLabVaultForm extends HookConsumerWidget {
               TextField(
                 key: const Key('gitlab-folder'),
                 controller: folder,
+                focusNode: folderFocus,
                 decoration: const InputDecoration(
                   labelText: 'Folder',
                   helperText: 'Empty means the repository root.',
                 ),
+                onChanged: controller.updateFolder,
                 onSubmitted: controller.setFolder,
                 onTapOutside: (_) => controller.setFolder(folder.text),
               ),
