@@ -112,9 +112,9 @@ class AppShell extends ConsumerWidget {
                   },
                 ),
 
-                // ─── Periods header + New period ──────────────────
-                _PeriodsHeader(
-                  onNewPeriod: () => showNewPeriodDialog(context, ref),
+                // ─── Next period ──────────────────────────────────
+                _NextPeriodButton(
+                  onPressed: () => showNewPeriodDialog(context, ref),
                 ),
 
                 // ─── Period links ───────────────────────────────────
@@ -261,50 +261,36 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-/// The "Periods" section label with the gold "+ Add" button on its
-/// right. Sits above the period list because periods are sorted newest
-/// first: the row a new period will occupy is directly below this header.
-class _PeriodsHeader extends StatelessWidget {
-  final VoidCallback onNewPeriod;
+/// The full-width outlined "+ Next period" button between Today and the
+/// period list. Periods sort newest first, so the row a new period will
+/// occupy is directly below the button. Outlined rather than filled so it
+/// does not compete with the selected nav item.
+class _NextPeriodButton extends StatelessWidget {
+  final VoidCallback onPressed;
 
-  const _PeriodsHeader({required this.onNewPeriod});
+  const _NextPeriodButton({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      // Matches the sub-item inset so the label lines up with period names.
-      padding: const EdgeInsets.only(left: 46, right: 20, top: 12, bottom: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Periods',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-              ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: onPressed,
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Next period'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: colorScheme.primary,
+            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.5)),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          ElevatedButton.icon(
-            onPressed: onNewPeriod,
-            icon: const Icon(Icons.add_rounded, size: 16),
-            label: const Text('Add'),
-            // The theme's CTA style (gold, 12 px radius) at sidebar scale.
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

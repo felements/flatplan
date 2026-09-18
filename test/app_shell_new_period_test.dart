@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_vaults.dart';
@@ -104,36 +105,45 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('sidebar shows a Periods header with an Add button', (
+  testWidgets('sidebar shows a wide outlined Next period button under Today', (
     tester,
   ) async {
     await pumpShell(tester, periods: [activePeriod()]);
 
-    expect(find.text('Periods'), findsOneWidget);
-    final button = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Add'),
-    );
+    expect(find.text('Periods'), findsNothing);
+    final buttonFinder = find.widgetWithText(OutlinedButton, 'Next period');
+    final button = tester.widget<OutlinedButton>(buttonFinder);
     final shape = button.style?.shape?.resolve({}) as RoundedRectangleBorder?;
     expect(shape?.borderRadius, BorderRadius.circular(12));
+
+    // Spans the sidebar like the nav items (220 px minus 12 px each side)
+    // and sits between Today and the first period.
+    expect(tester.getSize(buttonFinder).width, closeTo(196, 1));
+    final todayBottom = tester.getBottomLeft(find.text('Today')).dy;
+    final buttonTop = tester.getTopLeft(buttonFinder).dy;
+    final firstLabel = DateFormat('MMM yy').format(activePeriod().startDate);
+    final firstPeriodTop = tester.getTopLeft(find.text(firstLabel)).dy;
+    expect(buttonTop, greaterThan(todayBottom));
+    expect(tester.getBottomLeft(buttonFinder).dy, lessThan(firstPeriodTop));
   });
 
-  testWidgets('Add on an empty vault opens the first-period dialog', (
+  testWidgets('Next period on an empty vault opens the first-period dialog', (
     tester,
   ) async {
     await pumpShell(tester);
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Next period'));
     await tester.pumpAndSettle();
 
     expect(find.text('Create First Period'), findsOneWidget);
   });
 
-  testWidgets('Add with a current period opens the generate dialog', (
+  testWidgets('Next period with a current period opens the generate dialog', (
     tester,
   ) async {
     await pumpShell(tester, periods: [activePeriod()]);
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Add'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Next period'));
     await tester.pumpAndSettle();
 
     expect(find.text('Generate Next Period'), findsOneWidget);
