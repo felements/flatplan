@@ -13,6 +13,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Records every write the workspace announces, as the sync journal would.
+class _CountingListener implements WorkspaceChangeListener {
+  final List<String> changed = [];
+
+  @override
+  Future<void> onChanged(String name) async => changed.add(name);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -127,6 +135,28 @@ void main() {
     await container.read(currentPeriodStatsSyncProvider.future);
 
     expect(statsFile().existsSync(), isFalse);
+  });
+
+  test('a reload with unchanged data does not touch the file', () async {
+    final repo = PeriodRepository(workspace: DirectoryWorkspace(tempDir.path));
+    await repo.savePeriod(activePeriod());
+    final listener = _CountingListener();
+    final listened = PeriodRepository(
+      workspace: DirectoryWorkspace(tempDir.path, changeListener: listener),
+    );
+    container = ProviderContainer(
+      overrides: [periodRepositoryProvider.overrideWith((ref) => listened)],
+    );
+    container.listen(currentPeriodStatsSyncProvider, (_, _) {});
+    await container.read(currentPeriodStatsSyncProvider.future);
+    expect(listener.changed, [PeriodStatsWriter.fileName]);
+
+    // What a pull-triggered reload or a no-op save does.
+    container.invalidate(allPeriodsProvider);
+    container.invalidate(currentPeriodProvider);
+    await container.read(currentPeriodStatsSyncProvider.future);
+
+    expect(listener.changed, hasLength(1), reason: 'nothing changed, no write');
   });
 
   test('regenerates the file content when period data changes', () async {
