@@ -12,6 +12,7 @@ import '../providers/app_paths_provider.dart';
 import '../providers/open_vault_provider.dart';
 import '../providers/vaults_provider.dart';
 import 'vault_kinds.dart';
+import 'vault_remove.dart';
 
 /// `/settings/vaults/new` and `/settings/vaults/:id/edit`.
 ///
@@ -28,6 +29,7 @@ class VaultFormView extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final registry = ref.watch(vaultsProvider).value;
     final existing = vaultId == null ? null : registry?.byId(vaultId!);
+    final canRemove = (registry?.vaults.length ?? 0) > 1;
 
     if (vaultId != null && registry != null && existing == null) {
       return const Scaffold(
@@ -61,6 +63,19 @@ class VaultFormView extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (existing != null) ...[
+                  _RemoveButton(
+                    enabled: canRemove,
+                    onPressed: () async {
+                      final removed =
+                          await confirmRemoveVault(context, ref, existing);
+                      if (removed && context.mounted) {
+                        context.go('/settings/vaults');
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 TextButton.icon(
                   onPressed: () => context.go('/settings/vaults'),
                   icon: const Icon(Icons.close_rounded, size: 18),
@@ -83,6 +98,32 @@ class VaultFormView extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Remove" in the edit header. Disabled, with the reason as a tooltip,
+/// when the vault is the only one left.
+class _RemoveButton extends StatelessWidget {
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  const _RemoveButton({required this.enabled, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final button = TextButton.icon(
+      onPressed: enabled ? onPressed : null,
+      style: TextButton.styleFrom(
+        foregroundColor: Theme.of(context).colorScheme.error,
+      ),
+      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+      label: const Text('Remove'),
+    );
+    if (enabled) return button;
+    return Tooltip(
+      message: 'The last vault cannot be removed.',
+      child: button,
     );
   }
 }

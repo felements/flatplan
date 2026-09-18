@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/open_vault_provider.dart';
 import '../providers/vaults_provider.dart';
 import 'vault_kinds.dart';
+import 'vault_remove.dart';
 
 /// `/settings/vaults`: every vault, with edit, remove and sync actions.
 class VaultListView extends ConsumerWidget {
@@ -59,7 +60,7 @@ class VaultListView extends ConsumerWidget {
               canRemove: canRemove,
               onSyncNow: () => open?.scheduler?.syncNow(),
               onEdit: () => context.go('/settings/vaults/${vault.id}/edit'),
-              onRemove: () => _confirmRemove(context, ref, vault),
+              onRemove: () => confirmRemoveVault(context, ref, vault),
             ),
             const SizedBox(height: 12),
           ],
@@ -73,41 +74,6 @@ class VaultListView extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _confirmRemove(
-    BuildContext context,
-    WidgetRef ref,
-    Vault vault,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Remove "${vault.name}"?'),
-        content: const Text(
-          'FlatPlan will forget this vault. Your files are not deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(vaultsProvider.notifier).remove(vault.id);
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not remove "${vault.name}": $e')),
-      );
-    }
   }
 }
 
