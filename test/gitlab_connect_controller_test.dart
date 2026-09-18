@@ -469,4 +469,35 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(controller.projects.single.name, 'crab');
   });
+
+  test('back from the location step returns to the repository, keeping the token and project', () async {
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+    expect(controller.step, ConnectStep.target);
+
+    controller.back();
+
+    expect(controller.step, ConnectStep.project);
+    expect(controller.token, gitlab.validToken);
+    expect(controller.projects, isNotEmpty);
+    expect(controller.project, isNotNull);
+    expect(controller.canSave, isFalse);
+  });
+
+  test('back from the repository step returns to the token step and drops the connection', () async {
+    await controller.connect(gitlab.validToken);
+    expect(controller.step, ConnectStep.project);
+
+    controller.back();
+
+    expect(controller.step, ConnectStep.token);
+    expect(controller.token, isNull);
+    expect(controller.projects, isEmpty);
+    expect(controller.project, isNull);
+  });
+
+  test('back on the token step is a no-op', () {
+    controller.back();
+    expect(controller.step, ConnectStep.token);
+  });
 }

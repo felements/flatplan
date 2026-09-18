@@ -124,42 +124,65 @@ void main() {
     await tester.pumpAndSettle();
     expect(steps().current, 2);
 
-    // Changing the server sends the wizard back to the start.
-    await tester.tap(find.text('Self-hosted instance'));
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(steps().current, 1);
+
+    await tester.tap(find.text('Back'));
     await tester.pumpAndSettle();
     expect(steps().current, 0);
+    expect(find.text('Back'), findsNothing);
   });
 
-  testWidgets('connecting reveals projects, selecting reveals branch, folder and name', (tester) async {
+  testWidgets('each step shows only its own fields; earlier steps collapse to one line', (tester) async {
     gitlab.files['budget/2026-09-september.yaml'] = 'id: p\n';
     await tester.pumpWidget(app(const GitLabVaultForm()));
     await connect(tester, url: FakeGitLab.baseUrl);
 
-    expect(find.text('Connected'), findsOneWidget);
+    // Repository step: the token section is a summary line now.
+    expect(find.text('gitlab.test · Token verified'), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-token')), findsNothing);
+    expect(find.text('Self-hosted instance'), findsNothing);
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
     expect(find.text('group/repo'), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-branch')), findsNothing);
 
     await tester.tap(find.text('group/repo'));
     await tester.pumpAndSettle();
 
+    // Location step: the project list is gone, the chosen project is a line.
+    expect(find.byKey(const Key('gitlab-search')), findsNothing);
+    expect(find.byType(ListTile), findsNothing);
+    expect(find.text('group/repo'), findsOneWidget);
+    expect(find.text('gitlab.test · Token verified'), findsOneWidget);
     expect(find.text('1 period file found'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'repo'), findsOneWidget);
     expect(find.text('Create vault'), findsOneWidget);
   });
 
-  testWidgets('unchecking self-hosted after selecting a project resets the flow', (tester) async {
+  testWidgets('Back walks the wizard backwards and the token step ends with Connect again', (tester) async {
     await tester.pumpWidget(app(const GitLabVaultForm()));
     await connect(tester, url: FakeGitLab.baseUrl);
     await tester.tap(find.text('group/repo'));
     await tester.pumpAndSettle();
-
     expect(find.text('Create vault'), findsOneWidget);
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Create vault'), findsNothing);
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
     expect(find.text('group/repo'), findsOneWidget);
 
-    await tester.tap(find.text('Self-hosted instance'));
+    await tester.tap(find.text('Back'));
     await tester.pumpAndSettle();
-
-    expect(find.text('Create vault'), findsNothing);
+    expect(find.byKey(const Key('gitlab-token')), findsOneWidget);
+    expect(find.text('Self-hosted instance'), findsOneWidget);
     expect(find.text('group/repo'), findsNothing);
+
+    // The typed token is still in the field: Connect moves forward again.
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+    expect(find.text('group/repo'), findsOneWidget);
   });
 
   testWidgets('a rejected token shows the error and stays on the token step', (tester) async {
@@ -185,7 +208,7 @@ void main() {
     await tester.tap(find.text('Trust'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text('gitlab.test · Token verified'), findsOneWidget);
   });
 
   testWidgets('creating writes the secret first and then adds the vault', (tester) async {

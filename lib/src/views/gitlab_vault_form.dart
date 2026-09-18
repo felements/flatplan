@@ -169,168 +169,234 @@ class GitLabVaultForm extends HookConsumerWidget {
             ? (!controller.busy && (!tokenRequired || controller.token != null))
             : controller.canSave);
 
+    final atToken = controller.step.index <= ConnectStep.token.index;
+    final atProject = controller.step == ConnectStep.project;
+    final atTarget = controller.step == ConnectStep.target;
+    final host = Uri.tryParse(controller.baseUrl)?.host ?? controller.baseUrl;
+
+    // The create flow is a wizard: one step's fields at a time, every
+    // earlier step folded into one summary line. The edit form keeps
+    // everything visible, because nothing there is sequential.
+    final serverSection = <Widget>[
+      CheckboxListTile(
+        key: const Key('gitlab-self-hosted'),
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        title: const Text('Self-hosted instance'),
+        value: controller.selfHosted,
+        onChanged: isEdit
+            ? null
+            : (v) {
+                final checked = v ?? false;
+                controller.setSelfHosted(checked);
+                // Re-checking must re-sync the controller with
+                // whatever the (still-mounted) url field shows,
+                // rather than leaving it on gitlab.com.
+                if (checked) controller.setBaseUrl(url.text);
+              },
+      ),
+      if (controller.selfHosted) ...[
+        TextField(
+          key: const Key('gitlab-url'),
+          controller: url,
+          enabled: !isEdit,
+          decoration: const InputDecoration(
+            labelText: 'Instance URL',
+            hintText: 'https://gitlab.example.com',
+            helperText: 'http:// is allowed for internal servers.',
+          ),
+          onChanged: controller.setBaseUrl,
+        ),
+        const SizedBox(height: 20),
+      ],
+    ];
+
+    final tokenSection = <Widget>[
+      if (showTokenField) ...[
+        if (secretError.value != null) _ErrorLine(secretError.value!),
+        _TokenField(
+          controller: token,
+          busy: controller.busy,
+          onConnect: () => isEdit
+              ? controller.verifyReplacementToken(token.text.trim())
+              : controller.connect(token.text.trim()),
+        ),
+        const _TokenHelp(),
+        if (controller.connectError != null) _ErrorLine(controller.connectError!),
+        if (controller.token != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('Connected', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.primary)),
+          ),
+        const SizedBox(height: 20),
+      ] else if (isEdit && tokenLoaded.value) ...[
+        Row(
+          children: [
+            Expanded(child: Text('Token stored', style: theme.textTheme.bodyMedium)),
+            TextButton(onPressed: () => replacing.value = true, child: const Text('Replace token')),
+          ],
+        ),
+        const SizedBox(height: 20),
+      ],
+    ];
+
+    final projectSection = <Widget>[
+      TextField(
+        key: const Key('gitlab-search'),
+        controller: search,
+        decoration: const InputDecoration(
+          labelText: 'Project',
+          hintText: 'Type to search, or paste group/repo',
+        ),
+        onChanged: controller.search,
+      ),
+      for (final p in controller.projects)
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(p.name),
+          subtitle: Text(p.pathWithNamespace),
+          selected: controller.project?.id == p.id,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          onTap: () => controller.selectProject(p),
+        ),
+      const SizedBox(height: 20),
+    ];
+
+    final locationSection = <Widget>[
+      if (isEdit) ...[
+        Text('Location', style: theme.textTheme.labelLarge),
+        Text(existingSettings!.locationLine, style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')),
+        Text('To use a different repository or folder, create a new vault.', style: hint),
+        if (existingSettings.certFingerprint != null || controller.certFingerprint != null) ...[
+          const SizedBox(height: 12),
+          Text('Trusted certificate', style: theme.textTheme.labelLarge),
+          Text(controller.certFingerprint ?? existingSettings.certFingerprint!, style: const TextStyle(fontFamily: 'monospace')),
+          TextButton(
+            onPressed: storedToken.value == null || controller.busy
+                ? null
+                : () => controller.fetchCurrentCertificate(storedToken.value!),
+            child: const Text('Trust again'),
+          ),
+          if (!showTokenField && controller.connectError != null) _ErrorLine(controller.connectError!),
+        ],
+      ] else ...[
+        DropdownButtonFormField<String>(
+          key: const Key('gitlab-branch'),
+          initialValue: controller.branch,
+          decoration: const InputDecoration(labelText: 'Branch'),
+          items: [for (final b in controller.branches) DropdownMenuItem(value: b, child: Text(b))],
+          onChanged: (b) => b == null ? null : controller.selectBranch(b),
+        ),
+        const SizedBox(height: 20),
+        TextField(
+          key: const Key('gitlab-folder'),
+          controller: folder,
+          focusNode: folderFocus,
+          decoration: const InputDecoration(
+            labelText: 'Folder',
+            helperText: 'Empty means the repository root.',
+          ),
+          onChanged: controller.updateFolder,
+          onSubmitted: controller.setFolder,
+          onTapOutside: (_) => controller.setFolder(folder.text),
+        ),
+        if (controller.folderCheck != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(controller.folderCheck!.describe(), style: hint),
+          ),
+      ],
+      const SizedBox(height: 20),
+      TextField(
+        key: const Key('gitlab-name'),
+        controller: name,
+        decoration: InputDecoration(labelText: 'Name', errorText: nameError.value),
+        onChanged: (_) {
+          nameTouched.value = true;
+          nameError.value = null;
+        },
+      ),
+    ];
+
+    final submit = FilledButton(
+      onPressed: canSubmit ? save : null,
+      child: Text(isEdit ? 'Save' : 'Create vault'),
+    );
+
     return Material(
       type: MaterialType.transparency,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        children: isEdit
+            ? [
+                ...serverSection,
+                ...tokenSection,
+                ...locationSection,
+                const SizedBox(height: 24),
+                Align(alignment: Alignment.centerRight, child: submit),
+              ]
+            : [
+                WizardSteps(
+                  labels: const ['Token', 'Repository', 'Location'],
+                  current: atToken ? 0 : (atProject ? 1 : 2),
+                ),
+                const SizedBox(height: 24),
+                if (atToken) ...[
+                  ...serverSection,
+                  ...tokenSection,
+                ] else
+                  _DoneLine('$host · Token verified'),
+                if (atProject)
+                  ...projectSection
+                else if (atTarget)
+                  _DoneLine(controller.project!.pathWithNamespace),
+                if (atTarget) ...[
+                  const SizedBox(height: 12),
+                  ...locationSection,
+                ],
+                if (!atToken) ...[
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: controller.busy ? null : controller.back,
+                        icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                        label: const Text('Back'),
+                      ),
+                      const Spacer(),
+                      if (atTarget) submit,
+                    ],
+                  ),
+                ],
+              ],
+      ),
+    );
+  }
+}
+
+/// A completed wizard step folded into one line.
+class _DoneLine extends StatelessWidget {
+  final String text;
+
+  const _DoneLine(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
         children: [
-          if (!isEdit) ...[
-            WizardSteps(
-              labels: const ['Token', 'Repository', 'Location'],
-              current: switch (controller.step) {
-                ConnectStep.server || ConnectStep.token => 0,
-                ConnectStep.project => 1,
-                ConnectStep.target => 2,
-              },
+          Icon(Icons.check_circle_rounded, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 24),
-          ],
-          // 1. Server
-          CheckboxListTile(
-            key: const Key('gitlab-self-hosted'),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('Self-hosted instance'),
-            value: controller.selfHosted,
-            onChanged: isEdit
-                ? null
-                : (v) {
-                    final checked = v ?? false;
-                    controller.setSelfHosted(checked);
-                    // Re-checking must re-sync the controller with
-                    // whatever the (still-mounted) url field shows,
-                    // rather than leaving it on gitlab.com.
-                    if (checked) controller.setBaseUrl(url.text);
-                  },
           ),
-          if (controller.selfHosted) ...[
-            TextField(
-              key: const Key('gitlab-url'),
-              controller: url,
-              enabled: !isEdit,
-              decoration: const InputDecoration(
-                labelText: 'Instance URL',
-                hintText: 'https://gitlab.example.com',
-                helperText: 'http:// is allowed for internal servers.',
-              ),
-              onChanged: controller.setBaseUrl,
-            ),
-            const SizedBox(height: 20),
-          ],
-          // 2. Token
-          if (showTokenField) ...[
-            if (secretError.value != null) _ErrorLine(secretError.value!),
-            _TokenField(
-              controller: token,
-              busy: controller.busy,
-              onConnect: () => isEdit
-                  ? controller.verifyReplacementToken(token.text.trim())
-                  : controller.connect(token.text.trim()),
-            ),
-            const _TokenHelp(),
-            if (controller.connectError != null) _ErrorLine(controller.connectError!),
-            if (controller.token != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text('Connected', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.primary)),
-              ),
-            const SizedBox(height: 20),
-          ] else if (isEdit && tokenLoaded.value) ...[
-            Row(
-              children: [
-                Expanded(child: Text('Token stored', style: theme.textTheme.bodyMedium)),
-                TextButton(onPressed: () => replacing.value = true, child: const Text('Replace token')),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-          // 3. Project
-          if (!isEdit && controller.step.index >= ConnectStep.project.index) ...[
-            TextField(
-              key: const Key('gitlab-search'),
-              controller: search,
-              decoration: const InputDecoration(
-                labelText: 'Project',
-                hintText: 'Type to search, or paste group/repo',
-              ),
-              onChanged: controller.search,
-            ),
-            for (final p in controller.projects)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(p.name),
-                subtitle: Text(p.pathWithNamespace),
-                selected: controller.project?.id == p.id,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () => controller.selectProject(p),
-              ),
-            const SizedBox(height: 20),
-          ],
-          // 4. Branch and folder
-          if (controller.step == ConnectStep.target) ...[
-            if (isEdit) ...[
-              Text('Location', style: theme.textTheme.labelLarge),
-              Text(existingSettings!.locationLine, style: theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')),
-              Text('To use a different repository or folder, create a new vault.', style: hint),
-              if (existingSettings.certFingerprint != null || controller.certFingerprint != null) ...[
-                const SizedBox(height: 12),
-                Text('Trusted certificate', style: theme.textTheme.labelLarge),
-                Text(controller.certFingerprint ?? existingSettings.certFingerprint!, style: const TextStyle(fontFamily: 'monospace')),
-                TextButton(
-                  onPressed: storedToken.value == null || controller.busy
-                      ? null
-                      : () => controller.fetchCurrentCertificate(storedToken.value!),
-                  child: const Text('Trust again'),
-                ),
-                if (!showTokenField && controller.connectError != null) _ErrorLine(controller.connectError!),
-              ],
-            ] else ...[
-              DropdownButtonFormField<String>(
-                key: const Key('gitlab-branch'),
-                initialValue: controller.branch,
-                decoration: const InputDecoration(labelText: 'Branch'),
-                items: [for (final b in controller.branches) DropdownMenuItem(value: b, child: Text(b))],
-                onChanged: (b) => b == null ? null : controller.selectBranch(b),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                key: const Key('gitlab-folder'),
-                controller: folder,
-                focusNode: folderFocus,
-                decoration: const InputDecoration(
-                  labelText: 'Folder',
-                  helperText: 'Empty means the repository root.',
-                ),
-                onChanged: controller.updateFolder,
-                onSubmitted: controller.setFolder,
-                onTapOutside: (_) => controller.setFolder(folder.text),
-              ),
-              if (controller.folderCheck != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(controller.folderCheck!.describe(), style: hint),
-                ),
-            ],
-            const SizedBox(height: 20),
-            // 5. Name
-            TextField(
-              key: const Key('gitlab-name'),
-              controller: name,
-              decoration: InputDecoration(labelText: 'Name', errorText: nameError.value),
-              onChanged: (_) {
-                nameTouched.value = true;
-                nameError.value = null;
-              },
-            ),
-            const SizedBox(height: 24),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: canSubmit ? save : null,
-                child: Text(isEdit ? 'Save' : 'Create vault'),
-              ),
-            ),
-          ],
         ],
       ),
     );

@@ -275,6 +275,23 @@ class GitLabConnectController extends ChangeNotifier {
     await _checkFolder(api);
   });
 
+  /// One step back. From the location step the project stays chosen and
+  /// the list reappears; from the repository step the connection is
+  /// dropped so the token step ends with Connect again, which keeps every
+  /// step ending in one explicit action. A no-op on the token step.
+  void back() {
+    switch (step) {
+      case ConnectStep.target:
+        step = ConnectStep.project;
+        folderCheck = null;
+      case ConnectStep.project:
+        _resetConnectionIfAdvanced();
+      case ConnectStep.server || ConnectStep.token:
+        return;
+    }
+    _notify();
+  }
+
   void selectBranch(String name) {
     branch = name;
     _notify();
