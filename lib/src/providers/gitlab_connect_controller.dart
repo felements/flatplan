@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' show log;
 
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -195,6 +196,8 @@ class GitLabConnectController extends ChangeNotifier {
     token = null;
     _api = null;
     _avatars.clear();
+    // A search still in flight belongs to the dropped connection.
+    _searchSeq++;
     projects = const [];
     project = null;
     branches = const [];
@@ -318,7 +321,10 @@ class GitLabConnectController extends ChangeNotifier {
     if (project.avatarUrl == null || api == null) return Future.value(null);
     return _avatars.putIfAbsent(
       project.id,
-      () => api.projectAvatar(project.id).catchError((Object _) => null),
+      () => api.projectAvatar(project.id).catchError((Object e) {
+        log('Avatar of ${project.pathWithNamespace} not loaded: $e', name: 'flatplan.gitlab');
+        return null;
+      }),
     );
   }
 
@@ -379,6 +385,9 @@ class GitLabConnectController extends ChangeNotifier {
     _notify();
     try {
       final entries = await api.tree(chosen.id, ref, folder);
+      // Back may have left the location step meanwhile; its result would
+      // then describe a folder nobody is looking at.
+      if (step != ConnectStep.target) return;
       final prefix = folder.isEmpty ? '' : '$folder/';
       final periods = entries
           .where(
@@ -395,8 +404,10 @@ class GitLabConnectController extends ChangeNotifier {
           ? const FolderCheck.empty()
           : FolderCheck.periodFiles(periods.length, first: periods.first, last: periods.last);
     } on GitLabApiException catch (e) {
+      if (step != ConnectStep.target) return;
       if (e.status == 404) {
         final fresh = await api.project(chosen.id);
+        if (step != ConnectStep.target) return;
         folderCheck = fresh.emptyRepo ? const FolderCheck.newRepository() : const FolderCheck.missing();
       } else {
         folderCheck = FolderCheck.error(e.message);

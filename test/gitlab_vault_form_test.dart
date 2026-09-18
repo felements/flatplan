@@ -7,6 +7,7 @@ import 'package:flatplan/src/providers/gitlab_connect_controller.dart';
 import 'package:flatplan/src/providers/vaults_provider.dart';
 import 'package:flatplan/src/storage/vault_secrets.dart';
 import 'package:flatplan/src/sync/gitlab/gitlab_api.dart';
+import 'package:flatplan/src/views/gitlab_identicon.dart';
 import 'package:flatplan/src/views/gitlab_vault_form.dart';
 import 'package:flatplan/src/views/vault_kinds.dart';
 import 'package:flutter/material.dart';
@@ -315,6 +316,7 @@ void main() {
     await connect(tester, url: FakeGitLab.baseUrl);
 
     expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsOneWidget);
+    expect(find.byType(GitLabIdenticon), findsOneWidget);
     expect(find.byType(Image), findsNothing);
 
     gitlab.hasAvatar = true;
@@ -328,6 +330,36 @@ void main() {
     final image = tester.widget<Image>(find.descendant(of: find.byType(ListTile), matching: find.byType(Image)));
     expect((image.image as MemoryImage).bytes, FakeGitLab.avatarPng);
     expect(find.descendant(of: find.byType(ListTile), matching: find.text('R')), findsNothing);
+  });
+
+  testWidgets('Back stays clickable while the folder check the click itself started runs', (tester) async {
+    await tester.pumpWidget(app(const GitLabVaultForm()));
+    await connect(tester, url: FakeGitLab.baseUrl);
+    await tester.tap(find.text('group/repo'));
+    await tester.pumpAndSettle();
+
+    // Leaving the folder field (which a click on Back does, on pointer-down)
+    // starts a check; Back must survive the busy flag it raises.
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    await tester.enterText(find.byKey(const Key('gitlab-folder')), 'budget');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('Checking folder…'), findsOneWidget);
+    expect(
+      tester.widget<TextButton>(find.widgetWithText(TextButton, 'Back')).onPressed,
+      isNotNull,
+      reason: 'a folder check in flight must not disable Back',
+    );
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
+    expect(find.byKey(const Key('gitlab-folder')), findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('gitlab-search')), findsOneWidget);
   });
 
   testWidgets('Create vault stays clickable while a folder check runs', (tester) async {

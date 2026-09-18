@@ -11,6 +11,7 @@ import '../providers/gitlab_connect_controller.dart';
 import '../providers/vaults_provider.dart';
 import '../sync/gitlab/gitlab_api.dart';
 import '../sync/gitlab/gitlab_settings.dart';
+import 'gitlab_identicon.dart';
 
 /// Create or edit a GitLab vault. One scrolling column that reveals each
 /// step as the previous one succeeds; nothing needs a wide screen.
@@ -359,8 +360,11 @@ class GitLabVaultForm extends HookConsumerWidget {
                   const SizedBox(height: 24),
                   Row(
                     children: [
+                      // Not gated on busy: a click on Back first blurs the
+                      // folder field, which starts a check and would
+                      // disable the button before the click completes.
                       TextButton.icon(
-                        onPressed: controller.busy ? null : controller.back,
+                        onPressed: controller.back,
                         icon: const Icon(Icons.arrow_back_rounded, size: 18),
                         label: const Text('Back'),
                       ),
@@ -447,20 +451,7 @@ class _ProjectAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final initial = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        project.name.isEmpty ? '?' : project.name.substring(0, 1).toUpperCase(),
-        style: TextStyle(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600),
-      ),
-    );
+    final initial = GitLabIdenticon(id: project.id, name: project.name, size: size);
     if (project.avatarUrl == null) return initial;
     return FutureBuilder<Uint8List?>(
       future: load(project),

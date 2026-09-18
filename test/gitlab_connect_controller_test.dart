@@ -566,4 +566,24 @@ void main() {
     gitlab.failWith['/projects/42/avatar'] = 500;
     expect(await controller.avatarFor(controller.projects.single), isNull);
   });
+
+  test('back during a folder check leaves the repository step without a stale result', () async {
+    gitlab.files['budget/2026-05-may.yaml'] = 'b';
+    await controller.connect(gitlab.validToken);
+    await controller.selectProject(controller.projects.single);
+
+    final gate = Completer<void>();
+    gitlab.pauseTree = gate;
+    final pending = controller.setFolder('budget');
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.busy, isTrue);
+
+    controller.back();
+    expect(controller.step, ConnectStep.project);
+
+    gate.complete();
+    await pending;
+    expect(controller.step, ConnectStep.project);
+    expect(controller.folderCheck, isNull);
+  });
 }
