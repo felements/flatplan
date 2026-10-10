@@ -34,6 +34,36 @@ class PeriodNotifier extends _$PeriodNotifier {
     _debouncedSave(updatedPeriod);
   }
 
+  /// Renames the period and moves its start date, saving at once rather than
+  /// after the debounce so the caller can rely on the edit being on disk.
+  ///
+  /// The new start date reorders periods and so shifts end dates and which
+  /// period is current; the period list and current period are reloaded.
+  Future<void> updateDetails({
+    required String name,
+    required DateTime startDate,
+  }) async {
+    // A fast caller may arrive before the period has loaded.
+    final current = state.value ?? await future;
+    if (current == null) return;
+
+    // The edit below supersedes any save still waiting on the debounce;
+    // letting it fire afterwards would write the old name back.
+    _debounceTimer?.cancel();
+    final updated = current.copyWith(
+      name: name,
+      startDate: startDate,
+      lastModified: DateTime.now(),
+    );
+    state = AsyncData(updated);
+
+    final repo = await ref.read(periodRepositoryProvider.future);
+    await repo.savePeriod(updated);
+    // See _debouncedSave for why these two are invalidated.
+    ref.invalidate(periodLoadResultProvider);
+    ref.invalidate(currentPeriodProvider);
+  }
+
   /// Adds a fact expense to a specific category.
   void addFactExpense(String categoryId, FactExpense expense) {
     final current = state.value;

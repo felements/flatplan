@@ -241,11 +241,32 @@ class DashboardView extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       onSelected: (value) {
-                        if (value == 'manage_categories') {
+                        if (value == 'edit_period') {
+                          showEditPeriodDialog(
+                            context,
+                            ref,
+                            period: period,
+                            allPeriods: allPeriods,
+                          );
+                        } else if (value == 'manage_categories') {
                           context.go('/period/$effectivePeriodId/categories');
                         }
                       },
                       itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit_period',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit_calendar_rounded,
+                                size: 18,
+                                color: colorScheme.onSurface,
+                              ),
+                              const SizedBox(width: 10),
+                              const Text('Edit Period'),
+                            ],
+                          ),
+                        ),
                         PopupMenuItem(
                           value: 'manage_categories',
                           child: Row(

@@ -47,6 +47,40 @@ DateTime effectiveEndDate(Period period, List<Period> allPeriods) {
   return sorted[index + 1].startDate.subtract(const Duration(days: 1));
 }
 
+/// True when a period other than [period] starts on [day]'s calendar date.
+///
+/// Two periods starting the same day would leave the first one ending the
+/// day before it begins, so such a day cannot be given to [period].
+bool isStartDateTaken(Period period, DateTime day, List<Period> allPeriods) {
+  return allPeriods.any(
+    (p) => p.id != period.id && wholeDaysBetween(p.startDate, day) == 0,
+  );
+}
+
+/// The periods [period] would move past if it started on [newStart]
+/// instead, in ascending date order. Empty when the order is unchanged.
+///
+/// Periods are ordered by start date, so passing one changes which period
+/// ends when, which one is current, and which one seeds the next rollover.
+List<Period> periodsPassedBy(
+  Period period,
+  DateTime newStart,
+  List<Period> allPeriods,
+) {
+  final forward = wholeDaysBetween(period.startDate, newStart) > 0;
+  final from = forward ? period.startDate : newStart;
+  final to = forward ? newStart : period.startDate;
+  return allPeriods
+      .where(
+        (p) =>
+            p.id != period.id &&
+            wholeDaysBetween(from, p.startDate) > 0 &&
+            wholeDaysBetween(p.startDate, to) > 0,
+      )
+      .toList()
+    ..sort((a, b) => a.startDate.compareTo(b.startDate));
+}
+
 /// Resolves a [DueDate] to a concrete calendar date.
 ///
 /// `dayOfMonth` dates resolve to that day in [now]'s month, shifted one

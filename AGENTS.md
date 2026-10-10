@@ -28,7 +28,7 @@ FlatPlan is a Flutter budget-tracking app (desktop today, mobile planned) storin
 - `lib/src/providers/` — Riverpod providers binding storage to logic: `appPathsProvider`, `vaultsProvider` (registry), `openVaultProvider`, `currentSyncStatusProvider`, `periodRepositoryProvider` (async, errors with `VaultUnavailable`), `currentPeriodProvider`, `periodProvider`, `allPeriodsProvider`, `periodStatsProvider`, `currentPeriodStatsSyncProvider`, the settings providers, `gitLabApiFactoryProvider`, and `GitLabConnectController`
 - `lib/src/routing/` — GoRouter with `StatefulShellRoute` (Dashboard + Settings branches)
 - `lib/src/views/` — `DashboardView`, `CategoryDetailView`, `CategoryEditorView`, `SettingsView`, `AppShell`, `VaultListView`, `VaultFormView`, `GitLabVaultForm`, and the `vault_kinds.dart` descriptor list
-- `lib/src/components/` — `CategoryTile`, `SummaryCard`, `PeriodLoadBanner`, the `showCategoryDialog` / `showPlannedExpenseDialog` / `showNewPeriodDialog` editors, `VaultSwitcher`, `VaultAccessBanner`, `BrokenRegistryBanner`, `SyncLifecycleBridge`
+- `lib/src/components/` — `CategoryTile`, `SummaryCard`, `PeriodLoadBanner`, the `showCategoryDialog` / `showPlannedExpenseDialog` / `showNewPeriodDialog` / `showEditPeriodDialog` editors, `VaultSwitcher`, `VaultAccessBanner`, `BrokenRegistryBanner`, `SyncLifecycleBridge`
 
 ## Design Guidelines
 See `doc/08_design_guidelines.md` for the full visual identity — color palette (gold `#D4A84B`, teal `#5A8F7B`, coral `#E07A5F`), Outfit typography, component standards (16 px radius cards, 12 px buttons/inputs), sidebar spec, and spacing conventions. All new UI must follow this document.
