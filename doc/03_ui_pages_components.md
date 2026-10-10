@@ -14,6 +14,9 @@ The primary view acting as the control center for the active period.
 - **Header Selection**: 
   - Dropdown or Prev/Next arrows to switch the active period.
   - "Create Next Period" button (visible if the chronological next period doesn't exist).
+- **Period Actions Menu** (⋮ beside the period title), for the period being viewed, current or past:
+  - **Edit Period**: a dialog to rename the period and move its start date. Days another period already starts on cannot be picked. A date that carries the period past a neighbour shows a warning naming it, since periods run in start-date order and the move changes end dates and which period is current. The end date stays derived, and the YAML file keeps its original name.
+  - **Manage Categories**: opens the category editor.
 - **Summary CardsRow (Computed Stats)**:
   - *Planned Income vs Planned Expenses*
   - *Fact Income vs Planned Expenses* (Pacing)
