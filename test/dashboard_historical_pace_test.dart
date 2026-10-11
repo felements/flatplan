@@ -130,7 +130,14 @@ void main() {
     // priced on the 9000 runs booked after it ended.
     expect(find.textContaining('safe per shop'), findsNothing);
     expect(find.textContaining('averaging'), findsNothing);
-    expect(find.textContaining('/ day left'), findsOneWidget);
+    // Nor is anything left to spend per day. It shows how the period was
+    // paced instead: 4,000 over its 30 days is 133 a day, against the
+    // 14,000 limit's 467.
+    expect(find.textContaining('/ day left'), findsNothing);
+    expect(
+      find.textContaining(RegExp(r'averaged \D*133/day of \D*467/day planned')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a live period prices its trend off the period before it', (

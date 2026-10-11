@@ -19,7 +19,7 @@ Quick-reference for the domain language used throughout FlatPlan's codebase and 
 |---|---|
 | **Mandatory vs Optional Scope** | Every category is either mandatory (`isMandatory: true`) or optional. This split lets the user see the "free budget" remaining after all mandatory commitments. |
 | **Limit** | An optional spending cap on a category. When set, enables remaining-budget and daily-allowance calculations. |
-| **Daily Allowance** | Per-category feature (`isDailyAllowance: true`). Computes `remainingLimit / daysLeft` to show how much the user can spend per day for the rest of the period. |
+| **Daily Allowance** | Per-category feature (`isDailyAllowance: true`). Computes `remainingLimit / daysLeft` to show how much the user can spend per day for the rest of the period. Once the period has ended it shows instead what was spent per day against what the limit allowed per day. |
 | **Heat Indicator** | A 0.0–1.0+ ratio (`totalSpent / limit`) that visually signals overspending — turns red when > 1.0. |
 | **Period Rollover** | Creating the next period from an existing one. Keeps categories and planned expenses (resetting `isCompleted`), drops all fact expenses. Planned expenses with an exact due date are treated as one-time and dropped. |
 | **Cold-Start** | Creating the very first period when no previous periods or templates exist. Uses `createEmptyPeriod` to bootstrap a blank period. |

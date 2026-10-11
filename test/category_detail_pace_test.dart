@@ -129,15 +129,48 @@ void main() {
     });
 
     expect(find.textContaining('safe per shop'), findsOneWidget);
-    expect(
-      find.textContaining('Reserved for small purchases'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Reserved for small purchases'), findsOneWidget);
     // The trip count carries a decimal, so the safe-per-shop figure can be
     // divided out by hand rather than disagreeing with a rounded count.
     expect(
       find.textContaining(RegExp(r'across \d+\.\d shops')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a finished period shows how it was paced per day', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [periodRepositoryProvider.overrideWith((ref) => repo)],
+          child: const MaterialApp(
+            home: CategoryDetailView(
+              periodId: 'previous',
+              categoryId: 'old-groceries',
+            ),
+          ),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await tester.pump();
+    });
+
+    // 2,600 over the period's 30 days is 87 a day, against the 14,000
+    // limit's 467. Nothing is left to spend per day once it is over.
+    expect(
+      find.textContaining(
+        RegExp(r'Averaged \D*87 / day of \D*467 / day planned'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('/ day left'), findsNothing);
   });
 }

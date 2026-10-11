@@ -30,6 +30,11 @@ For every category:
 - **Daily Allowance** (if enabled): 
   - `Days Remaining` = `Period.endDate - CurrentDate` (constrained to > 0).
   - `Daily Allowance` = `Remaining Limit / Days Remaining`.
+  - Once the period has ended (today is past its last day) there is nothing left to divide, so the allowance is replaced by how the period was paced:
+    - `Period Length` = days from `Period.startDate` to `Period.endDate`, both inclusive.
+    - `Average Daily Spent` = `Total Spent / Period Length`.
+    - `Planned Daily Pace` = `Category Limit / Period Length` (omitted when the limit is 0).
+    - The figure turns red when `Average Daily Spent > Planned Daily Pace`.
 - **Heat Indicator**: `min(1.0, Total Spent / limit)`. Becomes red when > 1.0.
 
 ### C. Total Spendings Overview
