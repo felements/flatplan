@@ -8,6 +8,8 @@ Widget _tile({
   String? typicalLine,
   String? trendLine,
   bool isOverProjected = false,
+  String? pastPaceLine,
+  bool isOverPace = false,
 }) => MaterialApp(
   home: Scaffold(
     body: CategoryTile(
@@ -21,6 +23,8 @@ Widget _tile({
       typicalLine: typicalLine,
       trendLine: trendLine,
       isOverProjected: isOverProjected,
+      pastPaceLine: pastPaceLine,
+      isOverPace: isOverPace,
       onTap: () {},
     ),
   ),
@@ -31,7 +35,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _tile(safeBasketAmount: '550', trendLine: 'averaging 520/day — heading 2,400 over'),
+      _tile(
+        safeBasketAmount: '550',
+        trendLine: 'averaging 520/day — heading 2,400 over',
+      ),
     );
 
     expect(find.textContaining('550 safe per shop'), findsOneWidget);
@@ -72,5 +79,47 @@ void main() {
 
     expect(find.textContaining('550 safe per shop'), findsOneWidget);
     expect(find.textContaining('usually 60'), findsNothing);
+  });
+
+  testWidgets('a finished period shows its pace instead of a daily figure', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _tile(
+        dailyAllowanceAmount: null,
+        pastPaceLine: 'averaged 35/day of 40/day planned',
+      ),
+    );
+
+    expect(
+      find.textContaining('averaged 35/day of 40/day planned'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('/ day left'), findsNothing);
+  });
+
+  testWidgets('a pace above plan is drawn in the error colour', (tester) async {
+    Color? paceColor(WidgetTester tester) =>
+        tester.widget<Text>(find.textContaining('averaged')).style?.color;
+
+    await tester.pumpWidget(
+      _tile(
+        dailyAllowanceAmount: null,
+        pastPaceLine: 'averaged 47/day of 40/day planned',
+        isOverPace: true,
+      ),
+    );
+    final error = Theme.of(
+      tester.element(find.byType(CategoryTile)),
+    ).colorScheme.error;
+    expect(paceColor(tester), error);
+
+    await tester.pumpWidget(
+      _tile(
+        dailyAllowanceAmount: null,
+        pastPaceLine: 'averaged 35/day of 40/day planned',
+      ),
+    );
+    expect(paceColor(tester), isNot(error));
   });
 }

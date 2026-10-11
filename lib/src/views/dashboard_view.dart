@@ -630,6 +630,11 @@ class DashboardView extends ConsumerWidget {
                       '${c.trend!.isOverProjected ? ' — heading ${money.format(c.trend!.overshoot)} over' : ' — within budget'}'
                 : null,
             isOverProjected: c.trend?.isOverProjected ?? false,
+            pastPaceLine: c.averageDailySpent != null
+                ? 'averaged ${money.format(c.averageDailySpent)}/day'
+                      '${c.plannedDailyPace != null ? ' of ${money.format(c.plannedDailyPace)}/day planned' : ''}'
+                : null,
+            isOverPace: c.isOverPace,
             onTap: () => context.go(
               '/period/$effectivePeriodId/category/${c.categoryId}',
             ),

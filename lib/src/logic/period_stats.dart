@@ -12,6 +12,8 @@ enum PlannedExpenseStatus { completed, pending, overdue }
 
 @freezed
 sealed class CategoryStats with _$CategoryStats {
+  const CategoryStats._();
+
   const factory CategoryStats({
     required String categoryId,
     required String name,
@@ -26,8 +28,19 @@ sealed class CategoryStats with _$CategoryStats {
     @Default(false) bool plannedExceedsLimit,
     @Default([]) List<PlannedExpenseStatus> plannedExpenseStatuses,
     double? dailyAllowanceAmount,
+
+    /// What was spent per day across a finished period. Takes the place of
+    /// [dailyAllowanceAmount], which has nothing left to divide once the
+    /// period is over.
+    double? averageDailySpent,
+
+    /// What the budget allowed per day across a finished period, or null
+    /// when there was no budget to pace against.
+    double? plannedDailyPace,
+
     /// Where this period lands at the previous period's rate.
     SpendingTrend? trend,
+
     /// What is safe to spend on the next shop.
     BasketAdvice? basket,
 
@@ -35,6 +48,13 @@ sealed class CategoryStats with _$CategoryStats {
     /// counterpart to [basket], for categories with no threshold set.
     TypicalPurchase? typical,
   }) = _CategoryStats;
+
+  /// Whether a finished period was spent faster than its budget allowed.
+  bool get isOverPace {
+    final average = averageDailySpent;
+    final planned = plannedDailyPace;
+    return average != null && planned != null && average > planned;
+  }
 }
 
 @freezed
@@ -79,8 +99,14 @@ CategoryStats categoryStatsFor({
   final remaining = limit - spent;
 
   int daysLeft = wholeDaysBetween(now, endDate);
+  // Over once today is past the last day; on the last day itself there is
+  // still that one day left to spend.
+  final isFinished = daysLeft < 0;
   // Ensure at least 1 day to prevent division by zero.
   if (daysLeft < 1) daysLeft = 1;
+
+  final hasPastPace = category.isDailyAllowance && isFinished;
+  final lengthDays = wholeDaysBetween(period.startDate, endDate) + 1;
 
   final trend = spendingTrendFor(
     category: category,
@@ -145,9 +171,11 @@ CategoryStats categoryStatsFor({
     isDailyAllowance: category.isDailyAllowance,
     plannedExceedsLimit: category.plannedExceedsLimit,
     plannedExpenseStatuses: plannedExpenseStatuses,
-    dailyAllowanceAmount: category.isDailyAllowance
+    dailyAllowanceAmount: category.isDailyAllowance && !isFinished
         ? (remaining > 0 ? remaining / daysLeft : 0.0)
         : null,
+    averageDailySpent: hasPastPace ? spent / lengthDays : null,
+    plannedDailyPace: hasPastPace && limit > 0 ? limit / lengthDays : null,
     trend: trend,
     basket: basket,
     typical: typical,
@@ -203,7 +231,9 @@ PeriodStats periodStatsFor({
   }
 
   // Sort categories by highest heat percentage (closest to over budget).
-  categoryStatsList.sort((a, b) => b.heatPercentage.compareTo(a.heatPercentage));
+  categoryStatsList.sort(
+    (a, b) => b.heatPercentage.compareTo(a.heatPercentage),
+  );
 
   final totalBudget = totalMandatoryBudget + totalOptionalBudget;
   final totalSpent = totalMandatorySpent + totalOptionalSpent;

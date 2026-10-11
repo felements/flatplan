@@ -263,7 +263,8 @@ class CategoryDetailView extends HookConsumerWidget {
                 ],
               ),
               if (catStats.isDailyAllowance &&
-                  catStats.dailyAllowanceAmount != null) ...[
+                  (catStats.dailyAllowanceAmount != null ||
+                      catStats.averageDailySpent != null)) ...[
                 const SizedBox(height: 8),
                 _buildDailyAllowanceRow(theme, colorScheme, period, catStats),
               ],
@@ -330,6 +331,11 @@ class CategoryDetailView extends HookConsumerWidget {
     final basket = catStats.basket;
     final trend = catStats.trend;
     final typical = catStats.typical;
+    final average = catStats.averageDailySpent;
+    final planned = catStats.plannedDailyPace;
+    final dailyColor = catStats.isOverPace
+        ? colorScheme.error
+        : colorScheme.onSurfaceVariant;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,18 +343,17 @@ class CategoryDetailView extends HookConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.today_rounded,
-              size: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            Icon(Icons.today_rounded, size: 14, color: dailyColor),
             const SizedBox(width: 4),
             Text(
-              basket != null
+              average != null
+                  ? 'Averaged ${roundedFormat.format(average)} / day'
+                        '${planned != null ? ' of ${roundedFormat.format(planned)} / day planned' : ''}'
+                  : basket != null
                   ? '${roundedFormat.format(basket.safeBasket)} safe per shop · ${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left'
                   : '${roundedFormat.format(catStats.dailyAllowanceAmount)} / day left',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: dailyColor,
                 fontWeight: FontWeight.w500,
               ),
             ),

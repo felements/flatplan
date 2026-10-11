@@ -14,7 +14,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CategoryStats {
 
- String get categoryId; String get name; CategoryType get type; double get limit; double get totalSpent; double get totalPlanned; double get remaining; double get heatPercentage; bool get isOverBudget; bool get isDailyAllowance; bool get plannedExceedsLimit; List<PlannedExpenseStatus> get plannedExpenseStatuses; double? get dailyAllowanceAmount;/// Where this period lands at the previous period's rate.
+ String get categoryId; String get name; CategoryType get type; double get limit; double get totalSpent; double get totalPlanned; double get remaining; double get heatPercentage; bool get isOverBudget; bool get isDailyAllowance; bool get plannedExceedsLimit; List<PlannedExpenseStatus> get plannedExpenseStatuses; double? get dailyAllowanceAmount;/// What was spent per day across a finished period. Takes the place of
+/// [dailyAllowanceAmount], which has nothing left to divide once the
+/// period is over.
+ double? get averageDailySpent;/// What the budget allowed per day across a finished period, or null
+/// when there was no budget to pace against.
+ double? get plannedDailyPace;/// Where this period lands at the previous period's rate.
  SpendingTrend? get trend;/// What is safe to spend on the next shop.
  BasketAdvice? get basket;/// A typical purchase and how often the budget affords one. The
 /// counterpart to [basket], for categories with no threshold set.
@@ -29,16 +34,16 @@ $CategoryStatsCopyWith<CategoryStats> get copyWith => _$CategoryStatsCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.plannedExceedsLimit, plannedExceedsLimit) || other.plannedExceedsLimit == plannedExceedsLimit)&&const DeepCollectionEquality().equals(other.plannedExpenseStatuses, plannedExpenseStatuses)&&(identical(other.dailyAllowanceAmount, dailyAllowanceAmount) || other.dailyAllowanceAmount == dailyAllowanceAmount)&&(identical(other.trend, trend) || other.trend == trend)&&(identical(other.basket, basket) || other.basket == basket)&&(identical(other.typical, typical) || other.typical == typical));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.plannedExceedsLimit, plannedExceedsLimit) || other.plannedExceedsLimit == plannedExceedsLimit)&&const DeepCollectionEquality().equals(other.plannedExpenseStatuses, plannedExpenseStatuses)&&(identical(other.dailyAllowanceAmount, dailyAllowanceAmount) || other.dailyAllowanceAmount == dailyAllowanceAmount)&&(identical(other.averageDailySpent, averageDailySpent) || other.averageDailySpent == averageDailySpent)&&(identical(other.plannedDailyPace, plannedDailyPace) || other.plannedDailyPace == plannedDailyPace)&&(identical(other.trend, trend) || other.trend == trend)&&(identical(other.basket, basket) || other.basket == basket)&&(identical(other.typical, typical) || other.typical == typical));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget,isDailyAllowance,plannedExceedsLimit,const DeepCollectionEquality().hash(plannedExpenseStatuses),dailyAllowanceAmount,trend,basket,typical);
+int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget,isDailyAllowance,plannedExceedsLimit,const DeepCollectionEquality().hash(plannedExpenseStatuses),dailyAllowanceAmount,averageDailySpent,plannedDailyPace,trend,basket,typical);
 
 @override
 String toString() {
-  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget, isDailyAllowance: $isDailyAllowance, plannedExceedsLimit: $plannedExceedsLimit, plannedExpenseStatuses: $plannedExpenseStatuses, dailyAllowanceAmount: $dailyAllowanceAmount, trend: $trend, basket: $basket, typical: $typical)';
+  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget, isDailyAllowance: $isDailyAllowance, plannedExceedsLimit: $plannedExceedsLimit, plannedExpenseStatuses: $plannedExpenseStatuses, dailyAllowanceAmount: $dailyAllowanceAmount, averageDailySpent: $averageDailySpent, plannedDailyPace: $plannedDailyPace, trend: $trend, basket: $basket, typical: $typical)';
 }
 
 
@@ -49,7 +54,7 @@ abstract mixin class $CategoryStatsCopyWith<$Res>  {
   factory $CategoryStatsCopyWith(CategoryStats value, $Res Function(CategoryStats) _then) = _$CategoryStatsCopyWithImpl;
 @useResult
 $Res call({
- String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget, bool isDailyAllowance, bool plannedExceedsLimit, List<PlannedExpenseStatus> plannedExpenseStatuses, double? dailyAllowanceAmount, SpendingTrend? trend, BasketAdvice? basket, TypicalPurchase? typical
+ String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget, bool isDailyAllowance, bool plannedExceedsLimit, List<PlannedExpenseStatus> plannedExpenseStatuses, double? dailyAllowanceAmount, double? averageDailySpent, double? plannedDailyPace, SpendingTrend? trend, BasketAdvice? basket, TypicalPurchase? typical
 });
 
 
@@ -66,7 +71,7 @@ class _$CategoryStatsCopyWithImpl<$Res>
 
 /// Create a copy of CategoryStats
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,Object? isDailyAllowance = null,Object? plannedExceedsLimit = null,Object? plannedExpenseStatuses = null,Object? dailyAllowanceAmount = freezed,Object? trend = freezed,Object? basket = freezed,Object? typical = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,Object? isDailyAllowance = null,Object? plannedExceedsLimit = null,Object? plannedExpenseStatuses = null,Object? dailyAllowanceAmount = freezed,Object? averageDailySpent = freezed,Object? plannedDailyPace = freezed,Object? trend = freezed,Object? basket = freezed,Object? typical = freezed,}) {
   return _then(_self.copyWith(
 categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -81,6 +86,8 @@ as bool,isDailyAllowance: null == isDailyAllowance ? _self.isDailyAllowance : is
 as bool,plannedExceedsLimit: null == plannedExceedsLimit ? _self.plannedExceedsLimit : plannedExceedsLimit // ignore: cast_nullable_to_non_nullable
 as bool,plannedExpenseStatuses: null == plannedExpenseStatuses ? _self.plannedExpenseStatuses : plannedExpenseStatuses // ignore: cast_nullable_to_non_nullable
 as List<PlannedExpenseStatus>,dailyAllowanceAmount: freezed == dailyAllowanceAmount ? _self.dailyAllowanceAmount : dailyAllowanceAmount // ignore: cast_nullable_to_non_nullable
+as double?,averageDailySpent: freezed == averageDailySpent ? _self.averageDailySpent : averageDailySpent // ignore: cast_nullable_to_non_nullable
+as double?,plannedDailyPace: freezed == plannedDailyPace ? _self.plannedDailyPace : plannedDailyPace // ignore: cast_nullable_to_non_nullable
 as double?,trend: freezed == trend ? _self.trend : trend // ignore: cast_nullable_to_non_nullable
 as SpendingTrend?,basket: freezed == basket ? _self.basket : basket // ignore: cast_nullable_to_non_nullable
 as BasketAdvice?,typical: freezed == typical ? _self.typical : typical // ignore: cast_nullable_to_non_nullable
@@ -202,10 +209,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  bool plannedExceedsLimit,  List<PlannedExpenseStatus> plannedExpenseStatuses,  double? dailyAllowanceAmount,  SpendingTrend? trend,  BasketAdvice? basket,  TypicalPurchase? typical)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  bool plannedExceedsLimit,  List<PlannedExpenseStatus> plannedExpenseStatuses,  double? dailyAllowanceAmount,  double? averageDailySpent,  double? plannedDailyPace,  SpendingTrend? trend,  BasketAdvice? basket,  TypicalPurchase? typical)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CategoryStats() when $default != null:
-return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.plannedExceedsLimit,_that.plannedExpenseStatuses,_that.dailyAllowanceAmount,_that.trend,_that.basket,_that.typical);case _:
+return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.plannedExceedsLimit,_that.plannedExpenseStatuses,_that.dailyAllowanceAmount,_that.averageDailySpent,_that.plannedDailyPace,_that.trend,_that.basket,_that.typical);case _:
   return orElse();
 
 }
@@ -223,10 +230,10 @@ return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSp
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  bool plannedExceedsLimit,  List<PlannedExpenseStatus> plannedExpenseStatuses,  double? dailyAllowanceAmount,  SpendingTrend? trend,  BasketAdvice? basket,  TypicalPurchase? typical)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  bool plannedExceedsLimit,  List<PlannedExpenseStatus> plannedExpenseStatuses,  double? dailyAllowanceAmount,  double? averageDailySpent,  double? plannedDailyPace,  SpendingTrend? trend,  BasketAdvice? basket,  TypicalPurchase? typical)  $default,) {final _that = this;
 switch (_that) {
 case _CategoryStats():
-return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.plannedExceedsLimit,_that.plannedExpenseStatuses,_that.dailyAllowanceAmount,_that.trend,_that.basket,_that.typical);}
+return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.plannedExceedsLimit,_that.plannedExpenseStatuses,_that.dailyAllowanceAmount,_that.averageDailySpent,_that.plannedDailyPace,_that.trend,_that.basket,_that.typical);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -240,10 +247,10 @@ return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSp
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  bool plannedExceedsLimit,  List<PlannedExpenseStatus> plannedExpenseStatuses,  double? dailyAllowanceAmount,  SpendingTrend? trend,  BasketAdvice? basket,  TypicalPurchase? typical)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String categoryId,  String name,  CategoryType type,  double limit,  double totalSpent,  double totalPlanned,  double remaining,  double heatPercentage,  bool isOverBudget,  bool isDailyAllowance,  bool plannedExceedsLimit,  List<PlannedExpenseStatus> plannedExpenseStatuses,  double? dailyAllowanceAmount,  double? averageDailySpent,  double? plannedDailyPace,  SpendingTrend? trend,  BasketAdvice? basket,  TypicalPurchase? typical)?  $default,) {final _that = this;
 switch (_that) {
 case _CategoryStats() when $default != null:
-return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.plannedExceedsLimit,_that.plannedExpenseStatuses,_that.dailyAllowanceAmount,_that.trend,_that.basket,_that.typical);case _:
+return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSpent,_that.totalPlanned,_that.remaining,_that.heatPercentage,_that.isOverBudget,_that.isDailyAllowance,_that.plannedExceedsLimit,_that.plannedExpenseStatuses,_that.dailyAllowanceAmount,_that.averageDailySpent,_that.plannedDailyPace,_that.trend,_that.basket,_that.typical);case _:
   return null;
 
 }
@@ -254,8 +261,8 @@ return $default(_that.categoryId,_that.name,_that.type,_that.limit,_that.totalSp
 /// @nodoc
 
 
-class _CategoryStats implements CategoryStats {
-  const _CategoryStats({required this.categoryId, required this.name, required this.type, required this.limit, required this.totalSpent, required this.totalPlanned, required this.remaining, required this.heatPercentage, required this.isOverBudget, required this.isDailyAllowance, this.plannedExceedsLimit = false, final  List<PlannedExpenseStatus> plannedExpenseStatuses = const [], this.dailyAllowanceAmount, this.trend, this.basket, this.typical}): _plannedExpenseStatuses = plannedExpenseStatuses;
+class _CategoryStats extends CategoryStats {
+  const _CategoryStats({required this.categoryId, required this.name, required this.type, required this.limit, required this.totalSpent, required this.totalPlanned, required this.remaining, required this.heatPercentage, required this.isOverBudget, required this.isDailyAllowance, this.plannedExceedsLimit = false, final  List<PlannedExpenseStatus> plannedExpenseStatuses = const [], this.dailyAllowanceAmount, this.averageDailySpent, this.plannedDailyPace, this.trend, this.basket, this.typical}): _plannedExpenseStatuses = plannedExpenseStatuses,super._();
   
 
 @override final  String categoryId;
@@ -277,6 +284,13 @@ class _CategoryStats implements CategoryStats {
 }
 
 @override final  double? dailyAllowanceAmount;
+/// What was spent per day across a finished period. Takes the place of
+/// [dailyAllowanceAmount], which has nothing left to divide once the
+/// period is over.
+@override final  double? averageDailySpent;
+/// What the budget allowed per day across a finished period, or null
+/// when there was no budget to pace against.
+@override final  double? plannedDailyPace;
 /// Where this period lands at the previous period's rate.
 @override final  SpendingTrend? trend;
 /// What is safe to spend on the next shop.
@@ -295,16 +309,16 @@ _$CategoryStatsCopyWith<_CategoryStats> get copyWith => __$CategoryStatsCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.plannedExceedsLimit, plannedExceedsLimit) || other.plannedExceedsLimit == plannedExceedsLimit)&&const DeepCollectionEquality().equals(other._plannedExpenseStatuses, _plannedExpenseStatuses)&&(identical(other.dailyAllowanceAmount, dailyAllowanceAmount) || other.dailyAllowanceAmount == dailyAllowanceAmount)&&(identical(other.trend, trend) || other.trend == trend)&&(identical(other.basket, basket) || other.basket == basket)&&(identical(other.typical, typical) || other.typical == typical));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CategoryStats&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.totalSpent, totalSpent) || other.totalSpent == totalSpent)&&(identical(other.totalPlanned, totalPlanned) || other.totalPlanned == totalPlanned)&&(identical(other.remaining, remaining) || other.remaining == remaining)&&(identical(other.heatPercentage, heatPercentage) || other.heatPercentage == heatPercentage)&&(identical(other.isOverBudget, isOverBudget) || other.isOverBudget == isOverBudget)&&(identical(other.isDailyAllowance, isDailyAllowance) || other.isDailyAllowance == isDailyAllowance)&&(identical(other.plannedExceedsLimit, plannedExceedsLimit) || other.plannedExceedsLimit == plannedExceedsLimit)&&const DeepCollectionEquality().equals(other._plannedExpenseStatuses, _plannedExpenseStatuses)&&(identical(other.dailyAllowanceAmount, dailyAllowanceAmount) || other.dailyAllowanceAmount == dailyAllowanceAmount)&&(identical(other.averageDailySpent, averageDailySpent) || other.averageDailySpent == averageDailySpent)&&(identical(other.plannedDailyPace, plannedDailyPace) || other.plannedDailyPace == plannedDailyPace)&&(identical(other.trend, trend) || other.trend == trend)&&(identical(other.basket, basket) || other.basket == basket)&&(identical(other.typical, typical) || other.typical == typical));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget,isDailyAllowance,plannedExceedsLimit,const DeepCollectionEquality().hash(_plannedExpenseStatuses),dailyAllowanceAmount,trend,basket,typical);
+int get hashCode => Object.hash(runtimeType,categoryId,name,type,limit,totalSpent,totalPlanned,remaining,heatPercentage,isOverBudget,isDailyAllowance,plannedExceedsLimit,const DeepCollectionEquality().hash(_plannedExpenseStatuses),dailyAllowanceAmount,averageDailySpent,plannedDailyPace,trend,basket,typical);
 
 @override
 String toString() {
-  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget, isDailyAllowance: $isDailyAllowance, plannedExceedsLimit: $plannedExceedsLimit, plannedExpenseStatuses: $plannedExpenseStatuses, dailyAllowanceAmount: $dailyAllowanceAmount, trend: $trend, basket: $basket, typical: $typical)';
+  return 'CategoryStats(categoryId: $categoryId, name: $name, type: $type, limit: $limit, totalSpent: $totalSpent, totalPlanned: $totalPlanned, remaining: $remaining, heatPercentage: $heatPercentage, isOverBudget: $isOverBudget, isDailyAllowance: $isDailyAllowance, plannedExceedsLimit: $plannedExceedsLimit, plannedExpenseStatuses: $plannedExpenseStatuses, dailyAllowanceAmount: $dailyAllowanceAmount, averageDailySpent: $averageDailySpent, plannedDailyPace: $plannedDailyPace, trend: $trend, basket: $basket, typical: $typical)';
 }
 
 
@@ -315,7 +329,7 @@ abstract mixin class _$CategoryStatsCopyWith<$Res> implements $CategoryStatsCopy
   factory _$CategoryStatsCopyWith(_CategoryStats value, $Res Function(_CategoryStats) _then) = __$CategoryStatsCopyWithImpl;
 @override @useResult
 $Res call({
- String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget, bool isDailyAllowance, bool plannedExceedsLimit, List<PlannedExpenseStatus> plannedExpenseStatuses, double? dailyAllowanceAmount, SpendingTrend? trend, BasketAdvice? basket, TypicalPurchase? typical
+ String categoryId, String name, CategoryType type, double limit, double totalSpent, double totalPlanned, double remaining, double heatPercentage, bool isOverBudget, bool isDailyAllowance, bool plannedExceedsLimit, List<PlannedExpenseStatus> plannedExpenseStatuses, double? dailyAllowanceAmount, double? averageDailySpent, double? plannedDailyPace, SpendingTrend? trend, BasketAdvice? basket, TypicalPurchase? typical
 });
 
 
@@ -332,7 +346,7 @@ class __$CategoryStatsCopyWithImpl<$Res>
 
 /// Create a copy of CategoryStats
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,Object? isDailyAllowance = null,Object? plannedExceedsLimit = null,Object? plannedExpenseStatuses = null,Object? dailyAllowanceAmount = freezed,Object? trend = freezed,Object? basket = freezed,Object? typical = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? categoryId = null,Object? name = null,Object? type = null,Object? limit = null,Object? totalSpent = null,Object? totalPlanned = null,Object? remaining = null,Object? heatPercentage = null,Object? isOverBudget = null,Object? isDailyAllowance = null,Object? plannedExceedsLimit = null,Object? plannedExpenseStatuses = null,Object? dailyAllowanceAmount = freezed,Object? averageDailySpent = freezed,Object? plannedDailyPace = freezed,Object? trend = freezed,Object? basket = freezed,Object? typical = freezed,}) {
   return _then(_CategoryStats(
 categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -347,6 +361,8 @@ as bool,isDailyAllowance: null == isDailyAllowance ? _self.isDailyAllowance : is
 as bool,plannedExceedsLimit: null == plannedExceedsLimit ? _self.plannedExceedsLimit : plannedExceedsLimit // ignore: cast_nullable_to_non_nullable
 as bool,plannedExpenseStatuses: null == plannedExpenseStatuses ? _self._plannedExpenseStatuses : plannedExpenseStatuses // ignore: cast_nullable_to_non_nullable
 as List<PlannedExpenseStatus>,dailyAllowanceAmount: freezed == dailyAllowanceAmount ? _self.dailyAllowanceAmount : dailyAllowanceAmount // ignore: cast_nullable_to_non_nullable
+as double?,averageDailySpent: freezed == averageDailySpent ? _self.averageDailySpent : averageDailySpent // ignore: cast_nullable_to_non_nullable
+as double?,plannedDailyPace: freezed == plannedDailyPace ? _self.plannedDailyPace : plannedDailyPace // ignore: cast_nullable_to_non_nullable
 as double?,trend: freezed == trend ? _self.trend : trend // ignore: cast_nullable_to_non_nullable
 as SpendingTrend?,basket: freezed == basket ? _self.basket : basket // ignore: cast_nullable_to_non_nullable
 as BasketAdvice?,typical: freezed == typical ? _self.typical : typical // ignore: cast_nullable_to_non_nullable

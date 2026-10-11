@@ -18,6 +18,10 @@ class CategoryTile extends StatefulWidget {
   final String? typicalLine;
   final String? trendLine;
   final bool isOverProjected;
+
+  /// How a finished period was paced, shown in place of the daily figure.
+  final String? pastPaceLine;
+  final bool isOverPace;
   final List<PlannedExpenseStatus> plannedExpenseStatuses;
 
   const CategoryTile({
@@ -35,6 +39,8 @@ class CategoryTile extends StatefulWidget {
     this.typicalLine,
     this.trendLine,
     this.isOverProjected = false,
+    this.pastPaceLine,
+    this.isOverPace = false,
     this.plannedExpenseStatuses = const [],
   });
 
@@ -166,6 +172,32 @@ class _CategoryTileState extends State<CategoryTile> {
                                   : '${widget.dailyAllowanceAmount} / day left',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (widget.pastPaceLine != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.today_rounded,
+                            size: 14,
+                            color: widget.isOverPace
+                                ? colorScheme.error
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              widget.pastPaceLine!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: widget.isOverPace
+                                    ? colorScheme.error
+                                    : colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
