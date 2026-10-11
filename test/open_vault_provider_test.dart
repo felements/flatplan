@@ -99,6 +99,20 @@ void main() {
     );
   }
 
+  /// Waits for the open vault's first pull to land. The pull runs in the
+  /// background after [openVaultProvider] resolves, and `lastPullAt` is
+  /// published only once the mirror is written and the period providers
+  /// invalidated. A fixed delay raced it on a loaded CI runner.
+  Future<void> pullLanded() async {
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while (container.read(currentSyncStatusProvider)?.lastPullAt == null) {
+      if (DateTime.now().isAfter(deadline)) {
+        fail('the first pull did not land within 5 s');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+  }
+
   setUp(() {
     tempDir = Directory.systemTemp.createTempSync('flatplan_open_');
     paths = AppPaths(appSupportDir: p.join(tempDir.path, 'support'));
@@ -165,7 +179,7 @@ void main() {
     container = makeContainer(VaultRegistry(lastSelectedVaultId: 'r', vaults: [remoteVault()]));
 
     final open = await container.read(openVaultProvider.future);
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pullLanded();
 
     expect(await open.workspace!.readString('x.yaml'), 'x');
     expect(container.read(currentSyncStatusProvider), isNotNull);
@@ -192,7 +206,7 @@ void main() {
     container.listen(allPeriodsProvider, (_, _) {});
     container.listen(currentPeriodProvider, (_, _) {});
     await container.read(openVaultProvider.future);
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await pullLanded();
 
     final periods = await container.read(allPeriodsProvider.future);
     expect(periods.map((p) => p.id), ['p1']);
