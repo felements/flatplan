@@ -116,6 +116,7 @@ class CategoryDetailView extends HookConsumerWidget {
                         theme,
                         colorScheme,
                         category,
+                        catStats.plannedExpenseStatuses,
                         format,
                       ),
 
@@ -426,6 +427,7 @@ class CategoryDetailView extends HookConsumerWidget {
     ThemeData theme,
     ColorScheme colorScheme,
     Category category,
+    List<PlannedExpenseStatus> statuses,
     NumberFormat format,
   ) {
     return Expanded(
@@ -503,6 +505,11 @@ class CategoryDetailView extends HookConsumerWidget {
                       itemBuilder: (context, index) {
                         final planned = category.plannedExpenses[index];
                         final periodicityLabel = formatDueDate(planned.dueDate);
+                        // Same rule as the dashboard tile's red dot: only an
+                        // unpaid payment in the current period counts.
+                        final isOverdue =
+                            index < statuses.length &&
+                            statuses[index] == PlannedExpenseStatus.overdue;
 
                         return _buildPlannedExpenseRow(
                           context,
@@ -511,6 +518,7 @@ class CategoryDetailView extends HookConsumerWidget {
                           colorScheme,
                           planned,
                           periodicityLabel,
+                          isOverdue,
                           format,
                         );
                       },
@@ -529,8 +537,12 @@ class CategoryDetailView extends HookConsumerWidget {
     ColorScheme colorScheme,
     PlannedExpense planned,
     String periodicityLabel,
+    bool isOverdue,
     NumberFormat format,
   ) {
+    final dueColor = isOverdue
+        ? colorScheme.error
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
@@ -590,18 +602,15 @@ class CategoryDetailView extends HookConsumerWidget {
                           Icon(
                             Icons.schedule_rounded,
                             size: 12,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.7,
-                            ),
+                            color: dueColor,
                           ),
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
                               periodicityLabel,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.7,
-                                ),
+                                color: dueColor,
+                                fontWeight: isOverdue ? FontWeight.w600 : null,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
