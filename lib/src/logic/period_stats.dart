@@ -70,6 +70,15 @@ sealed class PeriodStats with _$PeriodStats {
     required double remainingFreeBalance,
     required double totalIncome,
     required double totalFactIncome,
+
+    /// How far the period is over budget: the sum, across expense
+    /// categories, of what each spent beyond its own limit. Categories
+    /// under their limit contribute nothing, so an underspend in one
+    /// category never hides an overshoot in another.
+    required double totalOverspent,
+
+    /// How many expense categories are over their limit.
+    required int overBudgetCount,
     required List<CategoryStats> categoryStats,
   }) = _PeriodStats;
 }
@@ -197,6 +206,8 @@ PeriodStats periodStatsFor({
   double totalIncome = 0;
   double totalFactIncome = 0;
   double effectiveTotalExpenseForFreeBalance = 0;
+  double totalOverspent = 0;
+  int overBudgetCount = 0;
 
   final categoryStatsList = <CategoryStats>[];
 
@@ -208,6 +219,11 @@ PeriodStats periodStatsFor({
       allPeriods: allPeriods,
       now: now,
     );
+
+    if (category.type != CategoryType.income && stats.isOverBudget) {
+      totalOverspent += stats.totalSpent - stats.limit;
+      overBudgetCount += 1;
+    }
 
     switch (category.type) {
       case CategoryType.mandatoryExpense:
@@ -249,6 +265,8 @@ PeriodStats periodStatsFor({
     remainingFreeBalance: totalFactIncome - effectiveTotalExpenseForFreeBalance,
     totalIncome: totalIncome,
     totalFactIncome: totalFactIncome,
+    totalOverspent: totalOverspent,
+    overBudgetCount: overBudgetCount,
     categoryStats: categoryStatsList,
   );
 }

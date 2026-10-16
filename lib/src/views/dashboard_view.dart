@@ -157,6 +157,27 @@ class DashboardView extends ConsumerWidget {
           remainingBgColor = AppTheme.cardCoral;
         }
 
+        // Any overshoot is worth a look; past a tenth of the plan it is
+        // the headline of the period.
+        Color overspentColor;
+        Color overspentBgColor;
+        if (stats.totalOverspent <= 0) {
+          overspentColor = const Color(0xFF6ABF69);
+          overspentBgColor = AppTheme.cardGreen;
+        } else if (stats.totalOverspent <= stats.totalBudget * 0.1) {
+          overspentColor = colorScheme.primary;
+          overspentBgColor = AppTheme.cardGold;
+        } else {
+          overspentColor = colorScheme.error;
+          overspentBgColor = AppTheme.cardCoral;
+        }
+        final expenseCategoryCount = stats.categoryStats
+            .where((c) => c.type != CategoryType.income)
+            .length;
+        final overspentSubtitle = stats.overBudgetCount == 0
+            ? 'all categories within limit'
+            : '${stats.overBudgetCount} of $expenseCategoryCount categories over limit';
+
         final mandatoryCategories = stats.categoryStats
             .where((c) => c.type == CategoryType.mandatoryExpense)
             .toList();
@@ -318,6 +339,19 @@ class DashboardView extends ConsumerWidget {
                       icon: Icons.shopping_cart_rounded,
                       color: spentColor,
                       backgroundColor: spentBgColor,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 260,
+                    child: SummaryCard(
+                      title: 'Over Budget',
+                      amount: currencyFormatter.format(stats.totalOverspent),
+                      subtitle: overspentSubtitle,
+                      tooltip:
+                          'How far you are over plan: the sum of what each category has spent beyond its own limit. Categories still under their limit do not offset it, so this is the money you had to find beyond the plan.',
+                      icon: Icons.local_fire_department_rounded,
+                      color: overspentColor,
+                      backgroundColor: overspentBgColor,
                     ),
                   ),
                   SizedBox(
