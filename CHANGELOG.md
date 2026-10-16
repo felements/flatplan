@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Changed
 - "Change Folder" and "Reset to default folder" moved into the vault's edit form.
 - Period creation moved out of Settings: a "+ Next period" button under Today in the sidebar creates the first period of an empty vault or rolls the current one over. The dashboard's empty state opens the same dialog directly. The rollover dialog now says which period's categories and recurring planned payments carry over.
+- On the category screen, a planned payment that is overdue in the current period shows its due day and clock icon in the same red as the dashboard tile's dot, so the list says which payment needs attention. Finished periods, paid payments and payments not yet due keep the muted grey.
 - A finished period's daily-allowance categories show how the period was paced — "averaged €35/day of €40/day planned", in red when spending ran ahead of plan — on the dashboard tile and the category screen, in place of a meaningless "/ day left".
 
 ### Planned
