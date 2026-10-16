@@ -30,6 +30,10 @@ FlatPlan is a Flutter budget-tracking app (desktop today, mobile planned) storin
 - `lib/src/views/` — `DashboardView`, `CategoryDetailView`, `CategoryEditorView`, `SettingsView`, `AppShell`, `VaultListView`, `VaultFormView`, `GitLabVaultForm`, and the `vault_kinds.dart` descriptor list
 - `lib/src/components/` — `CategoryTile`, `SummaryCard`, `PeriodLoadBanner`, the `showCategoryDialog` / `showPlannedExpenseDialog` / `showNewPeriodDialog` / `showEditPeriodDialog` editors, `VaultSwitcher`, `VaultAccessBanner`, `BrokenRegistryBanner`, `SyncLifecycleBridge`
 
+## Delivery Workflow
+- **Every user-visible change updates `CHANGELOG.md`** under `## [Unreleased]` (Added / Changed / Fixed, Keep a Changelog style) in the same PR as the code. A PR without its changelog line is not finished.
+- Work lands through a typed branch (`feat/`, `fix/`, `docs/`, `test/`) and a GitHub PR against `main` with a conventional-commit headline. When the change is verified (`flutter analyze` clean, full `flutter test` green), commit, push and open the PR without waiting to be asked.
+
 ## Design Guidelines
 See `doc/08_design_guidelines.md` for the full visual identity — color palette (gold `#D4A84B`, teal `#5A8F7B`, coral `#E07A5F`), Outfit typography, component standards (16 px radius cards, 12 px buttons/inputs), sidebar spec, and spacing conventions. All new UI must follow this document.
 
