@@ -51,6 +51,8 @@ PeriodStats _stats(List<CategoryStats> categoryStats) => PeriodStats(
   remainingFreeBalance: -50,
   totalIncome: 3500,
   totalFactIncome: 2000,
+  totalOverspent: 0,
+  overBudgetCount: 0,
   categoryStats: categoryStats,
 );
 
@@ -238,6 +240,19 @@ void main() {
     expect(md, contains('- Mandatory: 1,200 budget / 500 spent'));
     expect(md, contains('- Optional: 700 budget / 650 spent'));
     expect(md, contains('- Categories over budget: 1 of 2'));
+  });
+
+  test('summary totals state how far the period is over budget', () {
+    final md = formatCurrentPeriodStatsMarkdown(
+      period: _period(),
+      stats: _stats([
+        _catStats(id: 'a', name: 'A', limit: 100, spent: 150),
+      ]).copyWith(totalOverspent: 50, overBudgetCount: 1),
+      endDate: endDate,
+      now: now,
+    );
+
+    expect(md, contains('- Over budget by: 50'));
   });
 
   test('clamps day number when now is outside the period range', () {

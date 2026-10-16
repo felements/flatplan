@@ -221,7 +221,8 @@ String formatCurrentPeriodStatsMarkdown({
     )
     ..writeln(
       '- Categories over budget: $overCount of ${expenseCategories.length}',
-    );
+    )
+    ..writeln('- Over budget by: ${money.format(stats.totalOverspent)}');
 
   return buffer.toString();
 }

@@ -18,10 +18,10 @@ The primary view acting as the control center for the active period.
   - **Edit Period**: a dialog to rename the period and move its start date. Days another period already starts on cannot be picked. A date that carries the period past a neighbour shows a warning naming it, since periods run in start-date order and the move changes end dates and which period is current. The end date stays derived, and the YAML file keeps its original name.
   - **Manage Categories**: opens the category editor.
 - **Summary CardsRow (Computed Stats)**:
-  - *Planned Income vs Planned Expenses*
-  - *Fact Income vs Planned Expenses* (Pacing)
-  - *Total Remaining*: Sum of all positive remaining categories.
-  - *Total Over-budget*: Sum of all negative remaining categories.
+  - *Total Budget (plan)*: planned expenses against planned income.
+  - *Total Spent (fact)*: actual spending against actual income received (pacing).
+  - *Over Budget*: the sum, per expense category, of what was spent beyond its limit. Only overshoots count; a category under its limit contributes nothing, so this is how far the period as a whole has left the plan. The subtitle counts the categories over limit. Green at zero, gold up to a tenth of the total budget, coral beyond.
+  - *Free Money*: actual income minus planned expenses (with every overshoot taken at its actual spend).
 - **Category Lists (Mandatory & Optional scopes)**:
   - Two distinct sections or columns separating `isMandatory=true` and `isMandatory=false`.
   - **Category ListTile**:
