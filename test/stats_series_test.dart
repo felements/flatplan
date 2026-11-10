@@ -380,6 +380,20 @@ void main() {
       expect(renovation.label, 'renovation');
     });
 
+    test('a tag repeated in one comment counts the payment once', () {
+      final ps = [
+        period('p', DateTime(2026, 11, 5), [
+          category('Hosting', facts: [(100, 'hosting #tws #tws')]),
+        ]),
+      ];
+      final chart = buildStatsChart(
+        allPeriods: ps,
+        subjects: [StatsSubject.tag('tws')],
+        today: today,
+      );
+      expect(chart.lines.single.values, [100]);
+    });
+
     test('a subject found nowhere gives gaps for a category and zeros for a '
         'tag', () {
       final chart = chartOf([

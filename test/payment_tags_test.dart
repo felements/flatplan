@@ -113,6 +113,18 @@ void main() {
       expect(result[1].periodTotal, 100);
     });
 
+    test('a tag repeated in one comment counts the payment once', () {
+      final period = _period('p', [
+        _spending('home', [_fact('a', 100, 'hosting #tws #TWS #tws')]),
+      ]);
+
+      final tags = topTags(period: period, allPeriods: [period]);
+
+      expect(tags.single.tag, 'tws');
+      expect(tags.single.periodTotal, 100);
+      expect(tags.single.allPeriodsTotal, 100);
+    });
+
     test('adds every period into the all-periods total', () {
       final older = _period('older', [
         _spending('home', [_fact('o1', 500, '#renovation')]),
