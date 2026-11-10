@@ -53,6 +53,13 @@ Future<void> _pump(
   ),
 );
 
+/// The left axis labels on screen: whole-number texts, which the period
+/// labels ('Jan 26') are not.
+List<String> _leftLabels(WidgetTester tester) => [
+  for (final text in tester.widgetList<Text>(find.byType(Text)))
+    if (RegExp(r'^-?[\d,]+$').hasMatch(text.data ?? '')) text.data!,
+];
+
 LineChartData _data(WidgetTester tester) =>
     tester.widget<LineChart>(find.byType(LineChart)).data;
 
@@ -236,6 +243,23 @@ void main() {
       expect(find.text('0'), findsWidgets);
       expect(find.textContaining(RegExp(r'^\d{1,2},000$')), findsWidgets);
     });
+
+    // Amounts show without decimals, so a fractional tick (0.2, 0.5) would
+    // read as a repeat of its neighbour: only whole ticks get a label.
+    for (final (name, values) in [
+      ('all-zero', <double?>[0, 0, 0]),
+      ('small', <double?>[1, 3, 2]),
+    ]) {
+      testWidgets('left labels are all different for an $name chart', (
+        tester,
+      ) async {
+        await _pump(tester, _chart([_line('Rent', values)]));
+
+        final labels = _leftLabels(tester);
+        expect(labels, contains('0'));
+        expect(labels.toSet(), hasLength(labels.length), reason: '$labels');
+      });
+    }
 
     testWidgets('the tooltip describes the first touched spot only', (
       tester,

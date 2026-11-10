@@ -153,9 +153,13 @@ class StatsLineChart extends StatelessWidget {
               reservedSize: 56,
               getTitlesWidget: (value, meta) {
                 // The axis ends are labelled too, which would crowd the
-                // ticks; keep only the labels that fall on a tick.
+                // ticks: keep only the labels that fall on a tick. Amounts
+                // show without decimals, so a fractional tick (0.2 on a 0 to
+                // 1 axis) would repeat its neighbour's label: keep whole
+                // values only.
                 final ticks = value / meta.appliedInterval;
-                if ((ticks - ticks.roundToDouble()).abs() > 1e-6) {
+                if ((ticks - ticks.roundToDouble()).abs() > 1e-6 ||
+                    (value - value.roundToDouble()).abs() > 1e-6) {
                   return const SizedBox.shrink();
                 }
                 return SideTitleWidget(
