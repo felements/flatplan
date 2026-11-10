@@ -13,12 +13,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Storage abstraction and a sync engine (local mirror, persisted change journal, newest-wins conflict handling with side files) preparing for remote vaults on GitLab, GitHub, WebDAV, S3 and Google Drive.
 - "Edit Period" in the dashboard's period menu renames a period and moves its start date. Days another period starts on cannot be picked, and a date that moves the period past a neighbour shows a warning before saving.
 - An "Over Budget" card on the dashboard, between Total Spent and Free Money, sums what each category has spent beyond its own limit. Only overshoots count, so a category under its limit no longer hides one over it. The subtitle counts the categories over limit, and the AI stats export states the same figure.
+- Payment tags: write `#renovation` (or several tags) anywhere in a payment's comment. On the category screen the tags move out of the text and show as chips after it.
+- A "Top tags" card on the dashboard lists the three most-spent tags of the period, each with its sum this period and across all periods. A payment with several tags counts in full under each.
 
 ### Changed
 - "Change Folder" and "Reset to default folder" moved into the vault's edit form.
 - Period creation moved out of Settings: a "+ Next period" button under Today in the sidebar creates the first period of an empty vault or rolls the current one over. The dashboard's empty state opens the same dialog directly. The rollover dialog now says which period's categories and recurring planned payments carry over.
 - On the category screen, a planned payment that is overdue in the current period shows its due day and clock icon in the same red as the dashboard tile's dot, so the list says which payment needs attention. Finished periods, paid payments and payments not yet due keep the muted grey.
 - A finished period's daily-allowance categories show how the period was paced — "averaged €35/day of €40/day planned", in red when spending ran ahead of plan — on the dashboard tile and the category screen, in place of a meaningless "/ day left".
+
+### Fixed
+- A payment comment starting with `#` was erased on save, and a comment containing a double quote could make the whole period file unreadable. Such values are now quoted properly; files without them are written exactly as before.
 
 ### Planned
 - Multi-currency support

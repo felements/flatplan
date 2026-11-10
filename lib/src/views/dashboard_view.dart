@@ -8,7 +8,9 @@ import '../components/category_tile.dart';
 import '../components/period_dialogs.dart';
 import '../components/period_load_warning.dart';
 import '../components/summary_card.dart';
+import '../components/top_tags_card.dart';
 import '../components/vault_banners.dart';
+import '../logic/payment_tags.dart';
 import '../logic/period_extensions.dart';
 import '../logic/period_stats.dart';
 import '../providers/all_periods_provider.dart';
@@ -101,6 +103,12 @@ class DashboardView extends ConsumerWidget {
         if (stats == null) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        final tagTotals = topTags(
+          period: period,
+          allPeriods: allPeriods,
+          limit: TopTagsCard.maxTags,
+        );
 
         final currencyFormatter = NumberFormat.simpleCurrency(
           name: period.baseCurrency,
@@ -369,6 +377,8 @@ class DashboardView extends ConsumerWidget {
                       backgroundColor: remainingBgColor,
                     ),
                   ),
+                  if (tagTotals.isNotEmpty)
+                    SizedBox(width: 260, child: TopTagsCard(tags: tagTotals)),
                 ],
               ),
 

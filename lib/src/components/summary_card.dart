@@ -29,41 +29,9 @@ class SummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final accentColor = color ?? colorScheme.primary;
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      decoration: BoxDecoration(
-        color:
-            backgroundColor ??
-            (isDark
-                ? colorScheme.surfaceContainerLow
-                : colorScheme.surfaceContainerLowest),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-          width: 0.5,
-        ),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
+      decoration: summaryCardDecoration(context, backgroundColor),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,4 +111,48 @@ class SummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The surface shared by every dashboard summary card: 16 px radius, faint
+/// border and the layered shadow from the design guidelines, on
+/// [backgroundColor] or the default card surface.
+BoxDecoration summaryCardDecoration(
+  BuildContext context, [
+  Color? backgroundColor,
+]) {
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final isDark = theme.brightness == Brightness.dark;
+  return BoxDecoration(
+    color:
+        backgroundColor ??
+        (isDark
+            ? colorScheme.surfaceContainerLow
+            : colorScheme.surfaceContainerLowest),
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+      width: 0.5,
+    ),
+    boxShadow: isDark
+        ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ]
+        : [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+  );
 }
