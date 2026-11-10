@@ -395,6 +395,17 @@ void main() {
       }
     });
 
+    testWidgets('small amounts keep the usual left axis width', (tester) async {
+      await _pump(
+        tester,
+        _chart([
+          _line('Groceries', [5, 6, 7]),
+        ]),
+      );
+
+      expect(_data(tester).titlesData.leftTitles.sideTitles.reservedSize, 56);
+    });
+
     testWidgets('left labels use the amount format without decimals', (
       tester,
     ) async {
@@ -646,11 +657,12 @@ void main() {
         final picked = <(int, int)>[];
         await _pump(tester, chart, onPointTap: (l, p) => picked.add((l, p)));
         final data = _data(tester);
-        // The plot is the chart's box less the 56 px left and 28 px bottom
+        // The plot is the chart's box less the left and the 28 px bottom
         // axis labels; x runs from -0.5 to 2.5.
         final box = tester.getRect(find.byType(LineChart));
+        final left = data.titlesData.leftTitles.sideTitles.reservedSize;
         final plot = Rect.fromLTRB(
-          box.left + 56,
+          box.left + left,
           box.top,
           box.right,
           box.bottom - 28,

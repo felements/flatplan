@@ -102,6 +102,14 @@ class StatsLineChart extends StatelessWidget {
   /// Called with the line and period index of a clicked dot.
   final void Function(int line, int period)? onPointTap;
 
+  /// The least room the left axis labels get, enough for four-figure
+  /// amounts.
+  static const _minLeftAxisWidth = 56.0;
+
+  /// The gap fl_chart's `SideTitleWidget` leaves between a label and the
+  /// plot.
+  static const _titleSpace = 8.0;
+
   static const _lineWidth = 2.0;
   static const _dotRadius = 3.0;
   static const _limitAlpha = 0.55;
@@ -118,6 +126,7 @@ class StatsLineChart extends StatelessWidget {
     final count = chart.periods.length;
     final labelInterval = bottomLabelInterval(count);
     final bounds = statsYBounds(chart);
+    final leftAxisWidth = _leftAxisWidth(context, format, labelStyle, bounds);
 
     return LineChart(
       LineChartData(
@@ -166,7 +175,7 @@ class StatsLineChart extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 56,
+              reservedSize: leftAxisWidth,
               getTitlesWidget: (value, meta) {
                 // The axis ends are labelled too, which would crowd the
                 // ticks: keep only the labels that fall on a tick. Amounts
@@ -329,6 +338,52 @@ class StatsLineChart extends StatelessWidget {
       }
     }
     return bars;
+  }
+
+  /// Room for the left axis labels: the widest label the axis can show, plus
+  /// the gap before the plot, so a label never wraps onto a second line.
+  ///
+  /// No tick lies beyond the axis ends, so no label has more digits than
+  /// theirs. Digits differ in width ("200,000" is wider than "275,000" in
+  /// Outfit), so each end is measured with all its digits set to the widest.
+  static double _leftAxisWidth(
+    BuildContext context,
+    NumberFormat format,
+    TextStyle? style,
+    ({double minY, double maxY}) bounds,
+  ) {
+    final painter = TextPainter(
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    );
+    final resolved = DefaultTextStyle.of(context).style.merge(style);
+    double widthOf(String text) {
+      painter
+        ..text = TextSpan(text: text, style: resolved)
+        ..layout();
+      return painter.width;
+    }
+
+    var widestDigit = '0';
+    var digitWidth = 0.0;
+    for (var d = 0; d <= 9; d++) {
+      final width = widthOf('$d');
+      if (width > digitWidth) {
+        widestDigit = '$d';
+        digitWidth = width;
+      }
+    }
+    var widest = 0.0;
+    for (final end in [bounds.minY, bounds.maxY]) {
+      final label = format
+          .format(end.truncateToDouble())
+          .replaceAll(RegExp(r'\d'), widestDigit);
+      widest = math.max(widest, widthOf(label));
+    }
+    painter.dispose();
+    // A pixel or two of slack against rounding in the label's own layout.
+    return math.max(_minLeftAxisWidth, widest.ceilToDouble() + _titleSpace + 2);
   }
 
   /// [dot] with a ring around it when it is the [selected] dot: line [line]

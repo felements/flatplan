@@ -25,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A finished period's daily-allowance categories show how the period was paced — "averaged €35/day of €40/day planned", in red when spending ran ahead of plan — on the dashboard tile and the category screen, in place of a meaningless "/ day left".
 
 ### Fixed
+- Stats graph: amounts of six figures or more (250,000) no longer wrap onto two lines on the left axis; the axis widens to fit its longest label.
 - A payment comment starting with `#` was erased on save, and a comment containing a double quote could make the whole period file unreadable. Such values are now quoted properly; files without them are written exactly as before.
 
 ### Planned
