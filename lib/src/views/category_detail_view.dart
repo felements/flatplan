@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../components/category_dialog.dart';
 import '../components/planned_expense_dialog.dart';
+import '../components/tag_chip.dart';
 import '../logic/period_extensions.dart';
 import '../logic/period_stats.dart';
 import '../models/models.dart';
@@ -755,8 +756,8 @@ class CategoryDetailView extends HookConsumerWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        subtitle: Text(
-                          fact.description ?? 'No comment',
+                        subtitle: TaggedComment(
+                          fact.description,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),

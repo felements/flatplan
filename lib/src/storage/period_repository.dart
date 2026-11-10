@@ -1,11 +1,11 @@
 import 'dart:collection';
 import 'dart:developer' show log;
 
-import 'package:json2yaml/json2yaml.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:yaml/yaml.dart';
 
 import '../models/models.dart';
+import 'period_yaml.dart';
 import 'vault_workspace.dart';
 
 /// A period file that could not be read back into a [Period].
@@ -159,8 +159,7 @@ class PeriodRepository {
     final jsonMap = period.toJson();
     final sortedMap = _sortKeysAlphabetically(jsonMap);
 
-    // json2yaml formatting generates clean YAML output.
-    final yamlString = json2yaml(sortedMap, yamlStyle: YamlStyle.generic);
+    final yamlString = encodePeriodYaml(sortedMap);
     await workspace.writeString(filename, yamlString);
   }
 

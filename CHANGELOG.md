@@ -14,6 +14,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - "Edit Period" in the dashboard's period menu renames a period and moves its start date. Days another period starts on cannot be picked, and a date that moves the period past a neighbour shows a warning before saving.
 - An "Over Budget" card on the dashboard, between Total Spent and Free Money, sums what each category has spent beyond its own limit. Only overshoots count, so a category under its limit no longer hides one over it. The subtitle counts the categories over limit, and the AI stats export states the same figure.
 
+- Payment tags: write `#renovation` (or several tags) anywhere in a payment's comment. On the category screen the tags move out of the text and show as chips after it.
+- A "Top tags" card on the dashboard lists the three most-spent tags of the period, each with its sum this period and across all periods. A payment with several tags counts in full under each.
+
+### Fixed
+- A payment comment starting with `#` was erased on save, and a comment containing a double quote could make the whole period file unreadable. Such values are now quoted properly; files without them are written exactly as before.
+
 ### Changed
 - "Change Folder" and "Reset to default folder" moved into the vault's edit form.
 - Period creation moved out of Settings: a "+ Next period" button under Today in the sidebar creates the first period of an empty vault or rolls the current one over. The dashboard's empty state opens the same dialog directly. The rollover dialog now says which period's categories and recurring planned payments carry over.

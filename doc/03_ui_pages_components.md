@@ -22,6 +22,7 @@ The primary view acting as the control center for the active period.
   - *Total Spent (fact)*: actual spending against actual income received (pacing).
   - *Over Budget*: the sum, per expense category, of what was spent beyond its limit. Only overshoots count; a category under its limit contributes nothing, so this is how far the period as a whole has left the plan. The subtitle counts the categories over limit. Green at zero, gold up to a tenth of the total budget, coral beyond.
   - *Free Money*: actual income minus planned expenses (with every overshoot taken at its actual spend).
+  - *Top tags*: shown only when a payment this period carries a `#tag`. The three tags with the most spending this period, each with its sum in this period and across every period (columns "period" and "total"). A payment with several tags counts in full under each one; income is ignored. Same 260 px width and height as the other cards — three rows is what fits at that height.
 - **Category Lists (Mandatory & Optional scopes)**:
   - Two distinct sections or columns separating `isMandatory=true` and `isMandatory=false`.
   - **Category ListTile**:
@@ -42,6 +43,7 @@ A focused view for managing a specific category's expenses in the current period
 - **Fact Expenses Section**:
   - List of `FactExpense` items, ordered chronologically.
   - Displays: Amount, Optional Comment/Merchant, Time of entry, "One-Time" badge.
+  - `#tags` in the comment are cut out of the text wherever they were typed and drawn as teal chips after it, in the order written. The stored comment keeps the text as typed.
   - Interaction: Tap to edit, swipe/hover to delete.
 - **Quick Action FAB (Floating Action Button)** / Input Row:
   - Always-visible row at the bottom to quickly type amount + comment and hit Enter to add a `FactExpense`.

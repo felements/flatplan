@@ -24,6 +24,7 @@ Quick-reference for the domain language used throughout FlatPlan's codebase and 
 | **Period Rollover** | Creating the next period from an existing one. Keeps categories and planned expenses (resetting `isCompleted`), drops all fact expenses. Planned expenses with an exact due date are treated as one-time and dropped. |
 | **Cold-Start** | Creating the very first period when no previous periods or templates exist. Uses `createEmptyPeriod` to bootstrap a blank period. |
 | **Template** | A period-like YAML file without fact expenses, used as a reusable base for instantiating new periods. |
+| **Tag** | A `#word` in a fact expense's comment (letters of any script, digits, `_`, `-`; at the start or after a space; number-only `#12345` is not a tag). Case-insensitive, shown lowercase. A payment can carry several; each gets the payment's full amount. Parsed by `splitTags` in `logic/payment_tags.dart`, summed by `topTags`. |
 | **Base Currency** | A per-period currency code (e.g. `EUR`, `USD`) stored in `baseCurrency`. |
 | **Vault Switcher** | The sidebar footer control that shows the open vault and lets the user switch or manage vaults. |
 | **Mirror** | For a remote vault, the app-private local copy of the remote files (`<app support>/vaults/<id>/files`). The app only ever reads and writes the mirror; the sync engine moves changes to and from the provider. |
