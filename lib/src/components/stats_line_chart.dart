@@ -79,13 +79,28 @@ int bottomLabelInterval(int periodCount) =>
 /// period's whole slot. The chart fills the space its parent gives it and
 /// draws no card of its own; the hollow point is filled in the card colour,
 /// so put it on a card.
+///
+/// A click in a period picks the dot there nearest the pointer and reports
+/// it to [onPointTap]; the [selected] dot is drawn with a ring.
 class StatsLineChart extends StatelessWidget {
-  const StatsLineChart({super.key, required this.chart, required this.colors});
+  const StatsLineChart({
+    super.key,
+    required this.chart,
+    required this.colors,
+    this.selected,
+    this.onPointTap,
+  });
 
   final StatsChart chart;
 
   /// The colour of each line, in the order of [StatsChart.lines].
   final List<Color> colors;
+
+  /// The dot to ring: the index of its line and of its period.
+  final ({int line, int period})? selected;
+
+  /// Called with the line and period index of a clicked dot.
+  final void Function(int line, int period)? onPointTap;
 
   static const _lineWidth = 2.0;
   static const _dotRadius = 3.0;
@@ -172,6 +187,25 @@ class StatsLineChart extends StatelessWidget {
           ),
         ),
         lineTouchData: LineTouchData(
+          touchCallback: (event, response) {
+            final onTap = onPointTap;
+            if (onTap == null || event is! FlTapUpEvent || response == null) {
+              return;
+            }
+            final period = _periodOf(response.lineBarSpots ?? const []);
+            if (period == null) return;
+            final line = nearestLineAt(
+              chart,
+              period,
+              response.touchChartCoordinate.dy,
+            );
+            if (line != null) onTap(line, period);
+          },
+          mouseCursorResolver: (event, response) =>
+              onPointTap != null &&
+                  _periodOf(response?.lineBarSpots ?? const []) != null
+              ? SystemMouseCursors.click
+              : MouseCursor.defer,
           getTouchedSpotIndicator: (bar, indexes) => [
             for (final _ in indexes)
               // The limit has nothing to mark, and its ends lie half a slot
@@ -236,8 +270,12 @@ class StatsLineChart extends StatelessWidget {
             barWidth: _lineWidth,
             isStrokeCapRound: true,
             dotData: FlDotData(
-              getDotPainter: (spot, percent, bar, index) =>
-                  FlDotCirclePainter(radius: _dotRadius, color: color),
+              getDotPainter: (spot, percent, bar, index) => _ringIfSelected(
+                FlDotCirclePainter(radius: _dotRadius, color: color),
+                i,
+                spot,
+                color,
+              ),
             ),
           ),
         );
@@ -257,11 +295,16 @@ class StatsLineChart extends StatelessWidget {
             dotData: FlDotData(
               // Only the period in progress: the solid run draws the other end.
               checkToShowDot: (spot, bar) => spot.x == inProgress,
-              getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
-                radius: _dotRadius,
-                color: cardColor,
-                strokeColor: color,
-                strokeWidth: _lineWidth,
+              getDotPainter: (spot, percent, bar, index) => _ringIfSelected(
+                FlDotCirclePainter(
+                  radius: _dotRadius,
+                  color: cardColor,
+                  strokeColor: color,
+                  strokeWidth: _lineWidth,
+                ),
+                i,
+                spot,
+                color,
               ),
             ),
           ),
@@ -286,6 +329,31 @@ class StatsLineChart extends StatelessWidget {
       }
     }
     return bars;
+  }
+
+  /// [dot] with a ring around it when it is the [selected] dot: line [line]
+  /// at [spot]'s period.
+  FlDotPainter _ringIfSelected(
+    FlDotPainter dot,
+    int line,
+    FlSpot spot,
+    Color color,
+  ) {
+    final picked = selected;
+    if (picked == null || picked.line != line || spot.x != picked.period) {
+      return dot;
+    }
+    return _RingedDotPainter(dot, color);
+  }
+
+  /// The period a touch is in: that of the nearest touched spot at a whole
+  /// x. A limit bar's end spots lie half a slot out, between two periods,
+  /// and name none.
+  static int? _periodOf(List<LineBarSpot> spots) {
+    final onPeriod = spots
+        .where((spot) => (spot.x - spot.x.roundToDouble()).abs() < 1e-6)
+        .firstOrNull;
+    return onPeriod?.x.round();
   }
 
   /// The points of [figures] from index [from] up to, not including, [to]; a
@@ -325,20 +393,15 @@ class StatsLineChart extends StatelessWidget {
   /// One tooltip for the whole period: fl_chart hands over a touched spot per
   /// bar, and only the first gets the text, the rest none.
   ///
-  /// The period is the nearest touched spot at a whole x. A limit bar's end
-  /// spots lie half a slot out, between two periods, and name none; touching
-  /// nothing else gives no tooltip.
+  /// The period is the one [_periodOf] finds; touching none gives no tooltip.
   List<LineTooltipItem?> _tooltipItems(
     ThemeData theme,
     NumberFormat format,
     List<LineBarSpot> spots,
   ) {
-    final onPeriod = spots
-        .where((spot) => (spot.x - spot.x.roundToDouble()).abs() < 1e-6)
-        .firstOrNull;
-    if (onPeriod == null) return [for (final _ in spots) null];
+    final index = _periodOf(spots);
+    if (index == null) return [for (final _ in spots) null];
     final scheme = theme.colorScheme;
-    final index = onPeriod.x.round();
     final base = theme.textTheme.bodySmall ?? const TextStyle();
     final rows = <TextSpan>[];
     for (final row in tooltipRows(chart, index)) {
@@ -373,4 +436,42 @@ class StatsLineChart extends StatelessWidget {
     );
     return [item, for (var i = 1; i < spots.length; i++) null];
   }
+}
+
+/// A chart dot with a ring around it, marking the dot the user picked.
+class _RingedDotPainter extends FlDotPainter {
+  const _RingedDotPainter(this.dot, this.color);
+
+  /// The dot as drawn when not picked.
+  final FlDotPainter dot;
+  final Color color;
+
+  static const _radius = 7.0;
+  static const _width = 2.0;
+
+  @override
+  void draw(Canvas canvas, FlSpot spot, Offset offsetInCanvas) {
+    dot.draw(canvas, spot, offsetInCanvas);
+    canvas.drawCircle(
+      offsetInCanvas,
+      _radius,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _width,
+    );
+  }
+
+  @override
+  Size getSize(FlSpot spot) => const Size.fromRadius(_radius + _width / 2);
+
+  @override
+  Color get mainColor => dot.mainColor;
+
+  // The ring comes and goes at once; there is nothing to animate.
+  @override
+  FlDotPainter lerp(FlDotPainter a, FlDotPainter b, double t) => b;
+
+  @override
+  List<Object?> get props => [dot, color];
 }

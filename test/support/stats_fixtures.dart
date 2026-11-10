@@ -13,12 +13,16 @@ Period period(String id, DateTime start, List<Category> categories) => Period(
 
 /// A category named [name]; [planned] amounts and [facts] (amount and
 /// comment) get ids derived from the name and their index.
+///
+/// The i-th fact is recorded at [factTimes]' i-th entry, or on 2 January
+/// 2026 when there is none.
 Category category(
   String name, {
   CategoryType type = CategoryType.optionalExpense,
   double? limit,
   List<double> planned = const [],
   List<(double, String?)> facts = const [],
+  List<DateTime> factTimes = const [],
 }) => Category(
   id: name,
   name: name,
@@ -39,7 +43,7 @@ Category category(
         id: '$name-f$i',
         amount: facts[i].$1,
         description: facts[i].$2,
-        timestamp: DateTime(2026, 1, 2),
+        timestamp: i < factTimes.length ? factTimes[i] : DateTime(2026, 1, 2),
       ),
   ],
 );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flatplan/src/app_theme.dart';
 import 'package:flatplan/src/components/period_load_warning.dart';
 import 'package:flatplan/src/components/stats_line_chart.dart';
+import 'package:flatplan/src/components/tag_chip.dart';
 import 'package:flatplan/src/logic/stats_series.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flatplan/src/providers/all_periods_provider.dart';
@@ -646,6 +647,239 @@ void main() {
             .focusNode
             .hasFocus,
         isTrue,
+      );
+    });
+
+    group('picking a dot', () {
+      final paymentsCard = find.byKey(const ValueKey('stats-payments-card'));
+
+      /// Clicks the dot of the chart's line [line] in the period at [period],
+      /// as the chart reports a click.
+      Future<void> pick(WidgetTester tester, int line, int period) async {
+        tester.widget<StatsLineChart>(find.byType(StatsLineChart)).onPointTap!(
+          line,
+          period,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      /// The texts inside the payments card.
+      List<String> cardTexts(WidgetTester tester) => [
+        for (final text in tester.widgetList<Text>(
+          find.descendant(of: paymentsCard, matching: find.byType(Text)),
+        ))
+          text.data ?? text.textSpan!.toPlainText(),
+      ];
+
+      testWidgets('no list shows before a dot is picked', (tester) async {
+        await _pump(tester, _fixture());
+
+        expect(paymentsCard, findsNothing);
+        expect(
+          tester.widget<StatsLineChart>(find.byType(StatsLineChart)).selected,
+          isNull,
+        );
+      });
+
+      testWidgets('All\'s spent dot lists the period\'s expense payments under '
+          'the graph', (tester) async {
+        await _pump(tester, _fixture());
+        final name = _chart(tester).periods.last.name;
+
+        await pick(tester, 0, 2);
+
+        expect(paymentsCard, findsOneWidget);
+        final texts = cardTexts(tester);
+        expect(texts, contains('Spent · $name'));
+        expect(texts, contains('2 payments · €170.00'));
+        // Each row: the day, the comment, the category and the amount.
+        expect(
+          texts,
+          containsAllInOrder(['No comment', 'Groceries', '€50.00']),
+        );
+        expect(texts, containsAllInOrder(['Home', '€120.00']));
+        expect(texts, contains('2 Jan'));
+        expect(texts, isNot(contains('€2,000.00')));
+        // The tag is a chip, not text.
+        expect(
+          find.descendant(of: paymentsCard, matching: find.byType(TagChip)),
+          findsOneWidget,
+        );
+        // The list sits under the graph.
+        expect(
+          tester.getRect(paymentsCard).top,
+          greaterThan(
+            tester
+                .getRect(find.byKey(const ValueKey('stats-graph-card')))
+                .bottom,
+          ),
+        );
+      });
+
+      testWidgets('the picked dot is ringed on the chart', (tester) async {
+        await _pump(tester, _fixture());
+
+        await pick(tester, 1, 0);
+
+        expect(
+          tester.widget<StatsLineChart>(find.byType(StatsLineChart)).selected,
+          (line: 1, period: 0),
+        );
+        expect(cardTexts(tester), contains('1 payment · €2,000.00'));
+      });
+
+      testWidgets('a category\'s list leaves out the category name', (
+        tester,
+      ) async {
+        await _pump(tester, _fixture());
+        await _tapRow(tester, 'expenseCategory-home');
+
+        await pick(tester, 0, 1);
+
+        final texts = cardTexts(tester);
+        expect(texts, contains('1 payment · €120.00'));
+        expect(texts.where((t) => t == 'Home'), isEmpty);
+        expect(texts.first, startsWith('Home · '));
+      });
+
+      testWidgets('a tag\'s list names each payment\'s category', (
+        tester,
+      ) async {
+        await _pump(tester, _fixture());
+        await _tapRow(tester, 'tag-renovation');
+
+        await pick(tester, 0, 1);
+
+        expect(cardTexts(tester), containsAllInOrder(['Home', '€120.00']));
+      });
+
+      testWidgets('another dot switches the list; the same dot again closes '
+          'it', (tester) async {
+        await _pump(tester, _fixture());
+
+        await pick(tester, 0, 2);
+        await pick(tester, 1, 2);
+        expect(cardTexts(tester), contains('1 payment · €2,000.00'));
+
+        await pick(tester, 1, 2);
+        expect(paymentsCard, findsNothing);
+        expect(
+          tester.widget<StatsLineChart>(find.byType(StatsLineChart)).selected,
+          isNull,
+        );
+      });
+
+      testWidgets('the close button closes the list', (tester) async {
+        await _pump(tester, _fixture());
+        await pick(tester, 0, 2);
+
+        await tester.tap(find.byKey(const ValueKey('stats-payments-close')));
+        await tester.pumpAndSettle();
+
+        expect(paymentsCard, findsNothing);
+      });
+
+      testWidgets('unticking the subject closes the list for good', (
+        tester,
+      ) async {
+        await _pump(tester, _fixture());
+        await _tapRow(tester, 'expenseCategory-groceries');
+        await pick(tester, 0, 2);
+        expect(paymentsCard, findsOneWidget);
+
+        // Ticking another subject keeps the list.
+        await _tapRow(tester, 'expenseCategory-home');
+        expect(paymentsCard, findsOneWidget);
+
+        await _tapRow(tester, 'expenseCategory-groceries');
+        expect(paymentsCard, findsNothing);
+        await _tapRow(tester, 'expenseCategory-groceries');
+        expect(paymentsCard, findsNothing);
+      });
+
+      testWidgets('ticking a subject in place of All closes All\'s list', (
+        tester,
+      ) async {
+        await _pump(tester, _fixture());
+        await pick(tester, 0, 2);
+
+        await _tapRow(tester, 'expenseCategory-groceries');
+        expect(paymentsCard, findsNothing);
+        await _tapRow(tester, 'all-');
+        expect(paymentsCard, findsNothing);
+      });
+
+      testWidgets('a range leaving the period out closes the list for good', (
+        tester,
+      ) async {
+        await _pump(tester, _fixture());
+        await pick(tester, 0, 2);
+
+        // A range still holding the period keeps the list.
+        await _openRangeDialog(tester);
+        await _chooseFromTo(tester);
+        await _pickMonth(tester, 'stats-range-from', oldest);
+        await _apply(tester);
+        expect(paymentsCard, findsOneWidget);
+
+        await _openRangeDialog(tester);
+        await _pickMonth(tester, 'stats-range-to', oldest);
+        await _apply(tester);
+        expect(paymentsCard, findsNothing);
+
+        await _openRangeDialog(tester);
+        await tester.tap(find.text('All periods').last);
+        await tester.pumpAndSettle();
+        await _apply(tester);
+        expect(paymentsCard, findsNothing);
+      });
+
+      testWidgets('lays out in a narrow window without overflow', (
+        tester,
+      ) async {
+        await _pump(tester, _fixture(), size: const Size(680, 800));
+        await pick(tester, 0, 2);
+
+        expect(tester.takeException(), isNull);
+        expect(paymentsCard, findsOneWidget);
+      });
+
+      testWidgets('builds under the light theme', (tester) async {
+        await _pump(tester, _fixture(), theme: AppTheme.lightTheme);
+        await pick(tester, 0, 2);
+
+        expect(tester.takeException(), isNull);
+        expect(paymentsCard, findsOneWidget);
+      });
+    });
+
+    testWidgets('the legend shows each line\'s total over the periods shown', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+      Finder legend(int line) => find.byKey(ValueKey('stats-legend-$line'));
+
+      expect(
+        find.descendant(of: legend(0), matching: find.text('510')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: legend(1), matching: find.text('6,000')),
+        findsOneWidget,
+      );
+
+      await _openRangeDialog(tester);
+      await _chooseFromTo(tester);
+      await _pickMonth(tester, 'stats-range-from', newest);
+      await _apply(tester);
+
+      expect(
+        find.descendant(of: legend(0), matching: find.text('170')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: legend(1), matching: find.text('2,000')),
+        findsOneWidget,
       );
     });
 

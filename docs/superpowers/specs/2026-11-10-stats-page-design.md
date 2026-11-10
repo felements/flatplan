@@ -168,3 +168,24 @@ the dip reads as "not finished", not as a saving.
 - Narrow-window behaviour (the app is desktop today; mobile is planned): a
   reasonable fallback such as the list above the graph is fine.
 - Tooltip and range-panel widget choices.
+
+## Addendum: the payments behind a dot (agreed 2026-11-10)
+
+The graph shows how much was spent but not what the sum is made of. Clicking
+a dot lists the recorded payments behind its figure in a card under the
+graph, so a spike (e.g. October's `#tws`) can be read payment by payment.
+
+- A dot lists what its figure adds up: All's spent dot every expense
+  payment, its earned dot every income payment, a category's dot the
+  payments of every same-named category of its kind, a tag's dot the expense
+  payments carrying the tag (each once). The listed total always equals the
+  dot's value. Limit lines are not clickable.
+- Rows: day, comment with tag chips, category (left out on a category's own
+  line), amount in the period's currency; oldest first. Read-only.
+- The picked dot is ringed; another dot switches the list; the same dot
+  again or ✕ closes it, as does unticking the subject or picking a range that
+  leaves the period out. The current period's hollow dot can be picked too.
+- My call: a click anywhere in a period's column picks the dot there nearest
+  the pointer.
+- Asked alongside: the legend shows each line's total over the periods on the
+  chart (gaps count as nothing; the period in progress counts as it stands).
