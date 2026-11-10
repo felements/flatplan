@@ -1,0 +1,429 @@
+import 'package:flatplan/src/app_theme.dart';
+import 'package:flatplan/src/components/stats_line_chart.dart';
+import 'package:flatplan/src/logic/stats_series.dart';
+import 'package:flatplan/src/models/models.dart';
+import 'package:flatplan/src/providers/repository_provider.dart';
+import 'package:flatplan/src/storage/period_repository.dart';
+import 'package:flatplan/src/storage/vault_workspace.dart';
+import 'package:flatplan/src/views/stats_view.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import 'support/stats_fixtures.dart';
+
+DateTime _midnightDaysAgo(int days) {
+  final d = DateTime.now().subtract(Duration(days: days));
+  return DateTime(d.year, d.month, d.day);
+}
+
+String _month(DateTime date) => DateFormat('MMM yyyy').format(date);
+
+/// Three periods, the newest covering today: Groceries and Home to spend on,
+/// Salary to earn, and a `#renovation` payment.
+List<Period> _fixture() => [
+  for (final (id, daysAgo) in [('old', 70), ('mid', 40), ('new', 5)])
+    period(id, _midnightDaysAgo(daysAgo), [
+      category('Groceries', limit: 400, facts: [(50, null)]),
+      category('Home', facts: [(120, '#renovation')]),
+      category('Salary', type: CategoryType.income, facts: [(2000, null)]),
+    ]),
+];
+
+Future<PeriodRepository> _repoWith(List<Period> periods) async {
+  final repo = PeriodRepository(workspace: MemoryWorkspace());
+  for (final period in periods) {
+    await repo.savePeriod(period);
+  }
+  return repo;
+}
+
+Future<void> _pump(
+  WidgetTester tester,
+  List<Period> periods, {
+  Size size = const Size(1400, 900),
+  ThemeData? theme,
+}) async {
+  final repo = await _repoWith(periods);
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  await tester.runAsync(() async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [periodRepositoryProvider.overrideWith((ref) => repo)],
+        child: MaterialApp(
+          theme: theme,
+          home: const Scaffold(body: StatsView()),
+        ),
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await tester.pump();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await tester.pump();
+  });
+}
+
+StatsChart _chart(WidgetTester tester) =>
+    tester.widget<StatsLineChart>(find.byType(StatsLineChart)).chart;
+
+List<String> _labels(WidgetTester tester) => [
+  for (final line in _chart(tester).lines) line.label,
+];
+
+Finder _row(String key) => find.byKey(ValueKey('stats-subject-$key'));
+
+bool _ticked(WidgetTester tester, String key) => tester
+    .widget<Checkbox>(
+      find.descendant(of: _row(key), matching: find.byType(Checkbox)),
+    )
+    .value!;
+
+/// The colours of the round dots inside [scope].
+List<Color> _dots(WidgetTester tester, Finder scope) => [
+  for (final box in tester.widgetList<DecoratedBox>(
+    find.descendant(of: scope, matching: find.byType(DecoratedBox)),
+  ))
+    if (box.decoration case BoxDecoration(
+      shape: BoxShape.circle,
+      color: final color?,
+    ))
+      color,
+];
+
+Future<void> _tapRow(WidgetTester tester, String key) async {
+  await tester.tap(_row(key));
+  await tester.pumpAndSettle();
+}
+
+/// Opens the range dialog and picks [value] in the dropdown keyed [key].
+Future<void> _pickMonth(WidgetTester tester, String key, DateTime value) async {
+  await tester.tap(find.byKey(ValueKey(key)));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(_month(value)).last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openRangeDialog(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('stats-range')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _chooseFromTo(WidgetTester tester) async {
+  await tester.tap(find.text('From – to'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _apply(WidgetTester tester) async {
+  await tester.tap(find.text('Apply'));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  final newest = DateTime(_midnightDaysAgo(5).year, _midnightDaysAgo(5).month);
+  final oldest = DateTime(
+    _midnightDaysAgo(70).year,
+    _midnightDaysAgo(70).month,
+  );
+
+  group('StatsView', () {
+    testWidgets('opens on All with spent and earned lines', (tester) async {
+      await _pump(tester, _fixture());
+
+      expect(_ticked(tester, 'all-'), isTrue);
+      expect(_labels(tester), ['Spent', 'Earned']);
+      // The legend names both lines beside the chart.
+      expect(find.text('Spent'), findsOneWidget);
+      expect(find.text('Earned'), findsOneWidget);
+      expect(find.text('All periods'), findsOneWidget);
+      expect(find.byKey(const ValueKey('stats-list-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('stats-graph-card')), findsOneWidget);
+    });
+
+    testWidgets('groups the subjects under TOTALS, EXPENSES, INCOME and TAGS', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+
+      for (final heading in ['TOTALS', 'EXPENSES', 'INCOME', 'TAGS']) {
+        expect(find.text(heading), findsOneWidget);
+      }
+      expect(find.text('All (spent & earned)'), findsOneWidget);
+      expect(_row('expenseCategory-groceries'), findsOneWidget);
+      expect(_row('expenseCategory-home'), findsOneWidget);
+      expect(_row('incomeCategory-salary'), findsOneWidget);
+      expect(_row('tag-renovation'), findsOneWidget);
+    });
+
+    testWidgets('ticking a category replaces All; unticking it brings All '
+        'back', (tester) async {
+      await _pump(tester, _fixture());
+
+      await _tapRow(tester, 'expenseCategory-groceries');
+      expect(_labels(tester), ['Groceries']);
+      expect(_ticked(tester, 'all-'), isFalse);
+      expect(_ticked(tester, 'expenseCategory-groceries'), isTrue);
+
+      await _tapRow(tester, 'expenseCategory-groceries');
+      expect(_labels(tester), ['Spent', 'Earned']);
+      expect(_ticked(tester, 'all-'), isTrue);
+      expect(_ticked(tester, 'expenseCategory-groceries'), isFalse);
+    });
+
+    testWidgets('several subjects make several lines in tick order', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+
+      await _tapRow(tester, 'expenseCategory-groceries');
+      await _tapRow(tester, 'tag-renovation');
+
+      expect(_labels(tester), ['Groceries', 'renovation']);
+      // The legend repeats each name beside the list's own row.
+      expect(find.text('Groceries'), findsNWidgets(2));
+      expect(find.text('renovation'), findsNWidgets(2));
+    });
+
+    testWidgets('a ticked row shows its line colour and an unticked one none', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture(), theme: AppTheme.darkTheme);
+      final scheme = AppTheme.darkTheme.colorScheme;
+
+      // All is two lines, spent in teal and earned in gold.
+      expect(_dots(tester, _row('all-')), [scheme.secondary, scheme.primary]);
+      expect(_dots(tester, _row('expenseCategory-groceries')), isEmpty);
+
+      await _tapRow(tester, 'expenseCategory-groceries');
+      await _tapRow(tester, 'tag-renovation');
+
+      expect(_dots(tester, _row('all-')), isEmpty);
+      expect(_dots(tester, _row('expenseCategory-groceries')), [
+        statsPalette[0],
+      ]);
+      expect(_dots(tester, _row('tag-renovation')), [statsPalette[1]]);
+    });
+
+    testWidgets('search filters the list', (tester) async {
+      await _pump(tester, _fixture());
+      expect(find.text('Home'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'gro');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Groceries'), findsOneWidget);
+    });
+
+    testWidgets('search ignores case and hides groups with no match', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+
+      await tester.enterText(find.byType(TextField), 'RENO');
+      await tester.pumpAndSettle();
+
+      expect(find.text('TAGS'), findsOneWidget);
+      expect(_row('tag-renovation'), findsOneWidget);
+      for (final heading in ['TOTALS', 'EXPENSES', 'INCOME']) {
+        expect(find.text(heading), findsNothing);
+      }
+    });
+
+    testWidgets('a from–to range narrows the periods', (tester) async {
+      await _pump(tester, _fixture());
+      expect(_chart(tester).periods, hasLength(3));
+
+      await _openRangeDialog(tester);
+      await _chooseFromTo(tester);
+      await _pickMonth(tester, 'stats-range-from', newest);
+      await _apply(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('stats-range')),
+          matching: find.text('${_month(newest)} – ${_month(newest)}'),
+        ),
+        findsOneWidget,
+      );
+      expect(_chart(tester).periods, hasLength(1));
+    });
+
+    testWidgets('a from-month later than the to-month moves the to-month', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+
+      await _openRangeDialog(tester);
+      await _chooseFromTo(tester);
+      await _pickMonth(tester, 'stats-range-to', oldest);
+      await _pickMonth(tester, 'stats-range-from', newest);
+      await _apply(tester);
+
+      expect(
+        find.text('${_month(newest)} – ${_month(newest)}'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a to-month earlier than the from-month moves the from-month', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+
+      await _openRangeDialog(tester);
+      await _chooseFromTo(tester);
+      await _pickMonth(tester, 'stats-range-from', newest);
+      await _pickMonth(tester, 'stats-range-to', oldest);
+      await _apply(tester);
+
+      expect(
+        find.text('${_month(oldest)} – ${_month(oldest)}'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('choosing All periods again clears the range', (tester) async {
+      await _pump(tester, _fixture());
+      await _openRangeDialog(tester);
+      await _chooseFromTo(tester);
+      await _pickMonth(tester, 'stats-range-from', newest);
+      await _apply(tester);
+      expect(_chart(tester).periods, hasLength(1));
+
+      await _openRangeDialog(tester);
+      // The dialog reopens on the range it applied.
+      expect(
+        tester
+            .widget<DropdownButton<DateTime>>(
+              find.byKey(const ValueKey('stats-range-from')),
+            )
+            .value,
+        newest,
+      );
+      // 'All periods' is both the radio and, once cleared, the button label.
+      await tester.tap(find.widgetWithText(RadioListTile<bool>, 'All periods'));
+      await tester.pumpAndSettle();
+      await _apply(tester);
+
+      expect(find.text('All periods'), findsOneWidget);
+      expect(_chart(tester).periods, hasLength(3));
+    });
+
+    testWidgets('a range does not shorten the list of subjects', (
+      tester,
+    ) async {
+      // Only the oldest period has a Bakery category.
+      final periods = _fixture();
+      periods[0] = period('old', _midnightDaysAgo(70), [
+        category('Bakery', facts: [(5, null)]),
+        category('Groceries', facts: [(50, null)]),
+      ]);
+      await _pump(tester, periods);
+
+      await _openRangeDialog(tester);
+      await _chooseFromTo(tester);
+      await _pickMonth(tester, 'stats-range-from', newest);
+      await _apply(tester);
+
+      expect(_chart(tester).periods, hasLength(1));
+      expect(_row('expenseCategory-bakery'), findsOneWidget);
+    });
+
+    testWidgets('an empty vault says there is nothing to chart', (
+      tester,
+    ) async {
+      await _pump(tester, const []);
+
+      expect(find.text('No periods to chart yet.'), findsOneWidget);
+      expect(find.byType(StatsLineChart), findsNothing);
+      expect(find.byKey(const ValueKey('stats-list-card')), findsNothing);
+    });
+
+    testWidgets('a vault of only future periods says there is nothing to '
+        'chart yet', (tester) async {
+      await _pump(tester, [
+        period('next', _midnightDaysAgo(-10), [category('Groceries')]),
+      ]);
+
+      expect(find.text('No periods to chart yet.'), findsOneWidget);
+      expect(find.byType(StatsLineChart), findsNothing);
+    });
+
+    testWidgets('says so when the subjects have nothing recorded', (
+      tester,
+    ) async {
+      await _pump(tester, [
+        period('only', _midnightDaysAgo(5), [category('Groceries')]),
+      ]);
+
+      expect(find.byType(StatsLineChart), findsOneWidget);
+      expect(
+        find.text('Nothing recorded for these subjects in this range.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not warn about an empty chart when there is data', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+
+      expect(
+        find.text('Nothing recorded for these subjects in this range.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('keeps the search text when the window changes size', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture());
+      await tester.enterText(find.byType(TextField), 'gro');
+      await tester.pumpAndSettle();
+
+      tester.view.physicalSize = const Size(680, 800);
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, 'gro'), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
+    });
+
+    testWidgets('lays out in a narrow window without overflow', (tester) async {
+      await _pump(tester, _fixture(), size: const Size(680, 800));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('stats-list-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('stats-graph-card')), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const ValueKey('stats-list-card'))).height,
+        lessThanOrEqualTo(240),
+      );
+    });
+
+    testWidgets('puts the cards side by side in a wide window', (tester) async {
+      await _pump(tester, _fixture());
+
+      final list = tester.getRect(
+        find.byKey(const ValueKey('stats-list-card')),
+      );
+      final graph = tester.getRect(
+        find.byKey(const ValueKey('stats-graph-card')),
+      );
+      expect(list.width, 220);
+      expect(graph.left - list.right, 16);
+    });
+
+    testWidgets('builds under the light theme', (tester) async {
+      await _pump(tester, _fixture(), theme: AppTheme.lightTheme);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(StatsLineChart), findsOneWidget);
+    });
+  });
+}
