@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../components/period_load_warning.dart';
 import '../components/stats_line_chart.dart';
 import '../components/summary_card.dart';
 import '../logic/stats_series.dart';
 import '../providers/all_periods_provider.dart';
+import '../storage/period_repository.dart';
 
 /// The Stats page: pick what to graph in a list and read its per-period
 /// totals on a line chart, over all periods or a span of months.
@@ -26,6 +29,11 @@ class StatsView extends HookConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final periodsAsync = ref.watch(allPeriodsProvider);
+    // Files that could not be read are missing from the chart: say so, as the
+    // dashboard does.
+    final loadFailures =
+        ref.watch(periodLoadFailuresProvider).value ??
+        const <PeriodLoadFailure>[];
 
     final selected = useState<List<StatsSubject>>(const [StatsSubject.all]);
     final range = useState<MonthRange?>(null);
@@ -82,9 +90,16 @@ class StatsView extends HookConsumerWidget {
               ),
             ],
           ),
+          PeriodLoadBanner(
+            failures: loadFailures,
+            onViewDetails: () => context.go('/settings'),
+          ),
           const SizedBox(height: 20),
           Expanded(
             child: periodsAsync.when(
+              // A sync pull re-reads the periods while the page is open: keep
+              // showing it, with its scroll position and search focus.
+              skipLoadingOnReload: true,
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (periods) {
@@ -226,13 +241,29 @@ class _SubjectList extends StatelessWidget {
         dense: true,
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+        // The 220 px list leaves All's label (the longest) little room: the
+        // default 16 px gap would cut it short.
+        horizontalTitleGap: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         value: selected.contains(subject),
         onChanged: (_) => onToggle(subject),
-        title: Text(_label(subject), overflow: TextOverflow.ellipsis),
-        secondary: dots.isEmpty
-            ? null
-            : Row(mainAxisSize: MainAxisSize.min, spacing: 4, children: dots),
+        // The dots sit in the title rather than in the tile's trailing slot,
+        // which reserves a minimum width of its own. Stacked, All's two dots
+        // take no more width than one.
+        title: Row(
+          spacing: 4,
+          children: [
+            Expanded(
+              child: Text(_label(subject), overflow: TextOverflow.ellipsis),
+            ),
+            if (dots.isNotEmpty)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 3,
+                children: dots,
+              ),
+          ],
+        ),
       );
     }
 

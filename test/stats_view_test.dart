@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flatplan/src/app_theme.dart';
+import 'package:flatplan/src/components/period_load_warning.dart';
 import 'package:flatplan/src/components/stats_line_chart.dart';
 import 'package:flatplan/src/logic/stats_series.dart';
 import 'package:flatplan/src/models/models.dart';
@@ -8,7 +11,10 @@ import 'package:flatplan/src/storage/period_repository.dart';
 import 'package:flatplan/src/storage/vault_workspace.dart';
 import 'package:flatplan/src/views/stats_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -32,22 +38,59 @@ List<Period> _fixture() => [
     ]),
 ];
 
-Future<PeriodRepository> _repoWith(List<Period> periods) async {
-  final repo = PeriodRepository(workspace: MemoryWorkspace());
+/// A workspace that holds back listing its files while [gate] is set, to keep
+/// a reload of the periods under way.
+class _GatedWorkspace extends MemoryWorkspace {
+  Completer<void>? gate;
+
+  @override
+  Future<List<String>> listFiles() async {
+    await gate?.future;
+    return super.listFiles();
+  }
+}
+
+Future<PeriodRepository> _repoWith(
+  List<Period> periods, {
+  Map<String, String> files = const {},
+  VaultWorkspace? workspace,
+}) async {
+  final repo = PeriodRepository(workspace: workspace ?? MemoryWorkspace());
   for (final period in periods) {
     await repo.savePeriod(period);
+  }
+  for (final MapEntry(:key, :value) in files.entries) {
+    await repo.workspace.writeString(key, value);
   }
   return repo;
 }
 
 /// Pumps the page over a vault holding [periods] and returns its repository.
+///
+/// [files] are extra files in the vault, e.g. one that is not a period. The
+/// page sits at `/` of a router that also knows `/settings`, as the app's does.
 Future<PeriodRepository> _pump(
   WidgetTester tester,
   List<Period> periods, {
   Size size = const Size(1400, 900),
   ThemeData? theme,
+  Map<String, String> files = const {},
+  VaultWorkspace? workspace,
 }) async {
-  final repo = await _repoWith(periods);
+  final repo = await _repoWith(periods, files: files, workspace: workspace);
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const Scaffold(body: StatsView()),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, _) => const Text('settings page'),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -56,10 +99,7 @@ Future<PeriodRepository> _pump(
     await tester.pumpWidget(
       ProviderScope(
         overrides: [periodRepositoryProvider.overrideWith((ref) => repo)],
-        child: MaterialApp(
-          theme: theme,
-          home: const Scaffold(body: StatsView()),
-        ),
+        child: MaterialApp.router(theme: theme, routerConfig: router),
       ),
     );
     await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -155,6 +195,15 @@ Future<void> _leaveRangeStale(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // The test font draws every glyph as a full square, far wider than the
+  // app's own Outfit: load it, so a test with the app theme measures text as
+  // the user sees it.
+  setUpAll(() async {
+    final outfit = FontLoader('Outfit')
+      ..addFont(rootBundle.load('assets/fonts/Outfit-VariableFont_wght.ttf'));
+    await outfit.load();
+  });
 
   final newest = DateTime(_midnightDaysAgo(5).year, _midnightDaysAgo(5).month);
   final oldest = DateTime(
@@ -489,6 +538,115 @@ void main() {
       );
       expect(list.width, 220);
       expect(graph.left - list.right, 16);
+    });
+
+    testWidgets('the ticked All row shows its whole label beside its two '
+        'dots', (tester) async {
+      // The real theme: its font is wider than the test one.
+      await _pump(tester, _fixture(), theme: AppTheme.darkTheme);
+      expect(_ticked(tester, 'all-'), isTrue);
+      expect(_dots(tester, _row('all-')), hasLength(2));
+
+      final label = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: _row('all-'),
+          matching: find.text('All (spent & earned)'),
+        ),
+      );
+      // Cut short, the label ends in an ellipsis: the paragraph gives up
+      // lines it has no room for, or wraps onto a second one.
+      expect(label.didExceedMaxLines, isFalse);
+      // One box per line of text.
+      expect(
+        label.getBoxesForSelection(
+          const TextSelection(baseOffset: 0, extentOffset: 20),
+        ),
+        hasLength(1),
+      );
+      expect(
+        tester.getSize(find.byKey(const ValueKey('stats-list-card'))).width,
+        220,
+      );
+    });
+
+    testWidgets('warns above the cards when a period file could not be read', (
+      tester,
+    ) async {
+      await _pump(tester, _fixture(), files: {'broken.yaml': 'foo: [1, 2'});
+
+      expect(find.text('1 period file could not be read'), findsOneWidget);
+      expect(
+        tester.getBottomLeft(find.byType(PeriodLoadBanner)).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byKey(const ValueKey('stats-list-card'))).dy,
+        ),
+      );
+      // The periods that did load are still charted.
+      expect(_chart(tester).periods, hasLength(3));
+    });
+
+    testWidgets('warns even when no period could be read', (tester) async {
+      await _pump(tester, const [], files: {'broken.yaml': 'foo: [1, 2'});
+
+      expect(find.text('1 period file could not be read'), findsOneWidget);
+      expect(find.text('No periods to chart yet.'), findsOneWidget);
+    });
+
+    testWidgets('does not warn when every file can be read', (tester) async {
+      await _pump(tester, _fixture());
+
+      expect(find.textContaining('could not be read'), findsNothing);
+      expect(find.text('View details'), findsNothing);
+    });
+
+    testWidgets('View details on the warning opens Settings', (tester) async {
+      await _pump(tester, _fixture(), files: {'broken.yaml': 'foo: [1, 2'});
+
+      await tester.tap(find.text('View details'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('settings page'), findsOneWidget);
+    });
+
+    testWidgets('a reload keeps the page, and the search focus, on screen', (
+      tester,
+    ) async {
+      final workspace = _GatedWorkspace();
+      final repo = await _pump(tester, _fixture(), workspace: workspace);
+      await tester.enterText(find.byType(TextField), 'gro');
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(StatsView)),
+      );
+
+      await tester.runAsync(() async {
+        // As when a sync pull changes a file: the periods are read again,
+        // and the read is still going.
+        await repo.workspace.delete(repo.filenameForPeriod('old')!);
+        workspace.gate = Completer<void>();
+        container.invalidate(periodLoadResultProvider);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byKey(const ValueKey('stats-list-card')), findsOneWidget);
+        // Still the periods read before.
+        expect(_chart(tester).periods, hasLength(3));
+
+        workspace.gate!.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        await tester.pump();
+      });
+
+      expect(_chart(tester).periods, hasLength(2));
+      expect(find.widgetWithText(TextField, 'gro'), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(find.byType(EditableText))
+            .focusNode
+            .hasFocus,
+        isTrue,
+      );
     });
 
     testWidgets('builds under the light theme', (tester) async {
