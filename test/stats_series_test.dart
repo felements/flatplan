@@ -464,6 +464,19 @@ void main() {
       expect(chartOf([giftsSubject]).isEmpty, isFalse);
     });
 
+    test('a line\'s total adds its figures over the charted periods', () {
+      // Home has a gap after September; the range keeps October onward.
+      final chart = chartOf([StatsSubject.all, homeSubject, groceriesSubject]);
+      expect(
+        [for (final line in chart.lines) line.total],
+        [1720 + 710 + 50, 5200 + 5200 + 0, 900, 820 + 710 + 0],
+      );
+      final fromOctober = chartOf([
+        groceriesSubject,
+      ], range: MonthRange(DateTime(2026, 10), DateTime(2026, 11)));
+      expect(fromOctober.lines.single.total, 710);
+    });
+
     test('tooltipRows lists lines in order and skips gaps', () {
       final chart = chartOf([homeSubject, groceriesSubject]);
       final at0 = tooltipRows(chart, 0);
@@ -484,6 +497,302 @@ void main() {
         tooltipRows(chart, 1).map((r) => (r.line.label, r.value, r.limit)),
         [('Spent', 710, null), ('Earned', 5200, null)],
       );
+    });
+  });
+
+  group('the dot behind a click', () {
+    final groceries = StatsSubject.category('Groceries', income: false);
+    final groceriesIncome = StatsSubject.category('Groceries', income: true);
+    final rent = StatsSubject.category('Rent', income: false);
+    final salary = StatsSubject.category('Salary', income: true);
+    final tws = StatsSubject.tag('tws');
+    final renovation = StatsSubject.tag('renovation');
+
+    // October holds two spellings of Groceries (one key), an income category
+    // also called Groceries, and payments recorded out of order; two of them
+    // at the very same moment.
+    List<Period> fixture() => [
+      period('sep', DateTime(2026, 9, 5), [
+        category(
+          'Groceries',
+          facts: [(60, '#tws')],
+          factTimes: [DateTime(2026, 9, 8)],
+        ),
+      ]),
+      period('oct', DateTime(2026, 10, 5), [
+        category(
+          'Groceries',
+          facts: [(700, 'weekly shop'), (10, 'paint #renovation #tws')],
+          factTimes: [DateTime(2026, 10, 20), DateTime(2026, 10, 7, 9)],
+        ),
+        category(
+          'groceries ',
+          facts: [(30, 'market #tws #TWS')],
+          factTimes: [DateTime(2026, 10, 7, 9)],
+        ),
+        category(
+          'Rent',
+          type: CategoryType.mandatoryExpense,
+          facts: [(900, 'october rent')],
+          factTimes: [DateTime(2026, 10, 5)],
+        ),
+        category(
+          'Groceries',
+          type: CategoryType.income,
+          facts: [(15, 'refund #tws')],
+          factTimes: [DateTime(2026, 10, 9)],
+        ),
+        category(
+          'Salary',
+          type: CategoryType.income,
+          facts: [(5200, null)],
+          factTimes: [DateTime(2026, 10, 6)],
+        ),
+      ]),
+    ];
+
+    StatsChart chartOf(List<StatsSubject> subjects, {MonthRange? range}) =>
+        buildStatsChart(
+          allPeriods: fixture(),
+          subjects: subjects,
+          today: today,
+          range: range,
+        );
+
+    /// The comments of the payments behind [chart]'s line [line] in
+    /// October, in the order they are listed.
+    List<String?> octoberComments(StatsChart chart, int line) => [
+      for (final payment in pointPayments(chart.lines[line], chart.periods[1]))
+        payment.fact.description,
+    ];
+
+    test('All\'s spent dot lists every expense payment, oldest first', () {
+      final chart = chartOf([StatsSubject.all]);
+      expect(octoberComments(chart, 0), [
+        'october rent',
+        'paint #renovation #tws',
+        'market #tws #TWS',
+        'weekly shop',
+      ]);
+    });
+
+    test('All\'s earned dot lists every income payment, oldest first', () {
+      final chart = chartOf([StatsSubject.all]);
+      expect(octoberComments(chart, 1), [null, 'refund #tws']);
+    });
+
+    test('a category dot lists every same-named category of its kind', () {
+      final chart = chartOf([groceries, groceriesIncome]);
+      final payments = pointPayments(chart.lines[0], chart.periods[1]);
+      expect(
+        [for (final p in payments) (p.fact.description, p.category.name)],
+        [
+          ('paint #renovation #tws', 'Groceries'),
+          ('market #tws #TWS', 'groceries '),
+          ('weekly shop', 'Groceries'),
+        ],
+      );
+      expect(octoberComments(chart, 1), ['refund #tws']);
+    });
+
+    test(
+      'a tag dot lists the expense payments carrying the tag, each once',
+      () {
+        final chart = chartOf([tws]);
+        expect(octoberComments(chart, 0), [
+          'paint #renovation #tws',
+          'market #tws #TWS',
+        ]);
+      },
+    );
+
+    test('payments recorded at the same moment keep the period\'s order', () {
+      // Paint and market share a timestamp; paint's category comes first.
+      final chart = chartOf([tws]);
+      final reversed = fixture();
+      final october = reversed[1].copyWith(
+        categories: [
+          reversed[1].categories[1],
+          reversed[1].categories[0],
+          ...reversed[1].categories.skip(2),
+        ],
+      );
+      expect(octoberComments(chart, 0).first, 'paint #renovation #tws');
+      expect(
+        [
+          for (final payment in pointPayments(chart.lines[0], october))
+            payment.fact.description,
+        ],
+        ['market #tws #TWS', 'paint #renovation #tws'],
+      );
+    });
+
+    test('a long list of payments at one moment keeps the period\'s order', () {
+      // Dart sorts short lists stably anyway; past 32 entries it does not.
+      final at = DateTime(2026, 10, 7);
+      final busy = period('oct', DateTime(2026, 10, 5), [
+        category(
+          'Groceries',
+          facts: [for (var i = 0; i < 40; i++) (i.toDouble(), 'shop $i')],
+          factTimes: [for (var i = 0; i < 40; i++) at],
+        ),
+      ]);
+      final chart = StatsChart(
+        periods: [busy],
+        lines: [
+          StatsLine(
+            subject: groceries,
+            role: StatsLineRole.value,
+            values: const [780],
+          ),
+        ],
+      );
+      expect(
+        [for (final p in pointPayments(chart.lines[0], busy)) p.fact.amount],
+        [for (var i = 0; i < 40; i++) i.toDouble()],
+      );
+    });
+
+    test('every dot\'s payments add up to its figure, and a gap has none', () {
+      final chart = chartOf([
+        StatsSubject.all,
+        groceries,
+        groceriesIncome,
+        rent,
+        salary,
+        tws,
+        renovation,
+      ]);
+      for (final line in chart.lines) {
+        for (var i = 0; i < chart.periods.length; i++) {
+          final payments = pointPayments(line, chart.periods[i]);
+          final sum = payments.fold<double>(0, (s, p) => s + p.fact.amount);
+          expect(
+            sum,
+            line.values[i] ?? 0,
+            reason: '${line.label} in ${chart.periods[i].id}',
+          );
+          if (line.values[i] == null) expect(payments, isEmpty);
+        }
+      }
+    });
+
+    group('locatePoint', () {
+      test('finds the line and the period of a point', () {
+        final chart = chartOf([tws, rent]);
+        final point = StatsPoint(
+          subject: rent,
+          role: StatsLineRole.value,
+          periodId: 'oct',
+        );
+        expect(locatePoint(chart, point), (line: 1, period: 1));
+      });
+
+      test('tells All\'s spent dot from its earned one', () {
+        final chart = chartOf([StatsSubject.all]);
+        StatsPoint at(StatsLineRole role) =>
+            StatsPoint(subject: StatsSubject.all, role: role, periodId: 'sep');
+        expect(locatePoint(chart, at(StatsLineRole.spent)), (
+          line: 0,
+          period: 0,
+        ));
+        expect(locatePoint(chart, at(StatsLineRole.earned)), (
+          line: 1,
+          period: 0,
+        ));
+      });
+
+      test('is null once the subject is no longer charted', () {
+        final chart = chartOf([tws]);
+        final point = StatsPoint(
+          subject: rent,
+          role: StatsLineRole.value,
+          periodId: 'oct',
+        );
+        expect(locatePoint(chart, point), isNull);
+      });
+
+      test('is null once the period is outside the range', () {
+        final october = DateTime(2026, 10);
+        final chart = chartOf([tws], range: MonthRange(october, october));
+        final point = StatsPoint(
+          subject: tws,
+          role: StatsLineRole.value,
+          periodId: 'sep',
+        );
+        expect(locatePoint(chart, point), isNull);
+      });
+
+      test('is null where the line has a gap', () {
+        // September has no Rent category.
+        final chart = chartOf([rent]);
+        final point = StatsPoint(
+          subject: rent,
+          role: StatsLineRole.value,
+          periodId: 'sep',
+        );
+        expect(locatePoint(chart, point), isNull);
+      });
+
+      test('pointAt names the point locatePoint finds again', () {
+        final chart = chartOf([StatsSubject.all, tws]);
+        for (var line = 0; line < chart.lines.length; line++) {
+          for (var i = 0; i < chart.periods.length; i++) {
+            expect(locatePoint(chart, pointAt(chart, line, i)), (
+              line: line,
+              period: i,
+            ));
+          }
+        }
+        expect(
+          pointAt(chart, 1, 0),
+          StatsPoint(
+            subject: StatsSubject.all,
+            role: StatsLineRole.earned,
+            periodId: 'sep',
+          ),
+        );
+      });
+    });
+
+    group('nearestLineAt', () {
+      StatsLine line(String name, List<double?> values) => StatsLine(
+        subject: StatsSubject.category(name, income: false),
+        role: StatsLineRole.value,
+        values: values,
+      );
+      final chart = StatsChart(
+        periods: fixture(),
+        lines: [
+          line('A', [60, 40]),
+          line('B', [null, 900]),
+          line('C', [60, 740]),
+        ],
+      );
+
+      test('picks the line whose figure is nearest', () {
+        expect(nearestLineAt(chart, 1, 850), 1);
+        expect(nearestLineAt(chart, 1, 700), 2);
+        expect(nearestLineAt(chart, 1, -50), 0);
+      });
+
+      test('skips a line with a gap there', () {
+        expect(nearestLineAt(chart, 0, 850), 0);
+      });
+
+      test('picks the first of lines that meet', () {
+        expect(nearestLineAt(chart, 0, 60), 0);
+      });
+
+      test('is null when every line has a gap there', () {
+        final gaps = StatsChart(
+          periods: fixture(),
+          lines: [
+            line('B', [null, 900]),
+          ],
+        );
+        expect(nearestLineAt(gaps, 0, 10), isNull);
+      });
     });
   });
 }

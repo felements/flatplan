@@ -213,6 +213,10 @@ class StatsLine {
   /// lines have it; an entry is `null` where the period has no limit.
   final List<double?>? limits;
 
+  /// The line's figures added up over every charted period, gaps counting
+  /// as nothing; the period in progress counts with what it holds so far.
+  double get total => values.fold(0, (sum, value) => sum + (value ?? 0));
+
   /// What the legend and the tooltip call the line.
   String get label => switch (role) {
     StatsLineRole.spent => 'Spent',
@@ -279,6 +283,117 @@ List<StatsTooltipRow> tooltipRows(StatsChart chart, int index) => [
     if (line.values[index] case final value?)
       StatsTooltipRow(line: line, value: value, limit: line.limits?[index]),
 ];
+
+/// A dot the user picked on the chart: one line at one period.
+///
+/// It names the line by subject and role and the period by id, not by
+/// position, so ticking another subject or picking a range cannot move it to
+/// a different dot. [locatePoint] finds it on a chart again.
+class StatsPoint {
+  const StatsPoint({
+    required this.subject,
+    required this.role,
+    required this.periodId,
+  });
+
+  final StatsSubject subject;
+  final StatsLineRole role;
+  final String periodId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatsPoint &&
+      other.subject == subject &&
+      other.role == role &&
+      other.periodId == periodId;
+
+  @override
+  int get hashCode => Object.hash(subject, role, periodId);
+}
+
+/// The point of [chart]'s line [line] at the period at [period].
+StatsPoint pointAt(StatsChart chart, int line, int period) => StatsPoint(
+  subject: chart.lines[line].subject,
+  role: chart.lines[line].role,
+  periodId: chart.periods[period].id,
+);
+
+/// Where [chart] draws [point]: the index of its line and of its period.
+///
+/// Null when it draws no such dot: the subject is not ticked, the period is
+/// outside the range, or the line has a gap there.
+({int line, int period})? locatePoint(StatsChart chart, StatsPoint point) {
+  final line = chart.lines.indexWhere(
+    (l) => l.subject == point.subject && l.role == point.role,
+  );
+  final period = chart.periods.indexWhere((p) => p.id == point.periodId);
+  if (line < 0 || period < 0 || chart.lines[line].values[period] == null) {
+    return null;
+  }
+  return (line: line, period: period);
+}
+
+/// The line of [chart] whose dot at the period at [period] is nearest the
+/// amount [y], or null when every line has a gap there. Of lines meeting at
+/// one dot, the first wins.
+int? nearestLineAt(StatsChart chart, int period, double y) {
+  int? nearest;
+  double? distance;
+  for (var i = 0; i < chart.lines.length; i++) {
+    final value = chart.lines[i].values[period];
+    if (value == null) continue;
+    final d = (value - y).abs();
+    if (distance == null || d < distance) {
+      nearest = i;
+      distance = d;
+    }
+  }
+  return nearest;
+}
+
+/// A recorded payment and the category it was recorded in.
+class StatsPayment {
+  const StatsPayment({required this.fact, required this.category});
+
+  final FactExpense fact;
+  final Category category;
+}
+
+/// The recorded payments that add up to [line]'s figure in [period], oldest
+/// first; payments recorded at the same moment keep the period's order.
+///
+/// All's spent line takes every expense payment and its earned line every
+/// income one; a category line, those of every category of its kind with
+/// its name; a tag line, the expense payments carrying the tag, each once
+/// however often the tag is written.
+List<StatsPayment> pointPayments(StatsLine line, Period period) {
+  final subject = line.subject;
+  bool takes(Category category, FactExpense fact) {
+    final income = category.type == CategoryType.income;
+    return switch (subject.kind) {
+      StatsSubjectKind.all => income == (line.role == StatsLineRole.earned),
+      StatsSubjectKind.expenseCategory =>
+        !income && categoryKey(category.name) == subject.key,
+      StatsSubjectKind.incomeCategory =>
+        income && categoryKey(category.name) == subject.key,
+      StatsSubjectKind.tag =>
+        !income && splitTags(fact.description).tags.contains(subject.key),
+    };
+  }
+
+  final payments = [
+    for (final category in period.categories)
+      for (final fact in category.factExpenses)
+        if (takes(category, fact)) StatsPayment(fact: fact, category: category),
+  ];
+  // List.sort is not stable: break ties on the position in the period.
+  final indexed = [...payments.indexed]
+    ..sort((a, b) {
+      final byTime = a.$2.fact.timestamp.compareTo(b.$2.fact.timestamp);
+      return byTime != 0 ? byTime : a.$1.compareTo(b.$1);
+    });
+  return [for (final (_, payment) in indexed) payment];
+}
 
 List<StatsLine> _linesFor(StatsSubject subject, List<Period> periods) {
   switch (subject.kind) {

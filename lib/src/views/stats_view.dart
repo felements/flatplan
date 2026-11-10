@@ -7,15 +7,19 @@ import 'package:intl/intl.dart';
 import '../components/period_load_warning.dart';
 import '../components/stats_line_chart.dart';
 import '../components/summary_card.dart';
+import '../components/tag_chip.dart';
 import '../logic/stats_series.dart';
+import '../models/models.dart';
 import '../providers/all_periods_provider.dart';
 import '../storage/period_repository.dart';
 
 /// The Stats page: pick what to graph in a list and read its per-period
 /// totals on a line chart, over all periods or a span of months.
 ///
+/// Clicking a dot lists the payments behind it under the graph.
+///
 /// Every figure comes from `logic/stats_series.dart`; the view only keeps the
-/// selection, the month range and the search text.
+/// selection, the month range, the picked dot and the search text.
 class StatsView extends HookConsumerWidget {
   const StatsView({super.key});
 
@@ -38,6 +42,8 @@ class StatsView extends HookConsumerWidget {
     final selected = useState<List<StatsSubject>>(const [StatsSubject.all]);
     final range = useState<MonthRange?>(null);
     final query = useState('');
+    // The dot whose payments are listed under the graph.
+    final point = useState<StatsPoint?>(null);
     // Owned here, not by the list card, so the text survives the card moving
     // when the window crosses [_wideFrom].
     final search = useTextEditingController();
@@ -58,7 +64,18 @@ class StatsView extends HookConsumerWidget {
         context: context,
         builder: (_) => _RangeDialog(months: months, range: range.value),
       );
-      if (choice != null && context.mounted) range.value = choice.range;
+      if (choice == null || !context.mounted) return;
+      range.value = choice.range;
+      // A period the range leaves out takes its list with it, for good.
+      final periods = chartPeriods(
+        periodsAsync.value ?? const [],
+        today: today,
+        range: choice.range,
+      );
+      if (point.value case final picked?
+          when !periods.any((p) => p.id == picked.periodId)) {
+        point.value = null;
+      }
     }
 
     return Padding(
@@ -132,14 +149,47 @@ class StatsView extends HookConsumerWidget {
                   query: query.value,
                   search: search,
                   onQueryChanged: (text) => query.value = text,
-                  onToggle: (subject) =>
-                      selected.value = toggleSubject(selected.value, subject),
+                  onToggle: (subject) {
+                    final next = toggleSubject(selected.value, subject);
+                    selected.value = next;
+                    // An unticked subject takes its list with it, for good.
+                    if (point.value case final picked?
+                        when !next.contains(picked.subject)) {
+                      point.value = null;
+                    }
+                  },
                 );
+                // Null too while a reload has taken the dot's period away.
+                final located = switch (point.value) {
+                  final picked? => locatePoint(chart, picked),
+                  null => null,
+                };
                 final graph = _GraphCard(
                   key: const ValueKey('stats-graph-card'),
                   chart: chart,
                   colors: colors,
+                  selected: located,
+                  onPointTap: (line, period) {
+                    final picked = pointAt(chart, line, period);
+                    point.value = picked == point.value ? null : picked;
+                  },
                 );
+                final payments = located == null
+                    ? null
+                    : _PaymentsCard(
+                        key: const ValueKey('stats-payments-card'),
+                        line: chart.lines[located.line],
+                        period: chart.periods[located.period],
+                        color: colors[located.line],
+                        onClose: () => point.value = null,
+                      );
+                final underList = [
+                  graph,
+                  if (payments != null) ...[
+                    const SizedBox(height: 16),
+                    payments,
+                  ],
+                ];
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
@@ -149,7 +199,14 @@ class StatsView extends HookConsumerWidget {
                         children: [
                           SizedBox(width: 220, child: list),
                           const SizedBox(width: 16),
-                          Expanded(child: SingleChildScrollView(child: graph)),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: underList,
+                              ),
+                            ),
+                          ),
                         ],
                       );
                     }
@@ -159,7 +216,7 @@ class StatsView extends HookConsumerWidget {
                         children: [
                           SizedBox(height: 240, child: list),
                           const SizedBox(height: 16),
-                          graph,
+                          ...underList,
                         ],
                       ),
                     );
@@ -321,12 +378,22 @@ class _SubjectList extends StatelessWidget {
 
 /// The card holding the legend and the chart, or the reason there is none.
 class _GraphCard extends StatelessWidget {
-  const _GraphCard({super.key, required this.chart, required this.colors});
+  const _GraphCard({
+    super.key,
+    required this.chart,
+    required this.colors,
+    required this.selected,
+    required this.onPointTap,
+  });
 
   final StatsChart chart;
 
   /// The colour of each line of [chart].
   final List<Color> colors;
+
+  /// The picked dot, as [StatsLineChart.selected] takes it.
+  final ({int line, int period})? selected;
+  final void Function(int line, int period) onPointTap;
 
   static const _chartHeight = 320.0;
 
@@ -337,6 +404,7 @@ class _GraphCard extends StatelessWidget {
     final mutedStyle = theme.textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
     );
+    final format = NumberFormat.decimalPatternDigits(decimalDigits: 0);
 
     return Container(
       decoration: summaryCardDecoration(context),
@@ -351,6 +419,7 @@ class _GraphCard extends StatelessWidget {
             children: [
               for (var i = 0; i < chart.lines.length; i++)
                 Row(
+                  key: ValueKey('stats-legend-$i'),
                   mainAxisSize: MainAxisSize.min,
                   spacing: 6,
                   children: [
@@ -360,6 +429,12 @@ class _GraphCard extends StatelessWidget {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface,
                       ),
+                    ),
+                    // Over the periods on the chart, as the tooltip's
+                    // figures are formatted.
+                    Text(
+                      format.format(chart.lines[i].total),
+                      style: mutedStyle,
                     ),
                   ],
                 ),
@@ -371,7 +446,12 @@ class _GraphCard extends StatelessWidget {
           else ...[
             SizedBox(
               height: _chartHeight,
-              child: StatsLineChart(chart: chart, colors: colors),
+              child: StatsLineChart(
+                chart: chart,
+                colors: colors,
+                selected: selected,
+                onPointTap: onPointTap,
+              ),
             ),
             if (chart.isEmpty)
               Padding(
@@ -381,6 +461,151 @@ class _GraphCard extends StatelessWidget {
                   style: mutedStyle,
                 ),
               ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The payments behind a picked dot: [line]'s figure in [period].
+class _PaymentsCard extends StatelessWidget {
+  const _PaymentsCard({
+    super.key,
+    required this.line,
+    required this.period,
+    required this.color,
+    required this.onClose,
+  });
+
+  final StatsLine line;
+  final Period period;
+
+  /// The colour of [line].
+  final Color color;
+  final VoidCallback onClose;
+
+  static final _dayFormat = DateFormat('d MMM');
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final mutedStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
+    final money = NumberFormat.simpleCurrency(name: period.baseCurrency);
+    final payments = pointPayments(line, period);
+    final total = payments.fold<double>(0, (sum, p) => sum + p.fact.amount);
+    // A category's rows would all repeat its name.
+    final showCategory = !line.subject.hasLimit;
+    final count = payments.length == 1
+        ? '1 payment'
+        : '${payments.length} payments';
+
+    return Container(
+      decoration: summaryCardDecoration(context),
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            spacing: 8,
+            children: [
+              _Dot(color),
+              // The title gives way first in a narrow window; the close
+              // button stays at the right edge.
+              Expanded(
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '${line.label} · ${period.name}',
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Text('$count · ${money.format(total)}', style: mutedStyle),
+                  ],
+                ),
+              ),
+              IconButton(
+                key: const ValueKey('stats-payments-close'),
+                tooltip: 'Close',
+                icon: const Icon(Icons.close_rounded, size: 18),
+                color: colorScheme.onSurfaceVariant,
+                onPressed: onClose,
+              ),
+            ],
+          ),
+          if (payments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Nothing recorded in this period.',
+                style: mutedStyle,
+              ),
+            ),
+          for (final payment in payments) ...[
+            Divider(
+              height: 1,
+              thickness: 0.5,
+              color: colorScheme.outlineVariant,
+            ),
+            Padding(
+              key: ValueKey('stats-payment-${payment.fact.id}'),
+              padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+              child: Row(
+                spacing: 12,
+                children: [
+                  SizedBox(
+                    width: 52,
+                    child: Text(
+                      _dayFormat.format(payment.fact.timestamp),
+                      style: mutedStyle,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: TaggedComment(
+                      payment.fact.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  if (showCategory)
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        payment.category.name.trim(),
+                        overflow: TextOverflow.ellipsis,
+                        style: mutedStyle,
+                      ),
+                    ),
+                  // A fixed width keeps the columns before it aligned from
+                  // row to row; a long amount shrinks rather than overflows.
+                  SizedBox(
+                    width: 120,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        money.format(payment.fact.amount),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ],
       ),

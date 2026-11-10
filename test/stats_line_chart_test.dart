@@ -4,6 +4,7 @@ import 'package:flatplan/src/components/stats_line_chart.dart';
 import 'package:flatplan/src/logic/stats_series.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -41,14 +42,24 @@ Future<void> _pump(
   StatsChart chart, {
   ThemeData? theme,
   double width = 800,
+  ({int line, int period})? selected,
+  void Function(int line, int period)? onPointTap,
 }) => tester.pumpWidget(
   MaterialApp(
     theme: theme ?? AppTheme.darkTheme,
     home: Scaffold(
-      body: SizedBox(
-        width: width,
-        height: 300,
-        child: StatsLineChart(chart: chart, colors: _colors),
+      body: Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: width,
+          height: 300,
+          child: StatsLineChart(
+            chart: chart,
+            colors: _colors,
+            selected: selected,
+            onPointTap: onPointTap,
+          ),
+        ),
       ),
     ),
   ),
@@ -531,6 +542,200 @@ void main() {
         // ...the limit bar draws none, whichever of its spots is touched,
         // and still answers once per spot as fl_chart requires.
         expect(indicators(bars[1], const [0, 1, 3]), [null, null, null]);
+      });
+    });
+
+    group('picking a dot', () {
+      // Groceries has no figure in the last period; Rent has all three.
+      final chart = StatsChart(
+        periods: _periods(3),
+        lines: [
+          _line('Groceries', [100, 1234, null], limits: [800, 1500, null]),
+          _line('Rent', [700, 700, 700]),
+        ],
+      );
+
+      FlTapUpEvent tapUp() =>
+          FlTapUpEvent(TapUpDetails(kind: PointerDeviceKind.mouse));
+
+      /// What fl_chart reports for a touch at amount [y] that came near
+      /// [spots], each given as (bar index, spot index).
+      LineTouchResponse touchAt(
+        List<LineChartBarData> bars,
+        double y,
+        List<(int, int)> spots,
+      ) => LineTouchResponse(
+        touchLocation: Offset.zero,
+        touchChartCoordinate: Offset(0, y),
+        lineBarSpots: [
+          for (final (bar, spot) in spots)
+            TouchLineBarSpot(bars[bar], bar, bars[bar].spots[spot], 0),
+        ],
+      );
+
+      testWidgets('a tap picks the dot of the tapped period nearest the '
+          'touch', (tester) async {
+        final picked = <(int, int)>[];
+        await _pump(tester, chart, onPointTap: (l, p) => picked.add((l, p)));
+        final data = _data(tester);
+        final bars = data.lineBarsData;
+        // Solid Groceries, its limit, solid Rent. Middle period: Groceries
+        // 1,234, Rent 700.
+        final callback = data.lineTouchData.touchCallback!;
+
+        callback(tapUp(), touchAt(bars, 1000, [(0, 1), (1, 2), (2, 1)]));
+        callback(tapUp(), touchAt(bars, 800, [(2, 1), (0, 1)]));
+        // The period comes from a whole-number spot, not from the limit's
+        // half-slot end.
+        callback(tapUp(), touchAt(bars, 650, [(1, 3), (2, 1)]));
+
+        expect(picked, [(0, 1), (1, 1), (1, 1)]);
+      });
+
+      testWidgets('a tap skips a line with a gap in the tapped period', (
+        tester,
+      ) async {
+        final picked = <(int, int)>[];
+        await _pump(tester, chart, onPointTap: (l, p) => picked.add((l, p)));
+        final data = _data(tester);
+        final bars = data.lineBarsData;
+
+        data.lineTouchData.touchCallback!(
+          tapUp(),
+          touchAt(bars, 1300, [(2, 2)]),
+        );
+
+        expect(picked, [(1, 2)]);
+      });
+
+      testWidgets('a tap away from every period picks nothing', (tester) async {
+        final picked = <(int, int)>[];
+        await _pump(tester, chart, onPointTap: (l, p) => picked.add((l, p)));
+        final data = _data(tester);
+        final bars = data.lineBarsData;
+        final callback = data.lineTouchData.touchCallback!;
+
+        callback(tapUp(), null);
+        callback(
+          tapUp(),
+          LineTouchResponse(
+            touchLocation: Offset.zero,
+            touchChartCoordinate: Offset.zero,
+          ),
+        );
+        // A limit's half-slot end lies between two periods.
+        callback(tapUp(), touchAt(bars, 1500, [(1, 3)]));
+
+        expect(picked, isEmpty);
+      });
+
+      testWidgets('hovering picks nothing', (tester) async {
+        final picked = <(int, int)>[];
+        await _pump(tester, chart, onPointTap: (l, p) => picked.add((l, p)));
+        final data = _data(tester);
+
+        data.lineTouchData.touchCallback!(
+          FlPointerHoverEvent(const PointerHoverEvent()),
+          touchAt(data.lineBarsData, 1000, [(0, 1)]),
+        );
+
+        expect(picked, isEmpty);
+      });
+
+      testWidgets('a click on a dot on screen picks it', (tester) async {
+        final picked = <(int, int)>[];
+        await _pump(tester, chart, onPointTap: (l, p) => picked.add((l, p)));
+        final data = _data(tester);
+        // The plot is the chart's box less the 56 px left and 28 px bottom
+        // axis labels; x runs from -0.5 to 2.5.
+        final box = tester.getRect(find.byType(LineChart));
+        final plot = Rect.fromLTRB(
+          box.left + 56,
+          box.top,
+          box.right,
+          box.bottom - 28,
+        );
+        Offset dot(int period, double y) => Offset(
+          plot.left + (period + 0.5) / 3 * plot.width,
+          plot.top + (data.maxY - y) / (data.maxY - data.minY) * plot.height,
+        );
+
+        await tester.tapAt(dot(1, 700));
+        await tester.pump();
+        await tester.tapAt(dot(1, 1234));
+        await tester.pump();
+
+        expect(picked, [(1, 1), (0, 1)]);
+      });
+
+      testWidgets('the cursor is a hand over a period\'s dots', (tester) async {
+        await _pump(tester, chart, onPointTap: (_, _) {});
+        final data = _data(tester);
+        final bars = data.lineBarsData;
+        final resolve = data.lineTouchData.mouseCursorResolver!;
+        final hover = FlPointerHoverEvent(const PointerHoverEvent());
+
+        expect(
+          resolve(hover, touchAt(bars, 700, [(2, 1)])),
+          SystemMouseCursors.click,
+        );
+        expect(resolve(hover, null), MouseCursor.defer);
+        expect(
+          resolve(hover, touchAt(bars, 1500, [(1, 3)])),
+          MouseCursor.defer,
+        );
+      });
+
+      testWidgets('without onPointTap the cursor stays and taps do nothing', (
+        tester,
+      ) async {
+        await _pump(tester, chart);
+        final data = _data(tester);
+        final touch = data.lineTouchData;
+        final response = touchAt(data.lineBarsData, 700, [(2, 1)]);
+
+        expect(
+          touch.mouseCursorResolver?.call(
+                FlPointerHoverEvent(const PointerHoverEvent()),
+                response,
+              ) ??
+              MouseCursor.defer,
+          MouseCursor.defer,
+        );
+        touch.touchCallback?.call(tapUp(), response);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the picked dot is ringed in its line\'s colour', (
+        tester,
+      ) async {
+        // Only Groceries is blue. The chart animates from one data to the
+        // next: let it settle before counting.
+        await _pump(tester, chart);
+        final plain = await _bluePixels(tester);
+        await _pump(tester, chart, selected: (line: 0, period: 1));
+        await tester.pumpAndSettle();
+        final ringed = await _bluePixels(tester);
+        await _pump(tester, chart, selected: (line: 1, period: 1));
+        await tester.pumpAndSettle();
+        final other = await _bluePixels(tester);
+
+        expect(ringed, greaterThan(plain + 20));
+        expect(other, plain);
+      });
+
+      testWidgets('the hollow dot of the period in progress can be ringed', (
+        tester,
+      ) async {
+        final current = _chart([
+          _line('Groceries', [100, 400, 300]),
+        ], inProgress: 2);
+        await _pump(tester, current);
+        final plain = await _bluePixels(tester);
+        await _pump(tester, current, selected: (line: 0, period: 2));
+        await tester.pumpAndSettle();
+
+        expect(await _bluePixels(tester), greaterThan(plain + 20));
       });
     });
 

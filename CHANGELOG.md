@@ -16,6 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Payment tags: write `#renovation` (or several tags) anywhere in a payment's comment. On the category screen the tags move out of the text and show as chips after it.
 - A "Top tags" card on the dashboard lists the three most-spent tags of the period, each with its sum this period and across all periods. A payment with several tags counts in full under each.
 - A Stats page (sidebar → Stats) graphs recorded spending and income period by period. Tick All, any category or any tag — several at once — and choose all periods or a from–to month range. A ticked category also shows its limit in each period as a stepped dashed line.
+- On the Stats page, click a dot to list the payments behind it under the graph: date, comment with its tag chips, category and amount, oldest first. Click the dot again or ✕ to close the list. The legend shows each line's total over the periods on the chart.
 
 ### Changed
 - "Change Folder" and "Reset to default folder" moved into the vault's edit form.
