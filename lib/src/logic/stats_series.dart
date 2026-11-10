@@ -1,5 +1,6 @@
 import '../models/models.dart';
 import 'payment_tags.dart';
+import 'period_extensions.dart';
 
 /// What a chart line is about.
 enum StatsSubjectKind { all, expenseCategory, incomeCategory, tag }
@@ -178,6 +179,187 @@ List<StatsSubject> toggleSubject(
       if (s != StatsSubject.all) s,
     subject,
   ];
+}
+
+/// What a [StatsLine] measures.
+enum StatsLineRole {
+  /// Everything spent: the expense half of the All subject.
+  spent,
+
+  /// Everything earned: the income half of the All subject.
+  earned,
+
+  /// The subject's own figure: a category's facts or a tag's spending.
+  value,
+}
+
+/// One line on the chart: a figure per chart period.
+class StatsLine {
+  const StatsLine({
+    required this.subject,
+    required this.role,
+    required this.values,
+    this.limits,
+  });
+
+  final StatsSubject subject;
+  final StatsLineRole role;
+
+  /// One entry per chart period; `null` is a gap, a period without the
+  /// subject.
+  final List<double?> values;
+
+  /// The budget limit per chart period, drawn beside the line. Only category
+  /// lines have it; an entry is `null` where the period has no limit.
+  final List<double?>? limits;
+
+  /// What the legend and the tooltip call the line.
+  String get label => switch (role) {
+    StatsLineRole.spent => 'Spent',
+    StatsLineRole.earned => 'Earned',
+    StatsLineRole.value => subject.label,
+  };
+}
+
+/// Everything the Stats chart draws.
+class StatsChart {
+  const StatsChart({
+    required this.periods,
+    required this.lines,
+    this.inProgressIndex,
+  });
+
+  /// The periods along the x axis, oldest first.
+  final List<Period> periods;
+  final List<StatsLine> lines;
+
+  /// The index in [periods] of the one that covers today, if any.
+  final int? inProgressIndex;
+
+  /// True when no line has anything to draw: every value is a gap or zero.
+  bool get isEmpty => lines.every(
+    (line) => line.values.every((value) => value == null || value == 0),
+  );
+}
+
+/// One line's figures at a single chart period, as the tooltip lists them.
+class StatsTooltipRow {
+  const StatsTooltipRow({required this.line, required this.value, this.limit});
+
+  final StatsLine line;
+  final double value;
+  final double? limit;
+}
+
+/// The chart for [subjects] over the periods of [allPeriods] that
+/// [chartPeriods] keeps for [today] and [range].
+///
+/// [StatsSubject.all] becomes two lines, spent then earned; every other
+/// subject is one line, and lines follow the order of [subjects]. A period
+/// ends where the next one in [allPeriods] begins, charted or not, so a
+/// [range] cannot change which period is in progress.
+StatsChart buildStatsChart({
+  required List<Period> allPeriods,
+  required List<StatsSubject> subjects,
+  required DateTime today,
+  MonthRange? range,
+}) {
+  final periods = chartPeriods(allPeriods, today: today, range: range);
+  return StatsChart(
+    periods: periods,
+    lines: [for (final subject in subjects) ..._linesFor(subject, periods)],
+    inProgressIndex: _inProgressIndex(periods, allPeriods, today),
+  );
+}
+
+/// What the tooltip shows at [index]: a row for each line of [chart] that
+/// has a value there, in line order.
+List<StatsTooltipRow> tooltipRows(StatsChart chart, int index) => [
+  for (final line in chart.lines)
+    if (line.values[index] case final value?)
+      StatsTooltipRow(line: line, value: value, limit: line.limits?[index]),
+];
+
+List<StatsLine> _linesFor(StatsSubject subject, List<Period> periods) {
+  switch (subject.kind) {
+    case StatsSubjectKind.all:
+      return [
+        StatsLine(
+          subject: subject,
+          role: StatsLineRole.spent,
+          values: [for (final p in periods) _factsTotal(p, income: false)],
+        ),
+        StatsLine(
+          subject: subject,
+          role: StatsLineRole.earned,
+          values: [for (final p in periods) _factsTotal(p, income: true)],
+        ),
+      ];
+    case StatsSubjectKind.expenseCategory:
+    case StatsSubjectKind.incomeCategory:
+      return [_categoryLine(subject, periods)];
+    case StatsSubjectKind.tag:
+      return [
+        StatsLine(
+          subject: subject,
+          role: StatsLineRole.value,
+          values: [for (final p in periods) spendingByTag(p)[subject.key] ?? 0],
+        ),
+      ];
+  }
+}
+
+StatsLine _categoryLine(StatsSubject subject, List<Period> periods) {
+  final income = subject.kind == StatsSubjectKind.incomeCategory;
+  final values = <double?>[];
+  final limits = <double?>[];
+  for (final period in periods) {
+    final matching = [
+      for (final category in period.categories)
+        if ((category.type == CategoryType.income) == income &&
+            categoryKey(category.name) == subject.key)
+          category,
+    ];
+    if (matching.isEmpty) {
+      values.add(null);
+      limits.add(null);
+      continue;
+    }
+    values.add(matching.fold<double>(0, (sum, c) => sum + _facts(c)));
+    final limit = matching.fold<double>(0, (sum, c) => sum + c.effectiveLimit);
+    limits.add(limit == 0 ? null : limit);
+  }
+  return StatsLine(
+    subject: subject,
+    role: StatsLineRole.value,
+    values: values,
+    limits: limits,
+  );
+}
+
+/// Facts recorded in [period]'s income categories, or in its expense ones.
+double _factsTotal(Period period, {required bool income}) => period.categories
+    .where((c) => (c.type == CategoryType.income) == income)
+    .fold<double>(0, (sum, c) => sum + _facts(c));
+
+double _facts(Category category) =>
+    category.factExpenses.fold<double>(0, (sum, f) => sum + f.amount);
+
+/// The index in [periods] of the period whose days include [today].
+int? _inProgressIndex(
+  List<Period> periods,
+  List<Period> allPeriods,
+  DateTime today,
+) {
+  final day = DateTime(today.year, today.month, today.day);
+  for (var i = 0; i < periods.length; i++) {
+    final end = effectiveEndDate(periods[i], allPeriods);
+    if (!_startDay(periods[i]).isAfter(day) &&
+        !day.isAfter(DateTime(end.year, end.month, end.day))) {
+      return i;
+    }
+  }
+  return null;
 }
 
 DateTime _startDay(Period period) {
