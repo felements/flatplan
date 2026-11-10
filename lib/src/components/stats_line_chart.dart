@@ -75,7 +75,8 @@ int bottomLabelInterval(int periodCount) =>
 /// Each line is a solid run up to the period in progress, then a dashed
 /// stretch into that period whose point is hollow: its figure is still
 /// moving. A line with budget limits also gets a stepped, dashed, fainter
-/// line of the same colour. The chart fills the space its parent gives it and
+/// line of the same colour, holding each period's limit flat across the
+/// period's whole slot. The chart fills the space its parent gives it and
 /// draws no card of its own; the hollow point is filled in the card colour,
 /// so put it on a card.
 class StatsLineChart extends StatelessWidget {
@@ -173,23 +174,26 @@ class StatsLineChart extends StatelessWidget {
         lineTouchData: LineTouchData(
           getTouchedSpotIndicator: (bar, indexes) => [
             for (final _ in indexes)
-              TouchedSpotIndicatorData(
-                FlLine(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  strokeWidth: 1,
+              // The limit has nothing to mark, and its ends lie half a slot
+              // out, between two periods.
+              if (bar.isStepLineChart)
+                null
+              else
+                TouchedSpotIndicatorData(
+                  FlLine(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    strokeWidth: 1,
+                  ),
+                  FlDotData(
+                    getDotPainter: (spot, percent, bar, index) =>
+                        FlDotCirclePainter(
+                          radius: _dotRadius + 2,
+                          color: bar.color ?? scheme.primary,
+                          strokeColor: cardColor,
+                          strokeWidth: 2,
+                        ),
+                  ),
                 ),
-                FlDotData(
-                  // The limit line has no point to highlight.
-                  show: !bar.isStepLineChart,
-                  getDotPainter: (spot, percent, bar, index) =>
-                      FlDotCirclePainter(
-                        radius: _dotRadius + 2,
-                        color: bar.color ?? scheme.primary,
-                        strokeColor: cardColor,
-                        strokeWidth: 2,
-                      ),
-                ),
-              ),
           ],
           touchTooltipData: LineTouchTooltipData(
             maxContentWidth: 260,
@@ -268,7 +272,7 @@ class StatsLineChart extends StatelessWidget {
       if (limits != null) {
         bars.add(
           LineChartBarData(
-            spots: _spots(limits, 0, count),
+            spots: _limitSpots(limits),
             color: color.withValues(alpha: _limitAlpha),
             barWidth: _lineWidth,
             dashArray: const [6, 4],
@@ -294,16 +298,47 @@ class StatsLineChart extends StatelessWidget {
         FlSpot.nullSpot,
   ];
 
+  /// The points of the limit bar: each run of periods that have a limit
+  /// starts half a slot before its first period and ends half a slot after
+  /// its last, so every limit holds flat across its period's whole slot, and
+  /// a gap separates runs.
+  ///
+  /// A run is never a single spot: fl_chart dashes each run on its own, and a
+  /// lone spot is a zero-length path that dashes into nothing.
+  List<FlSpot> _limitSpots(List<double?> limits) {
+    final spots = <FlSpot>[];
+    for (var i = 0; i < limits.length; i++) {
+      final limit = limits[i];
+      if (limit == null) continue;
+      final startsRun = i == 0 || limits[i - 1] == null;
+      final endsRun = i == limits.length - 1 || limits[i + 1] == null;
+      if (startsRun) {
+        if (spots.isNotEmpty) spots.add(FlSpot.nullSpot);
+        spots.add(FlSpot(i - 0.5, limit));
+      }
+      spots.add(FlSpot(i.toDouble(), limit));
+      if (endsRun) spots.add(FlSpot(i + 0.5, limit));
+    }
+    return spots;
+  }
+
   /// One tooltip for the whole period: fl_chart hands over a touched spot per
   /// bar, and only the first gets the text, the rest none.
+  ///
+  /// The period is the nearest touched spot at a whole x. A limit bar's end
+  /// spots lie half a slot out, between two periods, and name none; touching
+  /// nothing else gives no tooltip.
   List<LineTooltipItem?> _tooltipItems(
     ThemeData theme,
     NumberFormat format,
     List<LineBarSpot> spots,
   ) {
-    if (spots.isEmpty) return const [];
+    final onPeriod = spots
+        .where((spot) => (spot.x - spot.x.roundToDouble()).abs() < 1e-6)
+        .firstOrNull;
+    if (onPeriod == null) return [for (final _ in spots) null];
     final scheme = theme.colorScheme;
-    final index = spots.first.x.round();
+    final index = onPeriod.x.round();
     final base = theme.textTheme.bodySmall ?? const TextStyle();
     final rows = <TextSpan>[];
     for (final row in tooltipRows(chart, index)) {

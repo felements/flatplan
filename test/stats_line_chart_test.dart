@@ -4,6 +4,7 @@ import 'package:flatplan/src/components/stats_line_chart.dart';
 import 'package:flatplan/src/logic/stats_series.dart';
 import 'package:flatplan/src/models/models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
@@ -63,6 +64,53 @@ List<String> _leftLabels(WidgetTester tester) => [
 LineChartData _data(WidgetTester tester) =>
     tester.widget<LineChart>(find.byType(LineChart)).data;
 
+/// How many pixels on screen are clearly blue, the colour of the first line.
+/// Nothing else in the chart is: the text, grid and background are grey.
+Future<int> _bluePixels(WidgetTester tester) async {
+  final boundary = tester.renderObject<RenderRepaintBoundary>(
+    find.byType(RepaintBoundary).first,
+  );
+  return (await tester.runAsync(() async {
+    final image = await boundary.toImage();
+    final data = await image.toByteData();
+    var count = 0;
+    for (var i = 0; i < data!.lengthInBytes; i += 4) {
+      final red = data.getUint8(i);
+      final blue = data.getUint8(i + 2);
+      if (blue > red + 40) count++;
+    }
+    return count;
+  }))!;
+}
+
+/// The stepped limit bar of the only line on screen: its last bar.
+LineChartBarData _limitBar(WidgetTester tester) {
+  final bar = _data(tester).lineBarsData.last;
+  expect(bar.isStepLineChart, isTrue);
+  return bar;
+}
+
+/// The stretches [bar] draws: its spots split at the gaps.
+List<List<FlSpot>> _runs(LineChartBarData bar) {
+  final runs = <List<FlSpot>>[[]];
+  for (final spot in bar.spots) {
+    if (spot.isNull()) {
+      if (runs.last.isNotEmpty) runs.add([]);
+    } else {
+      runs.last.add(spot);
+    }
+  }
+  if (runs.last.isEmpty) runs.removeLast();
+  return runs;
+}
+
+/// Where [bar]'s steps fall: the x midway between neighbouring spots that
+/// sit at different heights.
+List<double> _stepXs(List<FlSpot> run) => [
+  for (var i = 1; i < run.length; i++)
+    if (run[i].y != run[i - 1].y) (run[i].x + run[i - 1].x) / 2,
+];
+
 void main() {
   group('StatsLineChart', () {
     testWidgets('draws a solid run, a dashed stretch into the current period '
@@ -93,10 +141,14 @@ void main() {
       expect(bars[2].dashArray, [6, 4]);
       expect(bars[2].barWidth, 2);
       expect(bars[2].dotData.show, isFalse);
+      // Each period's limit holds across its whole slot, half a slot beyond
+      // the first and last period's own x.
       expect(bars[2].spots, const [
+        FlSpot(-0.5, 800),
         FlSpot(0, 800),
         FlSpot(1, 900),
         FlSpot(2, 700),
+        FlSpot(2.5, 700),
       ]);
       expect(bars[2].color, _colors[0].withValues(alpha: 0.55));
     });
@@ -170,16 +222,117 @@ void main() {
       expect(bars[0].dashArray, isNull);
     });
 
-    testWidgets('a null limit becomes a gap in the limit bar', (tester) async {
+    testWidgets('a single period holds its limit across its whole slot', (
+      tester,
+    ) async {
       final chart = _chart([
-        _line('Groceries', [5, 6], limits: [null, 9]),
+        _line('Groceries', [42], limits: [400]),
       ]);
       await _pump(tester, chart);
 
-      final bars = _data(tester).lineBarsData;
-      expect(bars, hasLength(2));
-      expect(bars[1].spots[0].isNull(), isTrue);
-      expect(bars[1].spots[1], const FlSpot(1, 9));
+      // One spot would be a zero-length path, which fl_chart dashes into
+      // nothing: the bar must run from one edge of the slot to the other.
+      final runs = _runs(_limitBar(tester));
+      expect(runs, hasLength(1));
+      expect(runs.single.first, const FlSpot(-0.5, 400));
+      expect(runs.single.last, const FlSpot(0.5, 400));
+      expect(runs.single.every((spot) => spot.y == 400), isTrue);
+    });
+
+    // fl_chart dashes each stretch on its own, and a stretch of one spot is a
+    // zero-length path that dashes into no pixel at all.
+    for (final (name, limits) in [
+      ('a single period', <double?>[400]),
+      (
+        'a limited period between two unlimited ones',
+        <double?>[null, 400, null],
+      ),
+      ('a limit on the first and last period only', <double?>[400, null, 400]),
+      ('two limited neighbours', <double?>[400, 400]),
+    ]) {
+      testWidgets('on screen: $name', (tester) async {
+        // The line itself has no figure, so only the limit is blue.
+        final chart = _chart([
+          _line(
+            'Groceries',
+            List<double?>.filled(limits.length, null),
+            limits: limits,
+          ),
+        ]);
+        await _pump(tester, chart);
+
+        expect(await _bluePixels(tester), greaterThan(0));
+      });
+    }
+
+    testWidgets('a limited period between two unlimited ones is drawn too', (
+      tester,
+    ) async {
+      final chart = _chart([
+        _line('Groceries', [5, 6, 7], limits: [null, 400, null]),
+      ]);
+      await _pump(tester, chart);
+
+      final runs = _runs(_limitBar(tester));
+      expect(runs, hasLength(1));
+      expect(runs.single.first, const FlSpot(0.5, 400));
+      expect(runs.single.last, const FlSpot(1.5, 400));
+    });
+
+    testWidgets('a period without a limit leaves a gap between two slots', (
+      tester,
+    ) async {
+      final chart = _chart([
+        _line('Groceries', [5, 6, 7], limits: [500, null, 300]),
+      ]);
+      await _pump(tester, chart);
+
+      final runs = _runs(_limitBar(tester));
+      expect(runs, hasLength(2));
+      expect(runs[0].first, const FlSpot(-0.5, 500));
+      expect(runs[0].last, const FlSpot(0.5, 500));
+      expect(runs[1].first, const FlSpot(1.5, 300));
+      expect(runs[1].last, const FlSpot(2.5, 300));
+    });
+
+    testWidgets('the limits of neighbouring periods step half way between '
+        'them', (tester) async {
+      final chart = _chart([
+        _line('Groceries', [5, 6, 7], limits: [800, 900, 700]),
+      ]);
+      await _pump(tester, chart);
+
+      final runs = _runs(_limitBar(tester));
+      expect(runs, hasLength(1));
+      expect(runs.single.first.x, -0.5);
+      expect(runs.single.last.x, 2.5);
+      expect(_stepXs(runs.single), [0.5, 1.5]);
+    });
+
+    testWidgets('equal neighbouring limits make one flat stretch', (
+      tester,
+    ) async {
+      final chart = _chart([
+        _line('Groceries', [5, 6], limits: [400, 400]),
+      ]);
+      await _pump(tester, chart);
+
+      final runs = _runs(_limitBar(tester));
+      expect(runs, hasLength(1));
+      expect(runs.single.first, const FlSpot(-0.5, 400));
+      expect(runs.single.last, const FlSpot(1.5, 400));
+      expect(_stepXs(runs.single), isEmpty);
+    });
+
+    testWidgets('a limit that is null in every period draws nothing and '
+        'builds', (tester) async {
+      final chart = _chart([
+        _line('Groceries', [5, 6], limits: [null, null]),
+      ]);
+      await _pump(tester, chart);
+
+      expect(_runs(_limitBar(tester)), isEmpty);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('each line is coloured by its own entry of colors', (
@@ -277,10 +430,11 @@ void main() {
       final bars = data.lineBarsData;
       // Solid Groceries, its limit, solid Rent.
       expect(bars, hasLength(3));
+      // Groceries' limit holds (1, 1500) as its third spot.
       final touched = [
         LineBarSpot(bars[2], 2, bars[2].spots[1]),
         LineBarSpot(bars[0], 0, bars[0].spots[1]),
-        LineBarSpot(bars[1], 1, bars[1].spots[1]),
+        LineBarSpot(bars[1], 1, bars[1].spots[2]),
       ];
 
       final items = data.lineTouchData.touchTooltipData.getTooltipItems(
@@ -295,6 +449,89 @@ void main() {
       expect(item.textStyle.fontWeight, FontWeight.bold);
       final rows = item.children!.map((s) => s.toPlainText()).join();
       expect(rows, '\nGroceries  1,234\nlimit  1,500\nRent  700');
+    });
+
+    group('hovering', () {
+      // Groceries has no figure in the last period; Rent has all three, so
+      // the last period's tooltip differs from the middle one's.
+      final chart = StatsChart(
+        periods: _periods(3),
+        lines: [
+          _line('Groceries', [100, 1234, null], limits: [800, 1500, null]),
+          _line('Rent', [700, 700, 700]),
+        ],
+      );
+      const middle = '\nGroceries  1,234\nlimit  1,500\nRent  700';
+
+      Future<(LineChartData, List<LineChartBarData>)> pumpChart(
+        WidgetTester tester,
+      ) async {
+        await _pump(tester, chart);
+        final data = _data(tester);
+        return (data, data.lineBarsData);
+      }
+
+      testWidgets('a limit bar\'s half-slot spot does not move the tooltip to '
+          'the next period', (tester) async {
+        final (data, bars) = await pumpChart(tester);
+        // Solid Groceries, its limit, solid Rent. The limit ends at (1.5,
+        // 1500), whose x rounds to period 2.
+        final halfSlot = bars[1].spots.last;
+        expect(halfSlot, const FlSpot(1.5, 1500));
+
+        final items = data.lineTouchData.touchTooltipData.getTooltipItems([
+          LineBarSpot(bars[1], 1, halfSlot),
+          LineBarSpot(bars[0], 0, bars[0].spots[1]),
+          LineBarSpot(bars[2], 2, bars[2].spots[1]),
+        ]);
+
+        expect(items, hasLength(3));
+        expect(items[1], isNull);
+        expect(items[2], isNull);
+        expect(items[0]!.text, chart.periods[1].name);
+        expect(items[0]!.children!.map((s) => s.toPlainText()).join(), middle);
+      });
+
+      testWidgets('the period comes from the whole-number spot wherever it '
+          'is in the touch', (tester) async {
+        final (data, bars) = await pumpChart(tester);
+
+        final items = data.lineTouchData.touchTooltipData.getTooltipItems([
+          LineBarSpot(bars[1], 1, bars[1].spots.first),
+          LineBarSpot(bars[2], 2, bars[2].spots[0]),
+        ]);
+
+        expect(items[0]!.text, chart.periods[0].name);
+        expect(items[1], isNull);
+      });
+
+      testWidgets('half-slot spots alone describe no period', (tester) async {
+        final (data, bars) = await pumpChart(tester);
+
+        final items = data.lineTouchData.touchTooltipData.getTooltipItems([
+          LineBarSpot(bars[1], 1, bars[1].spots.last),
+        ]);
+
+        expect(items, [null]);
+      });
+
+      testWidgets('only the lines get a touch indicator, not the limit', (
+        tester,
+      ) async {
+        final (data, bars) = await pumpChart(tester);
+        final indicators = data.lineTouchData.getTouchedSpotIndicator;
+
+        // The solid Groceries and Rent bars mark the touched spot...
+        for (final bar in [bars[0], bars[2]]) {
+          final marked = indicators(bar, const [1]);
+          expect(marked, hasLength(1));
+          expect(marked.single, isNotNull);
+          expect(marked.single!.touchedSpotDotData.show, isTrue);
+        }
+        // ...the limit bar draws none, whichever of its spots is touched,
+        // and still answers once per spot as fl_chart requires.
+        expect(indicators(bars[1], const [0, 1, 3]), [null, null, null]);
+      });
     });
 
     testWidgets('builds under the light theme without errors', (tester) async {
