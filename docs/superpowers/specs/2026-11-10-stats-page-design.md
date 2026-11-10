@@ -1,6 +1,6 @@
 # Stats page — design
 
-Date: 2026-11-10 · Status: agreed in conversation, awaiting final approval
+Date: 2026-11-10 · Status: approved 2026-11-10
 
 ## Why
 
