@@ -117,6 +117,17 @@ class AppShell extends ConsumerWidget {
                   },
                 ),
 
+                // ─── Stats ────────────────────────────────────────
+                _SidebarItem(
+                  icon: Icons.show_chart_rounded,
+                  label: 'Stats',
+                  isSelected: selectedIndex == 2,
+                  onTap: () => navigationShell.goBranch(
+                    2,
+                    initialLocation: selectedIndex == 2,
+                  ),
+                ),
+
                 // ─── Next period ──────────────────────────────────
                 _NextPeriodButton(
                   onPressed: () => showNewPeriodDialog(context, ref),
@@ -266,7 +277,7 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-/// The full-width outlined "+ Next period" button between Today and the
+/// The full-width outlined "+ Next period" button between Stats and the
 /// period list. Periods sort newest first, so the row a new period will
 /// occupy is directly below the button. Outlined rather than filled so it
 /// does not compete with the selected nav item.

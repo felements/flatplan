@@ -77,13 +77,13 @@ List<TagTotal> topTags({
   required List<Period> allPeriods,
   int limit = 5,
 }) {
-  final inPeriod = _spendingByTag(period);
+  final inPeriod = spendingByTag(period);
   if (inPeriod.isEmpty) return const [];
 
   final overall = Map<String, double>.of(inPeriod);
   for (final other in allPeriods) {
     if (other.id == period.id) continue;
-    _spendingByTag(other).forEach((tag, sum) {
+    spendingByTag(other).forEach((tag, sum) {
       overall.update(tag, (v) => v + sum, ifAbsent: () => sum);
     });
   }
@@ -103,7 +103,11 @@ List<TagTotal> topTags({
   ];
 }
 
-Map<String, double> _spendingByTag(Period period) {
+/// Spending in [period] summed under each lowercased tag, the full amount of
+/// a payment under every one of its tags.
+///
+/// Income categories are skipped: income is not spending.
+Map<String, double> spendingByTag(Period period) {
   final sums = <String, double>{};
   for (final category in period.categories) {
     if (category.type == CategoryType.income) continue;
