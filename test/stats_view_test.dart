@@ -2,6 +2,7 @@ import 'package:flatplan/src/app_theme.dart';
 import 'package:flatplan/src/components/stats_line_chart.dart';
 import 'package:flatplan/src/logic/stats_series.dart';
 import 'package:flatplan/src/models/models.dart';
+import 'package:flatplan/src/providers/all_periods_provider.dart';
 import 'package:flatplan/src/providers/repository_provider.dart';
 import 'package:flatplan/src/storage/period_repository.dart';
 import 'package:flatplan/src/storage/vault_workspace.dart';
@@ -39,7 +40,8 @@ Future<PeriodRepository> _repoWith(List<Period> periods) async {
   return repo;
 }
 
-Future<void> _pump(
+/// Pumps the page over a vault holding [periods] and returns its repository.
+Future<PeriodRepository> _pump(
   WidgetTester tester,
   List<Period> periods, {
   Size size = const Size(1400, 900),
@@ -65,6 +67,7 @@ Future<void> _pump(
     await Future<void>.delayed(const Duration(milliseconds: 300));
     await tester.pump();
   });
+  return repo;
 }
 
 StatsChart _chart(WidgetTester tester) =>
@@ -119,6 +122,34 @@ Future<void> _chooseFromTo(WidgetTester tester) async {
 
 Future<void> _apply(WidgetTester tester) async {
   await tester.tap(find.text('Apply'));
+  await tester.pumpAndSettle();
+}
+
+/// Narrows the page to the month of the period 5 days ago, then deletes that
+/// period and reloads the periods as the app does after a change, so the range
+/// is left matching nothing.
+Future<void> _leaveRangeStale(
+  WidgetTester tester,
+  PeriodRepository repo,
+  DateTime newest,
+) async {
+  await _openRangeDialog(tester);
+  await _chooseFromTo(tester);
+  await _pickMonth(tester, 'stats-range-from', newest);
+  await _apply(tester);
+  expect(_chart(tester).periods, hasLength(1));
+
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(StatsView)),
+  );
+  // As _pump does for the first load: the files are read in real time.
+  await tester.runAsync(() async {
+    await repo.workspace.delete(repo.filenameForPeriod('new')!);
+    container.invalidate(periodLoadResultProvider);
+    await tester.pump();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await tester.pump();
+  });
   await tester.pumpAndSettle();
 }
 
@@ -333,6 +364,47 @@ void main() {
 
       expect(_chart(tester).periods, hasLength(1));
       expect(_row('expenseCategory-bakery'), findsOneWidget);
+    });
+
+    testWidgets('a range left matching no period says so and draws no chart', (
+      tester,
+    ) async {
+      final repo = await _pump(tester, _fixture());
+      await _leaveRangeStale(tester, repo, newest);
+
+      expect(find.text('No periods in this range.'), findsOneWidget);
+      expect(find.byType(StatsLineChart), findsNothing);
+      expect(tester.takeException(), isNull);
+      // The button still names the range, and the legend its lines.
+      expect(
+        find.text('${_month(newest)} – ${_month(newest)}'),
+        findsOneWidget,
+      );
+      expect(find.text('Spent'), findsOneWidget);
+    });
+
+    testWidgets('reopening the dialog on a stale range falls back to the '
+        'months that remain', (tester) async {
+      final repo = await _pump(tester, _fixture());
+      await _leaveRangeStale(tester, repo, newest);
+
+      await _openRangeDialog(tester);
+
+      expect(tester.takeException(), isNull);
+      final remaining = [
+        for (final days in [70, 40])
+          DateTime(_midnightDaysAgo(days).year, _midnightDaysAgo(days).month),
+      ];
+      DateTime? value(String key) => tester
+          .widget<DropdownButton<DateTime>>(find.byKey(ValueKey(key)))
+          .value;
+      expect(value('stats-range-from'), remaining.first);
+      expect(value('stats-range-to'), remaining.last);
+
+      // Applying the fallback span brings the chart back.
+      await _apply(tester);
+      expect(_chart(tester).periods, hasLength(2));
+      expect(find.text('No periods in this range.'), findsNothing);
     });
 
     testWidgets('an empty vault says there is nothing to chart', (
