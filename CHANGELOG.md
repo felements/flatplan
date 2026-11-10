@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - An "Over Budget" card on the dashboard, between Total Spent and Free Money, sums what each category has spent beyond its own limit. Only overshoots count, so a category under its limit no longer hides one over it. The subtitle counts the categories over limit, and the AI stats export states the same figure.
 - Payment tags: write `#renovation` (or several tags) anywhere in a payment's comment. On the category screen the tags move out of the text and show as chips after it.
 - A "Top tags" card on the dashboard lists the three most-spent tags of the period, each with its sum this period and across all periods. A payment with several tags counts in full under each.
+- A Stats page (sidebar → Stats) graphs recorded spending and income period by period. Tick All, any category or any tag — several at once — and choose all periods or a from–to month range. A ticked category also shows its limit in each period as a stepped dashed line.
 
 ### Changed
 - "Change Folder" and "Reset to default folder" moved into the vault's edit form.

@@ -72,3 +72,10 @@ Triggered when starting a new period.
 
 ## 7. Vault Unavailable View (dashboard)
 - Shown instead of the dashboard when the selected vault cannot be opened: the reason and an "Open vault settings" button. Other vaults stay reachable from the switcher.
+
+## 8. Stats Page (`/stats`)
+- Reached from the sidebar's Stats item, under Today. A graph of recorded (fact) payments, one point per period, to show whether spending is falling or some months always run higher.
+- **Subject list** (left card): a search box, then groups Totals (All), Expenses, Income and Tags, each row with a checkbox; a ticked row shows its line colour. All is ticked by default; ticking anything else unticks All, and unticking the last subject ticks All again.
+- **Graph** (right card): one line per ticked subject. All draws two lines, spent and earned. A category matches across periods by name and kind; a period without it leaves a gap. A tag sums expense payments carrying it. A ticked category also shows each period's effective limit as a faint dashed stepped line. The current period's stretch is dashed with a hollow point. Hovering a period shows its name and each line's value.
+- **Range picker** (top right button): "All periods" or a from–to month range, by the month each period starts in.
+- Figures are raw per-period totals as recorded (no currency conversion, never per-day); periods that start after today are left out. The selection lives for the session only.

@@ -65,8 +65,9 @@ Used on `SummaryCard` for visual differentiation:
 - Width: **220 px**, full-height dark surface panel
 - Top: FlatPlan branding (wallet icon in rounded badge + bold title)
 - Items: icon + label in a `Row`, 12 px rounded `Material` highlight (gold @ 12 % opacity when selected)
+- Order: Today, Stats, then "+ Next period" and the period list; Settings sits at the bottom, under the vault switcher
 - Hover: gold @ 6 % opacity
-- "+ Next period": a full-width outlined button (gold text, gold @ 50 % border, 12 px radius, 14 × 10 px padding, 12 px side inset) between Today and the period list. It sits above the list because periods sort newest first, and stays outlined so it does not compete with the selected nav item.
+- "+ Next period": a full-width outlined button (gold text, gold @ 50 % border, 12 px radius, 14 × 10 px padding, 12 px side inset) between Stats and the period list. It sits above the list because periods sort newest first, and stays outlined so it does not compete with the selected nav item.
 
 ### Category Tiles
 - Animated hover background transition (180 ms ease-out)
