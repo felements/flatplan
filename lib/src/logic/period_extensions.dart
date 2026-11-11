@@ -83,22 +83,18 @@ List<Period> periodsPassedBy(
 
 /// Resolves a [DueDate] to a concrete calendar date.
 ///
-/// `dayOfMonth` dates resolve to that day in [now]'s month, shifted one
-/// month forward when that lands before [periodStart] (the due day for
-/// this period hasn't happened in the current calendar month yet).
-DateTime resolveDueDate(
-  DueDate dueDate, {
-  required DateTime now,
-  required DateTime periodStart,
-}) {
+/// A period does not follow the calendar month, so a `dayOfMonth` date
+/// resolves to the first such day on or after [periodStart]: in the start
+/// month when the day is not before the start day, otherwise in the next
+/// month — near the period's end. The result depends only on the period,
+/// never on today's date.
+DateTime resolveDueDate(DueDate dueDate, {required DateTime periodStart}) {
   return dueDate.when(
     exact: (d) => d,
-    dayOfMonth: (day) {
-      final d = DateTime(now.year, now.month, day);
-      if (d.isBefore(periodStart)) {
-        return DateTime(now.year, now.month + 1, day);
-      }
-      return d;
-    },
+    dayOfMonth: (day) => DateTime(
+      periodStart.year,
+      periodStart.month + (day < periodStart.day ? 1 : 0),
+      day,
+    ),
   );
 }
