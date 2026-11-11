@@ -25,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A finished period's daily-allowance categories show how the period was paced — "averaged €35/day of €40/day planned", in red when spending ran ahead of plan — on the dashboard tile and the category screen, in place of a meaningless "/ day left".
 
 ### Fixed
+- A planned payment set to a day of the month is now placed within its own period. In the last days of a period (after the calendar month turns), a payment due earlier in the period, such as the 25th, used to move to next month's 25th — hidden from the AI stats export and never shown as overdue. It now stays on the 25th of the period's start month and flags as overdue if unpaid.
 - Stats graph: amounts of six figures or more (250,000) no longer wrap onto two lines on the left axis; the axis widens to fit its longest label.
 - A payment comment starting with `#` was erased on save, and a comment containing a double quote could make the whole period file unreadable. Such values are now quoted properly; files without them are written exactly as before.
 

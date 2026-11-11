@@ -155,7 +155,6 @@ CategoryStats categoryStatsFor({
     if (isActivePeriod) {
       final expDate = resolveDueDate(
         exp.dueDate,
-        now: now,
         periodStart: period.startDate,
       );
       if (now.isAfter(expDate.add(const Duration(days: 1)))) {

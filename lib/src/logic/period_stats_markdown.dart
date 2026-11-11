@@ -169,11 +169,7 @@ String formatCurrentPeriodStatsMarkdown({
   for (final category in period.categories) {
     for (final exp in category.plannedExpenses) {
       if (exp.isCompleted) continue;
-      final due = resolveDueDate(
-        exp.dueDate,
-        now: now,
-        periodStart: period.startDate,
-      );
+      final due = resolveDueDate(exp.dueDate, periodStart: period.startDate);
       // Same overdue rule as periodStats: a full day of grace after the due
       // date before it flags as overdue.
       final isOverdue = now.isAfter(due.add(const Duration(days: 1)));

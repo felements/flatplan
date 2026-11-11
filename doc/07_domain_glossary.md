@@ -10,7 +10,7 @@ Quick-reference for the domain language used throughout FlatPlan's codebase and 
 | **Category** | `Category` | A named budget group within a period. Has an optional spending `limit`, a `isMandatory` flag for scope classification, and contains both planned and factual expenses. |
 | **Planned Expense** | `PlannedExpense` | A scheduled/expected expense inside a category. Has a required `description`, `amount`, `dueDate`, and an `isCompleted` flag that is checked off when paid. Rolls over to the next period with `isCompleted` reset to `false`. |
 | **Fact Expense** | `FactExpense` | An actual recorded spending entry. Has `amount`, optional `description`, and a `timestamp` that preserves chronological order. Never rolls over — cleared on period creation. |
-| **Due Date** | `DueDate` | A sealed union describing when a planned expense is due. Two variants: `exact` (specific `DateTime`) and `dayOfMonth` (recurring day number). |
+| **Due Date** | `DueDate` | A sealed union describing when a planned expense is due. Two variants: `exact` (specific `DateTime`) and `dayOfMonth` (recurring day number). Periods are not calendar months, so a `dayOfMonth` resolves to the first such day on or after the period's start: a day before the start day falls in the next calendar month, near the period's end (`resolveDueDate`). |
 | **Vault** | `Vault` | A named place holding one set of period files. Its `VaultLocation` is `local` (a folder path plus an optional macOS bookmark) or `remote` (a provider `kind` with non-secret `settings` and the names of its secrets). The registry (`VaultRegistry`, `vaults.json`) lists every vault and the selected one. |
 
 ## Key Domain Concepts
